@@ -31,6 +31,7 @@ type Temperature = Int
 -- But a quantity could not only be a measurement e.g. 100g it could also be a fraction of
 -- what we have made i.e. 1/2 of your cake mix.
 data Quantity = Measurement Int | Fraction Int Int
+    deriving Show
 
 data Position = Beside | Above | Wrap
     deriving Show
@@ -114,7 +115,7 @@ teabag = Ingredient "teabag"
 water = Ingredient "water"
 
 cupOfTea :: Recipe
-cupOfTea = milk >< wait 5 teabag >< heat 100 water
+cupOfTea = milk >< (wait 5 `after` (teabag >< heat 100 water))
 
 butter, bread, beans :: Recipe
 butter = Ingredient "butter"
