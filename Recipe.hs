@@ -1,3 +1,7 @@
+-- for CI purposes
+main :: IO ()
+main = putStrLn "Hello World"
+
 {- Cup of Tea:
 - Boil Water / Heat Water to 100 / Heat Water
 - Teabag into teapot
@@ -31,6 +35,7 @@ type Temperature = Int
 -- But a quantity could not only be a measurement e.g. 100g it could also be a fraction of
 -- what we have made i.e. 1/2 of your cake mix.
 data Quantity = Measurement Int | Fraction Int Int
+    deriving Show
 
 data Position = Beside | Above | Wrap
     deriving Show
@@ -38,7 +43,7 @@ data Position = Beside | Above | Wrap
 data Recipe = Ingredient String
             | Heat Temperature Recipe
             | Combine Recipe Recipe
-            | Transform Recipe
+            | Prepare Recipe -- cut, slice, peel etc.
             | Wait Time
             | Assemble Position Recipe Recipe
             | After Recipe Recipe
@@ -59,8 +64,8 @@ heat = Heat
 (><) :: Recipe -> Recipe -> Recipe
 (><) = Combine
 
-transform :: Recipe -> Recipe
-transform = Transform
+prepare :: Recipe -> Recipe
+prepare = Prepare
 
 wait :: Time -> Recipe
 wait = Wait
@@ -84,25 +89,6 @@ r1 ~~~ r2 = Assemble Beside r1 r2
 (@@@) :: Recipe -> Recipe -> Recipe
 r1 @@@ r2 = Assemble Wrap r1 r2
 
--- Transformations:
--- Heat is technically a transformation
--- Slice (cut into strips), dice (cut int squares), mince/mash, peel (cut out centre / remove skin). Inverse of assemble?
--- Score (cut lines into the food)
--- Flip
--- Rolling / shaping
--- Transform into x amount of some shape
-
--- Inverses:
--- Beside -> Slice
--- Pack together (like a ball of dough) -> Mince/mash
--- Wrap -> Peel / unwrap
--- leaves out score, how to represent dice?
-
--- Combinations:
--- Assemble
--- Mix / baste
--- Sequence
-
 -- Must consider how to deal with splitting a recipe, at the moment it would be something like this:
 -- (orangeZest >< (measure (Fraction 1 2) cakeMix)) ^^^ (lemonZest >< (measure (Fraction 1 2) cakeMix)
 
@@ -114,7 +100,7 @@ teabag = Ingredient "teabag"
 water = Ingredient "water"
 
 cupOfTea :: Recipe
-cupOfTea = milk >< wait 5 teabag >< heat 100 water
+cupOfTea = milk >< (wait 5 `after` (teabag >< heat 100 water))
 
 butter, bread, beans :: Recipe
 butter = Ingredient "butter"
