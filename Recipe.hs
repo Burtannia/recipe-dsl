@@ -1,3 +1,7 @@
+-- for CI purposes
+main :: IO ()
+main = putStrLn "Hello World"
+
 {- Cup of Tea:
 - Boil Water / Heat Water to 100 / Heat Water
 - Teabag into teapot
