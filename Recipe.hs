@@ -39,8 +39,8 @@ type Temperature = Int
 data Quantity = Measurement Int | Fraction Int Int
 
 instance Show Quantity where
-	show (Measurement i) = show i
-	show (Fraction n d) = "take " ++ show n ++ "//" ++ show d ++ " of the recipe" 
+        show (Measurement i) = show i
+        show (Fraction n d) = "take " ++ show n ++ "//" ++ show d ++ " of the recipe"
 
 data Position = Beside | Above | Wrap
   
