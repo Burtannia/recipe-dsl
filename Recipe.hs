@@ -1,3 +1,5 @@
+module Recipe where
+
 -- for CI purposes
 main :: IO ()
 main = putStrLn "Hello World"
@@ -35,10 +37,17 @@ type Temperature = Int
 -- But a quantity could not only be a measurement e.g. 100g it could also be a fraction of
 -- what we have made i.e. 1/2 of your cake mix.
 data Quantity = Measurement Int | Fraction Int Int
-    deriving Show
+
+instance Show Quantity where
+	show (Measurement i) = show i
+	show (Fraction n d) = "take " ++ show n ++ "//" ++ show d ++ " of the recipe" 
 
 data Position = Beside | Above | Wrap
-    deriving Show
+  
+instance Show Position where
+	show Beside = "and place it next to"
+	show Above = "and place it on top of"
+	show Wrap = "and wrap it in"
 
 data Recipe = Ingredient String
             | Heat Temperature Recipe
