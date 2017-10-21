@@ -38,4 +38,33 @@ getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
 printIngredients :: Recipe -> IO ()
 printIngredients r = mapM_ putStrLn (getIngredients r)
 
+-------------------------------------
+-- PRICE
+-------------------------------------
 
+type Price = Float
+type PricedItem = (String, Price)
+type PriceList = [PricedItem]
+
+class Priced a where
+    findCost :: a -> PriceList -> Price
+
+instance Priced Recipe where
+    findCost (Ingredient s) ps =
+        case prices of
+            [] -> 0
+            _  -> head prices
+        where prices = [p | (x, p) <- ps, x == s]
+    findCost (Heat _ r) ps       = findCost r ps
+    findCost (Combine r1 r2) ps  = findCost r1 ps + findCost r2 ps
+    findCost (Wait _) _          = 0
+    findCost (Sequence r1 r2) ps = findCost r1 ps + findCost r2 ps
+
+testList :: PriceList
+testList = [ ("milk", 1.00)
+           , ("teabag", 6.70)
+           ]
+
+-- Obviously this is rubbish... We need to take into account amortised costs
+-- type PricedItem = (String, Price, Quantity)
+-- Use the measurement constructor on recipes
