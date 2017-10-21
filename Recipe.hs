@@ -1,6 +1,5 @@
 module Recipe where
 
--- for CI purposes
 milk, teabag, water :: Recipe
 milk = Ingredient "milk"
 teabag = Ingredient "teabag"
@@ -8,9 +7,6 @@ water = Ingredient "water"
 
 cupOfTea :: Recipe
 cupOfTea = milk >< ((teabag >< heat 100 water) >>> wait 5)
-
-main :: IO ()
-main = print cupOfTea
 
 -------------------------------------
 

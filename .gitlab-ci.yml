@@ -3,4 +3,4 @@ image: haskell:8.2.1
 build:
   stage: build
   script:
-    - ghc -O2 Recipe.hs && ./Recipe
+    - ghc -O2 Recipe.hs && ghc -O2 RecipePrinter.hs
