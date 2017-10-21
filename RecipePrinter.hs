@@ -1,14 +1,41 @@
 module RecipePrinter where
 
-import Recipe
+import           Recipe
 
-describeRecipe :: Recipe -> String
-describeRecipe (Ingredient s) = s
-describeRecipe (Heat t r) = "Heat ... to" ++ show t ++ "\n"
-describeRecipe (Combine r1 r2) = "Mix " ++ describeRecipe r1 ++ " with " ++ describeRecipe r2 ++ "\n"
-describeRecipe (Prepare r) = "Prepare ..." ++ describeRecipe r ++ "\n"
-describeRecipe (Wait t) = "Wait" ++ "\n"
-describeRecipe (Assemble p r1 r2) = "Take the" ++ describeRecipe r1 ++ show p ++ describeRecipe r2
-describeRecipe (After r1 r2) = "Do the following:\n" ++ describeRecipe r1 ++ "Then do the following:\n" ++ describeRecipe r2
-describeRecipe (Measure q r) = "Measure " ++ show q ++ "of" ++ describeRecipe r
+-- data Recipe = Ingredient String
+--             | Heat Temperature Recipe
+--             | Combine Recipe Recipe
+--             | Wait Time
+--             | Sequence Recipe Recipe
+--             deriving (Show)
+
+-- Recipe -> Int (change in time)
+
+-------------------------------------
+-- PRINTING RECIPES
+-------------------------------------
+
+toString :: Recipe -> String
+toString (Ingredient s) = s
+toString (Heat t _)     = "Heat to " ++ show t
+toString (Combine _ _)  = "Mix"
+toString (Wait t)       = "Wait for " ++ show t
+toString (Sequence _ _) = "Then"
+
+-------------------------------------
+-- PRINTING INGREDIENTS
+-------------------------------------
+
+-- Create a list of ingredients in a recipe
+getIngredients :: Recipe -> [String]
+getIngredients (Ingredient s)   = [s]
+getIngredients (Heat _ r)       = getIngredients r
+getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
+getIngredients (Wait _)         = []
+getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
+
+-- Print the list of ingredients in a recipe
+printIngredients :: Recipe -> IO ()
+printIngredients r = mapM_ putStrLn (getIngredients r)
+
 
