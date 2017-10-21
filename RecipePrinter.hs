@@ -34,9 +34,19 @@ printRecipe x@(Sequence r1 r2) = printRecipe r1
                                     >> putStrLn (toString x)
                                     >> printRecipe r2
 
+printSteps :: Recipe -> IO ()
+printSteps (Ingredient _)    = return ()
+printSteps x@(Heat _ r)      = printSteps r >> (putStrLn . toString) x
+printSteps x@(Combine r1 r2) = printSteps r1 >> printSteps r2 >> (putStrLn . toString) x
+printSteps (Sequence r1 r2)  = printSteps r1 >> printSteps r2
+printSteps r                 = putStrLn $ toString r
+
 -- Great but should label steps
 -- Don't print out ingredients at the start
 -- Keep ingredient names for Heat etc. but use step label if not ingredient
+
+-- Parallel steps
+
 -------------------------------------
 -- PRINTING INGREDIENTS
 -------------------------------------
