@@ -16,12 +16,27 @@ import           Recipe
 -------------------------------------
 
 toString :: Recipe -> String
-toString (Ingredient s) = s
-toString (Heat t _)     = "Heat to " ++ show t
-toString (Combine _ _)  = "Mix"
-toString (Wait t)       = "Wait for " ++ show t
-toString (Sequence _ _) = "Then"
+toString (Ingredient s)   = s
+toString (Heat t r)       = "Heat (" ++ toString r ++ ") to " ++ show t
+toString (Combine r1 r2)  = "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 ++ ")"
+toString (Wait t)         = "Wait for " ++ show t
+toString (Sequence r1 r2) = "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
 
+printRecipe :: Recipe -> IO ()
+printRecipe x@(Ingredient _)   = putStrLn $ toString x
+printRecipe x@(Heat _ r)       = printRecipe r
+                                    >> putStrLn (toString x)
+printRecipe x@(Combine r1 r2)  = printRecipe r1
+                                    >> printRecipe r2
+                                    >> putStrLn (toString x)
+printRecipe x@(Wait _)         = putStrLn $ toString x
+printRecipe x@(Sequence r1 r2) = printRecipe r1
+                                    >> putStrLn (toString x)
+                                    >> printRecipe r2
+
+-- Great but should label steps
+-- Don't print out ingredients at the start
+-- Keep ingredient names for Heat etc. but use step label if not ingredient
 -------------------------------------
 -- PRINTING INGREDIENTS
 -------------------------------------
