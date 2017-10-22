@@ -9,6 +9,10 @@ import           Recipe.Recipe
 --             | Sequence Recipe Recipe
 --             deriving (Show)
 
+-------------------------------------
+-- TIMING RECIPES
+-------------------------------------
+
 calcTime :: Recipe -> Int
 calcTime (Ingredient _)   = 0
 calcTime (Heat t r)       = 0 + calcTime r -- need something here
@@ -34,3 +38,13 @@ atTime t r = if t >= calcTime r
                             then atTime t r2
                             else atTime t r1
                     _ -> r
+
+-------------------------------------
+-- SCHEDULING RECIPES
+-------------------------------------
+
+type RecipeSchedule = [Recipe]
+
+scheduleConcurrent :: Recipe -> Int -> RecipeSchedule
+scheduleConcurrent r 1 = [r]
+-- implement some timetabling thingy...

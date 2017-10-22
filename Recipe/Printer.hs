@@ -1,6 +1,6 @@
 module Recipe.Printer where
 
-import           Recipe
+import           Recipe.Recipe
 
 -- data Recipe = Ingredient String
 --             | Heat Temperature Recipe

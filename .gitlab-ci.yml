@@ -3,5 +3,6 @@ image: haskell:8.2.1
 build:
   stage: build
   script:
-    - cd Recipe
-    - ghc -O2 Recipe.hs && ghc -O2 Printer.hs && ghc -O2 Scheduler.hs
+    - ghc -O2 Recipe.Recipe
+      && ghc -O2 Recipe.Printer
+      && ghc -O2 Recipe.Scheduler

@@ -1,4 +1,4 @@
-module Recipe where
+module Recipe.Recipe where
 
 milk, teabag, water :: Recipe
 milk = Ingredient "milk"
