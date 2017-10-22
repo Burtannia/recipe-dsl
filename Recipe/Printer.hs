@@ -20,12 +20,12 @@ toString (Combine r1 r2)  = "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 
 toString (Wait t)         = "Wait for " ++ show t
 toString (Sequence r1 r2) = "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
 
-stepToString :: (Int, Recipe) -> String
-toString (i, Ingredient s)   = show i ++ ") " ++ s
-toString (i, Heat t r)       = show i ++ ") " ++ "Heat (" ++ "step " ++ show (fst r) ++ ") to " ++ show t
-toString (i, Combine r1 r2)  = show i ++ ") " ++ "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 ++ ")"
-toString (i, Wait t)         = show i ++ ") " ++ "Wait for " ++ show t
-toString (i, Sequence r1 r2) = show i ++ ") " ++ "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
+-- stepToString :: (Int, Recipe) -> String
+-- stepToString (i, Ingredient s)   = show i ++ ") " ++ s
+-- stepToString (i, Heat t r)       = show i ++ ") " ++ "Heat (" ++ "step " ++ show (fst r) ++ ") to " ++ show t
+-- stepToString (i, Combine r1 r2)  = show i ++ ") " ++ "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 ++ ")"
+-- stepToString (i, Wait t)         = show i ++ ") " ++ "Wait for " ++ show t
+-- stepToString (i, Sequence r1 r2) = show i ++ ") " ++ "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
 
 printRecipe :: Recipe -> IO ()
 printRecipe x@(Ingredient _)   = putStrLn $ toString x
