@@ -43,8 +43,21 @@ atTime t r = if t >= calcTime r
 -- SCHEDULING RECIPES
 -------------------------------------
 
-type RecipeSchedule = [Recipe]
+type Colour = Int
+type ColouredRecipe = (Colour, Recipe)
 
-scheduleConcurrent :: Recipe -> Int -> RecipeSchedule
-scheduleConcurrent r 1 = [r]
--- implement some timetabling thingy...
+type RecipeSchedule = [ColouredRecipe]
+
+-- Given a number of paths of execution (each
+-- performing steps one at a time), assigns
+-- steps between the paths
+-- scheduleLinear :: Recipe -> RecipeSchedule
+-- scheduleLinear r 1 = [(1, r)]
+
+--scheduleLinear' :: [Recipe] -> RecipeSchedule
+-- implement graph colouring
+
+-- Given a number of paths of execution (each
+-- performing multiple steps concurrently),
+-- assigns steps between the paths
+-- scheduleConcurrent :: Recipe -> Int -> RecipeSchedule

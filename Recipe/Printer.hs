@@ -20,6 +20,13 @@ toString (Combine r1 r2)  = "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 
 toString (Wait t)         = "Wait for " ++ show t
 toString (Sequence r1 r2) = "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
 
+stepToString :: (Int, Recipe) -> String
+toString (i, Ingredient s)   = show i ++ ") " ++ s
+toString (i, Heat t r)       = show i ++ ") " ++ "Heat (" ++ "step " ++ show (fst r) ++ ") to " ++ show t
+toString (i, Combine r1 r2)  = show i ++ ") " ++ "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 ++ ")"
+toString (i, Wait t)         = show i ++ ") " ++ "Wait for " ++ show t
+toString (i, Sequence r1 r2) = show i ++ ") " ++ "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
+
 printRecipe :: Recipe -> IO ()
 printRecipe x@(Ingredient _)   = putStrLn $ toString x
 printRecipe x@(Heat _ r)       = printRecipe r
@@ -33,11 +40,10 @@ printRecipe x@(Sequence r1 r2) = printRecipe r1
                                     >> printRecipe r2
 
 printSteps :: Recipe -> IO ()
-printSteps (Ingredient _)    = return ()
-printSteps x@(Heat _ r)      = printSteps r >> (putStrLn . toString) x
-printSteps x@(Combine r1 r2) = printSteps r1 >> printSteps r2 >> (putStrLn . toString) x
-printSteps (Sequence r1 r2)  = printSteps r1 >> printSteps r2
-printSteps r                 = putStrLn $ toString r
+printSteps r = mapM_ (putStrLn . showStep) (labelledSteps r)
+
+showStep :: (Int, Recipe) -> String
+showStep (i, r) = show i ++ ") " ++ toString r
 
 -- Great but should label steps
 -- Don't print out ingredients at the start
@@ -48,14 +54,6 @@ printSteps r                 = putStrLn $ toString r
 -------------------------------------
 -- PRINTING INGREDIENTS
 -------------------------------------
-
--- Create a list of ingredients in a recipe
-getIngredients :: Recipe -> [String]
-getIngredients (Ingredient s)   = [s]
-getIngredients (Heat _ r)       = getIngredients r
-getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
-getIngredients (Wait _)         = []
-getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
 
 -- Print the list of ingredients in a recipe
 printIngredients :: Recipe -> IO ()
