@@ -100,29 +100,48 @@ getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
 -- RECIPE LABELLING
 -------------------------------------
 
--- type Label = Int
+type Label = Int
 
--- data RecipeTree = Leaf Recipe
---                 | SingleNode Label Recipe RecipeTree
---                 | DoubleNode Label Recipe RecipeTree RecipeTree
+data LabelledRecipe = LIngredient Label String
+                    | LHeat Label Temperature LabelledRecipe
+                    | LCombine Label LabelledRecipe LabelledRecipe
+                    | LWait Label Time
+                    | LSequence Label LabelledRecipe LabelledRecipe
+                    deriving (Show)
 
---     deriving Show
+getLabel :: LabelledRecipe -> Label
+getLabel (LIngredient l _) = l
+getLabel (LHeat l _ _)     = l
+getLabel (LCombine l _ _)  = l
+getLabel (LWait l _)       = l
+getLabel (LSequence l _ _) = l
 
--- getLabel :: RecipeTree -> Label
--- getLabel (Leaf _)             = 0
--- getLabel (SingleNode l _ _)   = l
--- getLabel (DoubleNode l _ _ _) = l
+labelRecipe :: Recipe -> LabelledRecipe
+labelRecipe = labelRecipe' 1
 
--- labelRecipe :: Int -> Recipe -> RecipeTree
--- labelRecipe l r@(Ingredient _)   = Leaf r
--- labelRecipe l r@(Heat _ r')      = SingleNode l r (labelRecipe l r')
--- labelRecipe l r@(Combine r1 r2)  = DoubleNode l r (labelRecipe l r1) (labelRecipe l r2)
--- labelRecipe l r@(Wait _)         = Leaf r
--- labelRecipe l r@(Sequence r1 r2) = DoubleNode l r (labelRecipe l r1) (labelRecipe l r2)
+labelRecipe' :: Label -> Recipe -> LabelledRecipe
+labelRecipe' l (Ingredient s)   = LIngredient l s
 
-labelledSteps :: Recipe -> [(Int, Recipe)]
-labelledSteps r = let steps = extractSteps r
-                    in [(n, steps !! (n-1)) | n <- [1..length steps]]
+labelRecipe' l (Heat t r)       = LHeat l' t r'
+                                  where
+                                    r' = labelRecipe' l r
+                                    l' = getLabel r'
+
+labelRecipe' l (Combine r1 r2)  = LCombine (l''+1) lr1 lr2
+                                  where
+                                    lr1 = labelRecipe' l r1
+                                    lr2 = labelRecipe' (l'+1) r2
+                                    l'  = getLabel lr1
+                                    l'' = getLabel lr2
+
+labelRecipe' l (Wait t)         = LWait l t
+
+labelRecipe' l (Sequence r1 r2) = LSequence (l''+1) lr1 lr2
+                                  where
+                                    lr1 = labelRecipe' l r1
+                                    lr2 = labelRecipe' (l'+1) r2
+                                    l'  = getLabel lr1
+                                    l'' = getLabel lr2
 
 -------------------------------------
 -- MORE COMPLEX DEFINITIONS
