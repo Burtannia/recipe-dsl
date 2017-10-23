@@ -124,7 +124,9 @@ labelledSteps :: Recipe -> [(Int, Recipe)]
 labelledSteps r = let steps = extractSteps r
                     in [(n, steps !! (n-1)) | n <- [1..length steps]]
 
--- More complex definitions
+-------------------------------------
+-- MORE COMPLEX DEFINITIONS
+-------------------------------------
 
 -- data Quantity = Measurement Int | Fraction Int Int
 --
