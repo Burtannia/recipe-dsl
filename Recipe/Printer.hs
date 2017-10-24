@@ -20,6 +20,24 @@ toString (Combine r1 r2)  = "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 
 toString (Wait t)         = "Wait for " ++ show t
 toString (Sequence r1 r2) = "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
 
+showLabel :: LabelledRecipe -> String
+-- showLabel r = case r of
+--               (LIngredient s) -> s
+--               _ -> (show . getLabel) r
+showLabel (LIngredient s)   = s
+showLabel (LSequence r1 r2) = show $ if l1 > l2 then l1 else l2
+                              where
+                                l1 = getLabel r1
+                                l2 = getLabel r2
+showLabel r                 = (show . getLabel) r
+
+toStringL :: LabelledRecipe -> String
+toStringL (LIngredient s)    = s
+toStringL (LHeat l t r)      = show l ++ ") Heat (" ++ showLabel r ++ ") to" ++ show t
+toStringL (LCombine l r1 r2) = show l ++ ") Mix (" ++ showLabel r1 ++ ") with (" ++ showLabel r2 ++ ")"
+toStringL (LWait l t)        = show l ++ ") Wait for " ++ show t
+toStringL (LSequence r1 r2)  = "" -- this won't exist after extractSteps has been called
+
 -- stepToString :: (Int, Recipe) -> String
 -- stepToString (i, Ingredient s)   = show i ++ ") " ++ s
 -- stepToString (i, Heat t r)       = show i ++ ") " ++ "Heat (" ++ "step " ++ show (fst r) ++ ") to " ++ show t
@@ -40,10 +58,7 @@ printRecipe x@(Sequence r1 r2) = printRecipe r1
                                     >> printRecipe r2
 
 printSteps :: Recipe -> IO ()
-printSteps r = mapM_ (putStrLn . showStep) (labelledSteps r)
-
-showStep :: (Int, Recipe) -> String
-showStep (i, r) = show i ++ ") " ++ toString r
+printSteps r = mapM_ (putStrLn . toStringL) (extractSteps r)
 
 -- Great but should label steps
 -- Don't print out ingredients at the start

@@ -81,12 +81,16 @@ wait = Wait
 -------------------------------------
 
 -- Create a list of steps of the Recipe
-extractSteps :: LabelledRecipe -> [LabelledRecipe]
-extractSteps (LIngredient _)      = []
-extractSteps x@(LHeat _ _ r)      = extractSteps r ++ [x]
-extractSteps x@(LCombine _ r1 r2) = extractSteps r1 ++ extractSteps r2 ++ [x]
-extractSteps (LSequence r1 r2)    = extractSteps r1 ++ extractSteps r2
-extractSteps r                    = [r]
+extractSteps :: Recipe -> [LabelledRecipe]
+extractSteps = extractStepsL . labelRecipe
+
+-- Create a list of steps of a LabelledRecipe
+extractStepsL :: LabelledRecipe -> [LabelledRecipe]
+extractStepsL (LIngredient _)      = []
+extractStepsL x@(LHeat _ _ r)      = extractStepsL r ++ [x]
+extractStepsL x@(LCombine _ r1 r2) = extractStepsL r1 ++ extractStepsL r2 ++ [x]
+extractStepsL (LSequence r1 r2)    = extractStepsL r1 ++ extractStepsL r2
+extractStepsL r                    = [r]
 
 -- Create a list of ingredients in a recipe
 getIngredients :: Recipe -> [String]
