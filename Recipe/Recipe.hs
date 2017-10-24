@@ -81,12 +81,12 @@ wait = Wait
 -------------------------------------
 
 -- Create a list of steps of the Recipe
-extractSteps :: Recipe -> [Recipe]
-extractSteps (Ingredient _)    = []
-extractSteps x@(Heat _ r)      = extractSteps r ++ [x]
-extractSteps x@(Combine r1 r2) = extractSteps r1 ++ extractSteps r2 ++ [x]
-extractSteps (Sequence r1 r2)  = extractSteps r1 ++ extractSteps r2
-extractSteps r                 = [r]
+extractSteps :: LabelledRecipe -> [LabelledRecipe]
+extractSteps (LIngredient _)      = []
+extractSteps x@(LHeat _ _ r)      = extractSteps r ++ [x]
+extractSteps x@(LCombine _ r1 r2) = extractSteps r1 ++ extractSteps r2 ++ [x]
+extractSteps (LSequence r1 r2)    = extractSteps r1 ++ extractSteps r2
+extractSteps r                    = [r]
 
 -- Create a list of ingredients in a recipe
 getIngredients :: Recipe -> [String]
@@ -102,46 +102,52 @@ getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
 
 type Label = Int
 
-data LabelledRecipe = LIngredient Label String
+data LabelledRecipe = LIngredient String
                     | LHeat Label Temperature LabelledRecipe
                     | LCombine Label LabelledRecipe LabelledRecipe
                     | LWait Label Time
-                    | LSequence Label LabelledRecipe LabelledRecipe
+                    | LSequence LabelledRecipe LabelledRecipe
                     deriving (Show)
 
 getLabel :: LabelledRecipe -> Label
-getLabel (LIngredient l _) = l
-getLabel (LHeat l _ _)     = l
-getLabel (LCombine l _ _)  = l
-getLabel (LWait l _)       = l
-getLabel (LSequence l _ _) = l
+getLabel (LIngredient _)  = 0
+getLabel (LHeat l _ _)    = l
+getLabel (LCombine l _ _) = l
+getLabel (LWait l _)      = l
+getLabel (LSequence _ _)  = 0
 
 labelRecipe :: Recipe -> LabelledRecipe
 labelRecipe = labelRecipe' 1
 
 labelRecipe' :: Label -> Recipe -> LabelledRecipe
-labelRecipe' l (Ingredient s)   = LIngredient l s
+labelRecipe' _ (Ingredient s)   = LIngredient s
 
 labelRecipe' l (Heat t r)       = LHeat l' t r'
                                   where
                                     r' = labelRecipe' l r
-                                    l' = getLabel r'
+                                    l' = calcLabel l r'
 
-labelRecipe' l (Combine r1 r2)  = LCombine (l''+1) lr1 lr2
+labelRecipe' l (Combine r1 r2)  = LCombine l'' lr1 lr2
                                   where
                                     lr1 = labelRecipe' l r1
-                                    lr2 = labelRecipe' (l'+1) r2
-                                    l'  = getLabel lr1
-                                    l'' = getLabel lr2
+                                    lr2 = labelRecipe' l' r2
+                                    l'  = calcLabel l lr1
+                                    l'' = calcLabel l' lr2
 
 labelRecipe' l (Wait t)         = LWait l t
 
-labelRecipe' l (Sequence r1 r2) = LSequence (l''+1) lr1 lr2
+labelRecipe' l (Sequence r1 r2) = LSequence lr1 lr2
                                   where
                                     lr1 = labelRecipe' l r1
-                                    lr2 = labelRecipe' (l'+1) r2
-                                    l'  = getLabel lr1
-                                    l'' = getLabel lr2
+                                    lr2 = labelRecipe' l' r2
+                                    l'  = calcLabel l lr1
+                                    l'' = calcLabel l' lr2
+
+calcLabel :: Label -> LabelledRecipe -> Label
+calcLabel l r' = case r' of
+    (LIngredient s)  -> l
+    (LSequence _ r2) -> getLabel r2 + 1
+    _                -> getLabel r' + 1
 
 -------------------------------------
 -- MORE COMPLEX DEFINITIONS
