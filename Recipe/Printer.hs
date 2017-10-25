@@ -36,14 +36,7 @@ toStringL (LIngredient s)    = s
 toStringL (LHeat l t r)      = show l ++ ") Heat (" ++ showLabel r ++ ") to" ++ show t
 toStringL (LCombine l r1 r2) = show l ++ ") Mix (" ++ showLabel r1 ++ ") with (" ++ showLabel r2 ++ ")"
 toStringL (LWait l t)        = show l ++ ") Wait for " ++ show t
-toStringL (LSequence r1 r2)  = "" -- this won't exist after extractSteps has been called
-
--- stepToString :: (Int, Recipe) -> String
--- stepToString (i, Ingredient s)   = show i ++ ") " ++ s
--- stepToString (i, Heat t r)       = show i ++ ") " ++ "Heat (" ++ "step " ++ show (fst r) ++ ") to " ++ show t
--- stepToString (i, Combine r1 r2)  = show i ++ ") " ++ "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 ++ ")"
--- stepToString (i, Wait t)         = show i ++ ") " ++ "Wait for " ++ show t
--- stepToString (i, Sequence r1 r2) = show i ++ ") " ++ "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
+toStringL (LSequence _ _)    = "" -- this won't exist after extractSteps has been called
 
 printRecipe :: Recipe -> IO ()
 printRecipe x@(Ingredient _)   = putStrLn $ toString x
