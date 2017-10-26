@@ -31,6 +31,7 @@ printRecipe x@(Wait _)         = putStrLn $ toString x
 printRecipe x@(Sequence r1 r2) = printRecipe r1
                                     >> putStrLn (toString x)
                                     >> printRecipe r2
+-- If mixing one ingredient just say "add"
 
 -- Great but should label steps
 -- Don't print out ingredients at the start
@@ -94,3 +95,5 @@ testList = [ ("milk", 1.00)
 -- type PricedItem = (String, Price, Quantity)
 -- Use the measurement constructor on recipes, at the moment we have a cooking show
 -- setup where we presume everything is already chopped and measured etc.
+
+-- print as graph

@@ -21,6 +21,7 @@ calcTime (Combine r1 r2)  = calcTime r1 + calcTime r2
 calcTime (Wait t)         = t
 calcTime (Sequence r1 r2) = calcTime r1 + calcTime r2
 -- time to heat something depends on temp, volume and what it is
+-- heat capacity and stuff
 
 -- Calculates the time a single LabelledRecipe will take
 -- Does not recurse down tree
