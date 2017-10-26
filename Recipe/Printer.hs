@@ -20,10 +20,23 @@ toString (Combine r1 r2)  = "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 
 toString (Wait t)         = "Wait for " ++ show t
 toString (Sequence r1 r2) = "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
 
+printRecipe :: Recipe -> IO ()
+printRecipe x@(Ingredient _)   = putStrLn $ toString x
+printRecipe x@(Heat _ r)       = printRecipe r
+                                    >> putStrLn (toString x)
+printRecipe x@(Combine r1 r2)  = printRecipe r1
+                                    >> printRecipe r2
+                                    >> putStrLn (toString x)
+printRecipe x@(Wait _)         = putStrLn $ toString x
+printRecipe x@(Sequence r1 r2) = printRecipe r1
+                                    >> putStrLn (toString x)
+                                    >> printRecipe r2
+
+-- Great but should label steps
+-- Don't print out ingredients at the start
+-- Keep ingredient names for Heat etc. but use step label if not ingredient
+
 showLabel :: LabelledRecipe -> String
--- showLabel r = case r of
---               (LIngredient s) -> s
---               _ -> (show . getLabel) r
 showLabel (LIngredient s)   = s
 showLabel (LSequence r1 r2) = show $ if l1 > l2 then l1 else l2
                               where
@@ -38,26 +51,9 @@ toStringL (LCombine l r1 r2) = show l ++ ") Mix (" ++ showLabel r1 ++ ") with ("
 toStringL (LWait l t)        = show l ++ ") Wait for " ++ show t
 toStringL (LSequence _ _)    = "" -- this won't exist after extractSteps has been called
 
-printRecipe :: Recipe -> IO ()
-printRecipe x@(Ingredient _)   = putStrLn $ toString x
-printRecipe x@(Heat _ r)       = printRecipe r
-                                    >> putStrLn (toString x)
-printRecipe x@(Combine r1 r2)  = printRecipe r1
-                                    >> printRecipe r2
-                                    >> putStrLn (toString x)
-printRecipe x@(Wait _)         = putStrLn $ toString x
-printRecipe x@(Sequence r1 r2) = printRecipe r1
-                                    >> putStrLn (toString x)
-                                    >> printRecipe r2
-
+-- Print numbered steps in a recipe
 printSteps :: Recipe -> IO ()
 printSteps r = mapM_ (putStrLn . toStringL) (extractSteps r)
-
--- Great but should label steps
--- Don't print out ingredients at the start
--- Keep ingredient names for Heat etc. but use step label if not ingredient
-
--- Parallel steps
 
 -------------------------------------
 -- PRINTING INGREDIENTS

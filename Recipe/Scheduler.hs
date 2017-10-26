@@ -13,6 +13,7 @@ import           Recipe.Recipe
 -- TIMING RECIPES
 -------------------------------------
 
+-- Calculates the time a Recipe will take
 calcTime :: Recipe -> Int
 calcTime (Ingredient _)   = 0
 calcTime (Heat t r)       = 0 + calcTime r -- need something here
@@ -20,6 +21,19 @@ calcTime (Combine r1 r2)  = calcTime r1 + calcTime r2
 calcTime (Wait t)         = t
 calcTime (Sequence r1 r2) = calcTime r1 + calcTime r2
 -- time to heat something depends on temp, volume and what it is
+
+-- Calculates the time a single LabelledRecipe will take
+-- Does not recurse down tree
+calcStepTime :: LabelledRecipe -> Int
+calcStepTime (LIngredient _)     = 0
+calcStepTime (LHeat _ t r)       = 3
+calcStepTime (LCombine _ r1 r2)  = case r1 of
+    (LWait _ _) -> 0
+    _           -> case r2 of
+        (LWait _ _) -> 0
+        _           -> 5
+calcStepTime (LWait _ t)         = t
+calcStepTime (LSequence r1 r2)   = 0
 
 atTime :: Int -> Recipe -> Recipe
 atTime t r = if t >= calcTime r
@@ -42,22 +56,3 @@ atTime t r = if t >= calcTime r
 -------------------------------------
 -- SCHEDULING RECIPES
 -------------------------------------
-
-type Colour = Int
-type ColouredRecipe = (Colour, Recipe)
-
-type RecipeSchedule = [ColouredRecipe]
-
--- Given a number of paths of execution (each
--- performing steps one at a time), assigns
--- steps between the paths
--- scheduleLinear :: Recipe -> RecipeSchedule
--- scheduleLinear r 1 = [(1, r)]
-
---scheduleLinear' :: [Recipe] -> RecipeSchedule
--- implement graph colouring
-
--- Given a number of paths of execution (each
--- performing multiple steps concurrently),
--- assigns steps between the paths
--- scheduleConcurrent :: Recipe -> Int -> RecipeSchedule

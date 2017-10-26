@@ -59,6 +59,7 @@ data Recipe = Ingredient String
             | Wait Time
             | Sequence Recipe Recipe
             deriving (Show)
+            -- Inverse Recipe e.g. Heat -> Cool, Combine -> Remove
 
 temp :: Int -> Temperature
 temp = Degrees
