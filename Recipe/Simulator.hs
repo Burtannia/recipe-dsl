@@ -29,3 +29,5 @@ simulateRecipe' r = do
     threadDelay $ calcStepTime r * 1000000
     putStrLn "Finished..."
     putStrLn ""
+
+    -- list of how to prep each labelled item
