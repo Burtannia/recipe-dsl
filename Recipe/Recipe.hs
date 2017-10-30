@@ -52,11 +52,10 @@ data Recipe = Ingredient String
             | Heat
             | Time
             | Void
-            | Optional Recipe
+            | Optional (Bool -> Recipe)
             | Measure Quantity Recipe
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
-            deriving Show
 
 type Quantity = Int
 
@@ -65,7 +64,9 @@ type Quantity = Int
 -- e.g. Wait is a quantity of time, heat int recipe is a quantity of heat
 
 optional :: Recipe -> Recipe
-optional = Optional
+optional r = Optional (\b -> if b
+                               then r
+                               else Void)
 
 measure :: Quantity -> Recipe -> Recipe
 measure = Measure
@@ -98,7 +99,7 @@ extractSteps = extractStepsL . labelRecipe
 
 -- Create a list of steps of a LabelledRecipe
 extractStepsL :: LabelledRecipe -> [LabelledRecipe]
-extractStepsL x@(LOptional _ r)    = extractStepsL r ++ [x]
+extractStepsL x@(LOptional _ r)    = extractStepsL (r True) ++ [x]
 extractStepsL x@(LMeasure _ _ r)   = extractStepsL r ++ [x]
 extractStepsL x@(LCombine _ r1 r2) = extractStepsL r1 ++ extractStepsL r2 ++ [x]
 extractStepsL (LSequence r1 r2)    = extractStepsL r1 ++ extractStepsL r2
@@ -120,11 +121,10 @@ data LabelledRecipe = LIngredient String
                     | LHeat
                     | LTime
                     | LVoid
-                    | LOptional Label LabelledRecipe
+                    | LOptional Label (Bool -> LabelledRecipe)
                     | LMeasure Label Quantity LabelledRecipe
                     | LCombine Label LabelledRecipe LabelledRecipe
                     | LSequence LabelledRecipe LabelledRecipe
-                    deriving Show
 
 type Label = Int
 
@@ -143,8 +143,11 @@ labelRecipe' _ Heat             = LHeat
 labelRecipe' _ Time             = LTime
 labelRecipe' _ Void             = LVoid
 
-labelRecipe' l (Optional r)     = LOptional l' r'
+labelRecipe' l (Optional br)    = LOptional l' (\b -> if b
+                                                        then r'
+                                                        else LVoid)
                                   where
+                                    r  = br True
                                     r' = labelRecipe' l r
                                     l' = calcLabel l r'
 
@@ -178,23 +181,36 @@ calcLabel l r' = case r' of
 -------------------------------------
 -- RECIPE SEMANTICS
 -------------------------------------
--- RECIPE:
--- Ingredients
--- time to make
--- actions to make
 
--- Recipe is WHAT you do, Action is HOW you do it
--- We describe what a recipe IS, we must describe the execution
--- A recipe gets "fed" time and progresses in completion
--- Recipe -> Time -> Recipe
--- if Time > timeOf Recipe then Recipe is completed
+-- executeR :: Recipe -> (World -> Action)
+-- executeR r = case r of
+--     Ingredient s -> (\w ->
+--         if not $ r `elem` w
+--             then Get r
+--             else Idle)
 
-data Action = Get Recipe
-            | Tag String Recipe
+--     Heat         -> (\_ -> Idle)
+--     Time         -> (\_ -> Idle)
+--     Void         -> (\_ -> Idle)
 
---semantics :: Recipe -> (Time -> Action)
+--     Optional br -> (\w ->
+--         if Decide (br True) True `elem` w
+--             then executeR (br True)
+--             else if Decide (br True) False `elem` w
+--                     then Idle
+--                     else Decide (br True)
 
--- Abstract semantics: set of actions that correspond directly to cooking techniques
--- these actions are "performed" when given Time
+--     Measure q r -> (\w ->
+--         )
+
+-- type World = [Action]
 
 -- Concrete implementation: various simulation models e.g. professional with brigade
+-- data Kitchen = Kitchen
+--     { kActions :: Recipe -> (Time -> Action)
+--     , kPaths   :: Int -- number of paths of concurrent execution
+--     }
+
+-- dice r = Diced r (describes what we want)
+-- this has to compile into a set of cutting instructions
+-- Cut Method (0 to 1)
