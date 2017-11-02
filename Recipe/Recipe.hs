@@ -10,7 +10,7 @@ teabag = Ingredient "teabag"
 water = Ingredient "water"
 
 cupOfTea :: Recipe
-cupOfTea = milk >< ((teabag >< (water `heatAt` 100)) >>> wait 5)
+cupOfTea = milk >< ((teabag >< (heat 100 water)) >>> wait 5)
 
 oliveOil, tomato, onion, garlic, tinnedTomatoes, bayLeaf, thyme, basil, vegStock :: Recipe
 oliveOil = Ingredient "olive oil"
@@ -34,12 +34,12 @@ redChilli = Ingredient "red chilli"
 coriander = Ingredient "coriander"
 
 tomatoSauce :: Recipe
-tomatoSauce = (((((oliveOil `heatAt` 2) >< onion >< garlic) >>> wait 5)
-              >< tinnedTomatoes >< measure 6 tomato >< vegStock >< bayLeaf >< thyme)
+tomatoSauce = (((((heat 2 oliveOil) >< onion >< garlic) >>> wait 5)
+              >< tinnedTomatoes >< tomato >< vegStock >< bayLeaf >< thyme)
               >>> wait 20) >< basil
 
 chilliConCarne :: Recipe
-chilliConCarne = ((((((((oliveOil `heatAt` 2) >< beefMince) >>> wait 5)
+chilliConCarne = ((((((((heat 2 oliveOil) >< beefMince) >>> wait 5)
                     >< cumin >< paprika >< cayenne) >>> wait 5)
                     >< tomatoSauce >< beefStock) >>> wait 30)
                     >< kidneyBeans >< redChilli >< coriander) >>> wait 10
@@ -48,12 +48,23 @@ chilliConCarne = ((((((((oliveOil `heatAt` 2) >< beefMince) >>> wait 5)
 -- RECIPE DEFINITION
 -------------------------------------
 
+-- data Base = Ingredient String | Intangible
+
+-- data Intangible = Heat | Time | Void
+
+-- data Recipe = Ingredient String
+--             | Heat | Time | Void
+--             | Optional Recipe
+--             | Temporary Recipe
+--             | Measure Quantity Recipe
+--             | Combine CMethod Recipe Recipe
+--             | Sequence Recipe Recipe
+
+-- data CMethod = Mix | Stack | PlaceIn
+
 data Recipe = Ingredient String
-            | Heat
-            | Time
-            | Void
-            | Optional (Bool -> Recipe)
-            | Measure Quantity Recipe
+            | Heat Int Recipe
+            | Wait Int
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
 
@@ -63,16 +74,33 @@ type Quantity = Int
 -- any quantifiable combinators into the measure combinator
 -- e.g. Wait is a quantity of time, heat int recipe is a quantity of heat
 
-optional :: Recipe -> Recipe
-optional r = Optional (\b -> if b
-                               then r
-                               else Void)
+heat :: Int -> Recipe -> Recipe
+heat = Heat
 
-measure :: Quantity -> Recipe -> Recipe
-measure = Measure
+-- optional :: Recipe -> Recipe
+-- optional = Optional
+
+-- temporary :: Recipe -> Recipe
+-- temporary = Temporary
+
+-- measure :: Quantity -> Recipe -> Recipe
+-- measure = Measure
+
+-----------------
+--- COMBINES: ---
+-----------------
 
 (><) :: Recipe -> Recipe -> Recipe
+--(><) = Combine Mix
 (><) = Combine
+
+-- (^^^) :: Recipe -> Recipe -> Recipe
+-- (^^^) = Combine Stack
+
+-- (@@@) :: Recipe -> Recipe -> Recipe
+-- (@@@) = Combine PlaceIn
+
+-----------------
 
 -- r1 then r2
 (>>>) :: Recipe -> Recipe -> Recipe
@@ -80,14 +108,15 @@ measure = Measure
 
 -- Can now build up some new combinators
 
-heatAt :: Recipe -> Quantity -> Recipe
-r `heatAt` t = (measure t Heat) >< r
+-- heatAt :: Recipe -> Quantity -> Recipe
+-- r `heatAt` t = (measure t Heat) >< r
 
-forDuration :: Recipe -> Quantity -> Recipe
-r `forDuration` q = (measure q Time) >< r
+-- forDuration :: Recipe -> Quantity -> Recipe
+-- r `forDuration` q = (measure q Time) >< r
 
 wait :: Quantity -> Recipe
-wait q = (measure q Time) >< Void
+--wait q = (measure q Time) >< Void
+wait = Wait
 
 -------------------------------------
 -- UTILITY FUNCTIONS
@@ -99,82 +128,69 @@ extractSteps = extractStepsL . labelRecipe
 
 -- Create a list of steps of a LabelledRecipe
 extractStepsL :: LabelledRecipe -> [LabelledRecipe]
-extractStepsL x@(LOptional _ r)    = extractStepsL (r True) ++ [x]
-extractStepsL x@(LMeasure _ _ r)   = extractStepsL r ++ [x]
+extractStepsL (LIngredient _)      = []
+extractStepsL x@(LHeat _ _ r)      = extractStepsL r ++ [x]
 extractStepsL x@(LCombine _ r1 r2) = extractStepsL r1 ++ extractStepsL r2 ++ [x]
 extractStepsL (LSequence r1 r2)    = extractStepsL r1 ++ extractStepsL r2
-extractStepsL _                    = []
+extractStepsL r                    = [r]
+
+-- Create a list of ingredients in a recipe
+getIngredients :: Recipe -> [String]
+getIngredients (Ingredient s)   = [s]
+getIngredients (Heat _ r)       = getIngredients r
+getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
+getIngredients (Wait _)         = []
+getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
 
 -------------------------------------
 -- RECIPE LABELLING
 -------------------------------------
 
--- r' is a LabelledRecipe therefore we can't construct
--- Optional r'.
-
--- labelRecipe' l (Optional r)     = (l', Optional r')
--- where
---   r' = labelRecipe' l r
---   l' = calcLabel l r'
-
-data LabelledRecipe = LIngredient String
-                    | LHeat
-                    | LTime
-                    | LVoid
-                    | LOptional Label (Bool -> LabelledRecipe)
-                    | LMeasure Label Quantity LabelledRecipe
-                    | LCombine Label LabelledRecipe LabelledRecipe
-                    | LSequence LabelledRecipe LabelledRecipe
-
 type Label = Int
 
+data LabelledRecipe = LIngredient String
+                    | LHeat Label Int LabelledRecipe
+                    | LCombine Label LabelledRecipe LabelledRecipe
+                    | LWait Label Int
+                    | LSequence LabelledRecipe LabelledRecipe
+                    deriving (Show)
+
 getLabel :: LabelledRecipe -> Label
-getLabel (LOptional l _)  = l
-getLabel (LMeasure l _ _) = l
+getLabel (LIngredient _)  = 0
+getLabel (LHeat l _ _)    = l
 getLabel (LCombine l _ _) = l
-getLabel _                = 0
+getLabel (LWait l _)      = l
+getLabel (LSequence _ _)  = 0
 
 labelRecipe :: Recipe -> LabelledRecipe
 labelRecipe = labelRecipe' 1
 
 labelRecipe' :: Label -> Recipe -> LabelledRecipe
 labelRecipe' _ (Ingredient s)   = LIngredient s
-labelRecipe' _ Heat             = LHeat
-labelRecipe' _ Time             = LTime
-labelRecipe' _ Void             = LVoid
 
-labelRecipe' l (Optional br)    = LOptional l' (\b -> if b
-                                                        then r'
-                                                        else LVoid)
-                                  where
-                                    r  = br True
-                                    r' = labelRecipe' l r
-                                    l' = calcLabel l r'
-
-labelRecipe' l (Measure q r)    = LMeasure l' q r'
-                                  where
-                                    r' = labelRecipe' l r
-                                    l' = calcLabel l r'
+labelRecipe' l (Heat t r)       = LHeat l' t r'
+              where
+                r' = labelRecipe' l r
+                l' = calcLabel l r'
 
 labelRecipe' l (Combine r1 r2)  = LCombine l'' lr1 lr2
-                                  where
-                                    lr1 = labelRecipe' l r1
-                                    lr2 = labelRecipe' l' r2
-                                    l'  = calcLabel l lr1
-                                    l'' = calcLabel l' lr2
+              where
+                lr1 = labelRecipe' l r1
+                lr2 = labelRecipe' l' r2
+                l'  = calcLabel l lr1
+                l'' = calcLabel l' lr2
+
+labelRecipe' l (Wait t) = LWait l t
 
 labelRecipe' l (Sequence r1 r2) = LSequence lr1 lr2
-                                  where
-                                    lr1 = labelRecipe' l r1
-                                    lr2 = labelRecipe' l' r2
-                                    l'  = calcLabel l lr1
+              where
+                lr1 = labelRecipe' l r1
+                lr2 = labelRecipe' l' r2
+                l'  = calcLabel l lr1
 
 calcLabel :: Label -> LabelledRecipe -> Label
 calcLabel l r' = case r' of
     (LIngredient _)  -> l
-    LHeat            -> l
-    LTime            -> l
-    LVoid            -> l
     (LSequence _ r2) -> getLabel r2 + 1
     _                -> getLabel r' + 1
 
