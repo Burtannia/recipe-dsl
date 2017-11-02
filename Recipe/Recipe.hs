@@ -62,6 +62,10 @@ chilliConCarne = ((((((((heat 2 oliveOil) >< beefMince) >>> wait 5)
 
 -- data CMethod = Mix | Stack | PlaceIn
 
+-- instance Monoid Recipe where
+--     mempty  = Void
+--     mappend = (><)
+
 data Recipe = Ingredient String
             | Heat Int Recipe
             | Wait Int
@@ -155,6 +159,8 @@ data LabelledRecipe = LIngredient String
                     | LSequence LabelledRecipe LabelledRecipe
                     deriving (Show)
 
+-- type ST Recipe = State -> (State, Recipe)
+
 getLabel :: LabelledRecipe -> Label
 getLabel (LIngredient _)  = 0
 getLabel (LHeat l _ _)    = l
@@ -198,35 +204,11 @@ calcLabel l r' = case r' of
 -- RECIPE SEMANTICS
 -------------------------------------
 
--- executeR :: Recipe -> (World -> Action)
--- executeR r = case r of
---     Ingredient s -> (\w ->
---         if not $ r `elem` w
---             then Get r
---             else Idle)
+-- Chain of actions, next action is triggered by condition being met
+-- Recipe `until` (Cond -> Recipe)
 
---     Heat         -> (\_ -> Idle)
---     Time         -> (\_ -> Idle)
---     Void         -> (\_ -> Idle)
-
---     Optional br -> (\w ->
---         if Decide (br True) True `elem` w
---             then executeR (br True)
---             else if Decide (br True) False `elem` w
---                     then Idle
---                     else Decide (br True)
-
---     Measure q r -> (\w ->
---         )
-
--- type World = [Action]
-
--- Concrete implementation: various simulation models e.g. professional with brigade
+-- Concrete implementation: various simulation models e.g. professional kitchen with brigade
 -- data Kitchen = Kitchen
 --     { kActions :: Recipe -> (Time -> Action)
 --     , kPaths   :: Int -- number of paths of concurrent execution
 --     }
-
--- dice r = Diced r (describes what we want)
--- this has to compile into a set of cutting instructions
--- Cut Method (0 to 1)
