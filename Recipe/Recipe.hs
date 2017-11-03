@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 module Recipe.Recipe where
 
 -------------------------------------
@@ -66,15 +67,24 @@ chilliConCarne = ((((((((heat 2 oliveOil) >< beefMince) >>> wait 5)
 --     mempty  = Void
 --     mappend = (><)
 
---newtype Obs a = ()
-
 data Recipe = Ingredient String
             | Heat Int Recipe
             | Wait Int
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
+            | forall a. Condition a => Recipe `Until` a
 
 type Quantity = Int
+
+-- time, temperature, image from AI camera
+class Condition a where
+    met :: a -> (a -> Bool)
+
+newtype Temperature = Temp Int
+    deriving (Eq, Show)
+
+instance Condition Temperature where
+    met = (\x -> (==) x)
 
 -- With adding the Measure combinator we can extract
 -- any quantifiable combinators into the measure combinator
