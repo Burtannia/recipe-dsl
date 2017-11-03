@@ -66,6 +66,8 @@ chilliConCarne = ((((((((heat 2 oliveOil) >< beefMince) >>> wait 5)
 --     mempty  = Void
 --     mappend = (><)
 
+--newtype Obs a = ()
+
 data Recipe = Ingredient String
             | Heat Int Recipe
             | Wait Int
@@ -204,22 +206,13 @@ calcLabel l r' = case r' of
 -- RECIPE SEMANTICS
 -------------------------------------
 
--- Chain of actions, next action is triggered by condition being met
--- Recipe `until` (Cond -> Recipe)
-
--- Recipe is like a path from start to finish with certain nodes
--- it must visit in a certain order
-
--- when you add things while heating something else you often dont remove from the heat
--- if you should remove from the heat then use the temporary constructor
--- RecipeP {Prerequisites: (could be other Recipes), Actions, Completion: (\s -> Bool)}
+-- RP: how to perform the Recipe. Translates Recipe into a set of fundamental actions.
 
 type Time = Int
 
-data RecipeP = RecipeP
+data RP = RP
     { rPrereqs :: [Recipe]
     , rActions :: [Action]
-    --, rConds :: [Time -> Bool] -- maybe these conditions should be part of Actions
     }
 
 data Action = Get Recipe
@@ -237,17 +230,21 @@ data Action = Get Recipe
             | PourOver Recipe Recipe
             | Mix Recipe Recipe
 
-processRecipe :: Recipe -> RecipeP
-processRecipe x@(Ingredient s) = RecipeP {[], [Get x]}
-processRecipe x@(Heat t r)
-    | t > 22             = RecipeP {[r, Preheat t], [Get r, PlaceInHeat r]}
-    | t <= 22 && t >= 20 = RecipeP {[r], [Get r, LeaveRoomTemp r]}
-    | t > 0              = RecipeP {[r], [Get r, Refrigerate r]}
-    | t <= 0             = RecipeP {[r], [Get r, Freeze r]}
-processRecipe x@(Combine r1 r2) = case r1 of
-    Wait t -> case r2 of
-                Wait t' -> processRecipe (Wait t + t')
-                _ -> -- do actions for r2 then add termination condition of time = t
+-- processRecipe :: Recipe -> RP
+-- processRecipe x@(Ingredient s) = RP {rPrereqs = [], rActions = [Get x]}
+-- processRecipe x@(Heat t r)
+--     | t > 22             = RP {[r, Preheat t], [Get r, PlaceInHeat r]}
+--     | t <= 22 && t >= 20 = RP {[r], [Get r, LeaveRoomTemp r]}
+--     | t > 0              = RP {[r], [Get r, Refrigerate r]}
+--     | t <= 0             = RP {[r], [Get r, Freeze r]}
+-- processRecipe x@(Combine r1 r2) = case r1 of
+--     Wait t -> case r2 of
+--                 Wait t' -> processRecipe (Wait t + t')
+--                 _ -> -- do actions for r2 then add termination condition of time = t
+
+-------------------------------------
+-- CONCRETE IMPLEMENTATION
+-------------------------------------
 
 -- Concrete implementation: various simulation models e.g. professional kitchen with brigade
 -- data Kitchen = Kitchen
