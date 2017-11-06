@@ -218,6 +218,22 @@ calcLabel l r' = case r' of
 -- RECIPE SEMANTICS
 -------------------------------------
 
+-- type TimerId = Int
+-- type StartTime = Int
+-- type Timer = (TimerId, StartTime)
+-- type TimerLog = [Timer]
+
+-- newTimer :: TimerId -> TimerLog -> TimerLog
+-- newTimer i l = (i, currentTime) : l
+
+-- getTimerVal :: TimerId -> TimerLog
+-- getTimerVal i ts = case [t | t <- ts, fst t == i] of
+--     [] -> 0
+--     xs -> currentTime - (snd $ head xs)
+
+-- currentTime :: Int
+-- currentTime = 100 -- get system time or something
+
 -- RP: Recipe Process - how to perform the Recipe. Translates Recipe into a set of fundamental actions.
 
 -- Recipes are compositional, to get the Actions for a Recipe
@@ -228,7 +244,8 @@ calcLabel l r' = case r' of
 -- RC: Recipe cost
 
 -- E : Recipe -> RP
--- RP = [Conditions] -> RA
+-- RP = [] -> RA
+-- RA = [Action] -- leaves of Recipe tree at that point in the Recipe
 -- Recipe is a process that models the set of actions you could be doing at a given stage
 -- This set becomes smaller as time progresses
 
