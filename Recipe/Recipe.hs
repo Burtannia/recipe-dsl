@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
+
 module Recipe.Recipe where
 
 -------------------------------------
@@ -72,9 +73,10 @@ data Recipe = Ingredient String
             | Wait Int
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
-            | forall a. Condition a => Recipe `Until` a
+            -- | forall a. Condition a => Recipe `Until` a
 
 type Quantity = Int
+type Time = Int
 
 -- time, temperature, image from AI camera
 class Condition a where
@@ -216,14 +218,27 @@ calcLabel l r' = case r' of
 -- RECIPE SEMANTICS
 -------------------------------------
 
--- RP: how to perform the Recipe. Translates Recipe into a set of fundamental actions.
+-- RP: Recipe Process - how to perform the Recipe. Translates Recipe into a set of fundamental actions.
 
-type Time = Int
+-- Recipes are compositional, to get the Actions for a Recipe
+-- compute Actions for sub recipes and combine in combinator dependent way
 
-data RP = RP
-    { rPrereqs :: [Recipe]
-    , rActions :: [Action]
-    }
+-- RT: Recipe Time - sum of time of Actions
+
+-- RC: Recipe cost
+
+-- E : Recipe -> RP
+-- RP = Time -> RA
+-- Recipe is a process that models the set of actions you could be doing at a given time
+-- This set becomes smaller as time progresses
+
+-- e.g. cupOfTea
+-- could start by getting milk and measuring it
+-- could get water and boil it
+-- could get teabag
+
+-- by the end of the recipe the only thing we can do
+-- is combine the tea and the milk
 
 data Action = Get Recipe
             -- Heat
@@ -239,18 +254,6 @@ data Action = Get Recipe
             | PlaceIn Recipe Recipe
             | PourOver Recipe Recipe
             | Mix Recipe Recipe
-
--- processRecipe :: Recipe -> RP
--- processRecipe x@(Ingredient s) = RP {rPrereqs = [], rActions = [Get x]}
--- processRecipe x@(Heat t r)
---     | t > 22             = RP {[r, Preheat t], [Get r, PlaceInHeat r]}
---     | t <= 22 && t >= 20 = RP {[r], [Get r, LeaveRoomTemp r]}
---     | t > 0              = RP {[r], [Get r, Refrigerate r]}
---     | t <= 0             = RP {[r], [Get r, Freeze r]}
--- processRecipe x@(Combine r1 r2) = case r1 of
---     Wait t -> case r2 of
---                 Wait t' -> processRecipe (Wait t + t')
---                 _ -> -- do actions for r2 then add termination condition of time = t
 
 -------------------------------------
 -- CONCRETE IMPLEMENTATION
