@@ -244,7 +244,7 @@ calcLabel l r' = case r' of
 -- RC: Recipe cost
 
 -- E : Recipe -> RP
--- RP = [] -> RA
+-- RP = [Conditions] -> RA
 -- RA = [Action] -- leaves of Recipe tree at that point in the Recipe
 -- Recipe is a process that models the set of actions you could be doing at a given stage
 -- This set becomes smaller as time progresses
