@@ -80,13 +80,13 @@ type Time = Int
 
 -- time, temperature, image from AI camera
 class Condition a where
-    met :: a -> (a -> Bool)
+    eval :: a -> (a -> Bool)
 
 newtype Temperature = Temp Int
     deriving (Eq, Show)
 
 instance Condition Temperature where
-    met = (\x -> (==) x)
+    eval = (\x -> (==) x)
 
 -- With adding the Measure combinator we can extract
 -- any quantifiable combinators into the measure combinator
@@ -228,8 +228,8 @@ calcLabel l r' = case r' of
 -- RC: Recipe cost
 
 -- E : Recipe -> RP
--- RP = Time -> RA
--- Recipe is a process that models the set of actions you could be doing at a given time
+-- RP = [Conditions] -> RA
+-- Recipe is a process that models the set of actions you could be doing at a given stage
 -- This set becomes smaller as time progresses
 
 -- e.g. cupOfTea
