@@ -56,11 +56,11 @@ chilliConCarne = ((((((((heat 2 oliveOil) >< beefMince) >>> wait 5)
 
 -- data Recipe = Ingredient String
 --             | Heat | Time | Void
---             | Optional Recipe
---             | Temporary Recipe
 --             | Measure Quantity Recipe
 --             | Combine CMethod Recipe Recipe
 --             | Sequence Recipe Recipe
+
+-- need some sort of Remove / Temporary Recipe
 
 -- data CMethod = Mix | Stack | PlaceIn
 
@@ -94,12 +94,6 @@ instance Condition Temperature where
 
 heat :: Int -> Recipe -> Recipe
 heat = Heat
-
--- optional :: Recipe -> Recipe
--- optional = Optional
-
--- temporary :: Recipe -> Recipe
--- temporary = Temporary
 
 -- measure :: Quantity -> Recipe -> Recipe
 -- measure = Measure
@@ -218,35 +212,29 @@ calcLabel l r' = case r' of
 -- RECIPE SEMANTICS
 -------------------------------------
 
--- type TimerId = Int
--- type StartTime = Int
--- type Timer = (TimerId, StartTime)
--- type TimerLog = [Timer]
+type Step = Int
 
--- newTimer :: TimerId -> TimerLog -> TimerLog
--- newTimer i l = (i, currentTime) : l
+type RP = Step -> RA
+type RA = [Action]
 
--- getTimerVal :: TimerId -> TimerLog
--- getTimerVal i ts = case [t | t <- ts, fst t == i] of
---     [] -> 0
---     xs -> currentTime - (snd $ head xs)
+data Action = Get Recipe
+    -- Heat
+    | Preheat Int
+    | Refrigerate Recipe
+    | PlaceInHeat Recipe --can infer oven or stove from Temp being Medium or 180
+    | LeaveRoomTemp Recipe
+    | Freeze Recipe
+    -- Wait
+    | DoNothing
+    -- Combine
+    | PlaceAbove Recipe Recipe
+    | PlaceIn Recipe Recipe
+    | PourOver Recipe Recipe
+    | Mix Recipe Recipe
 
--- currentTime :: Int
--- currentTime = 100 -- get system time or something
+--semantics :: Recipe -> RP
 
--- RP: Recipe Process - how to perform the Recipe. Translates Recipe into a set of fundamental actions.
-
--- Recipes are compositional, to get the Actions for a Recipe
--- compute Actions for sub recipes and combine in combinator dependent way
-
--- RT: Recipe Time - sum of time of Actions
-
--- RC: Recipe cost
-
--- E : Recipe -> RP
--- RP = [Conditions] -> RA
--- RA = [Action] -- leaves of Recipe tree at that point in the Recipe
--- Recipe is a process that models the set of actions you could be doing at a given stage
+-- Recipe is a process that models the set of actions you could be doing at a given step
 -- This set becomes smaller as time progresses
 
 -- e.g. cupOfTea
@@ -257,27 +245,22 @@ calcLabel l r' = case r' of
 -- by the end of the recipe the only thing we can do
 -- is combine the tea and the milk
 
-data Action = Get Recipe
-            -- Heat
-            | Preheat Int
-            | Refrigerate Recipe
-            | PlaceInHeat Recipe --can infer oven or stove from Temp being Medium or 180
-            | LeaveRoomTemp Recipe
-            | Freeze Recipe
-            -- Wait
-            | DoNothing
-            -- Combine
-            | PlaceAbove Recipe Recipe
-            | PlaceIn Recipe Recipe
-            | PourOver Recipe Recipe
-            | Mix Recipe Recipe
-
 -------------------------------------
 -- CONCRETE IMPLEMENTATION
 -------------------------------------
 
 -- Concrete implementation: various simulation models e.g. professional kitchen with brigade
 -- data Kitchen = Kitchen
---     { kActions :: Recipe -> (Time -> Action)
---     , kPaths   :: Int -- number of paths of concurrent execution
+--     { kStations :: [Station]
+--     , kTime :: Time -- current time
 --     }
+
+-- data Station = Station
+--     { sActions :: [Action] -- actions the station can perform
+--     , sTemperature :: Temperature -- current temperature
+--     }
+
+-- type SS = [(Step, Action)] -- the action to be performed at each step
+-- type RS = [(Station, SS)] -- Recipe Schedule: list of stations and their schedules
+
+-- schedule :: RP -> Kitchen -> RS
