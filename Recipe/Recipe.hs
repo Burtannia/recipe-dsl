@@ -86,7 +86,7 @@ newtype Temperature = Temp Int
     deriving (Eq, Show)
 
 instance Condition Temperature where
-    eval = (\x -> (==) x)
+    eval = (==)
 
 -- With adding the Measure combinator we can extract
 -- any quantifiable combinators into the measure combinator
