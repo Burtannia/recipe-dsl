@@ -1,20 +1,24 @@
-\documentclass[12pt]{article}
+\documentclass[11pt]{article}
+
 \usepackage{hyperref}
+\hypersetup
+{
+    allcolors = black,
+    linktoc = all
+}
+
 \usepackage{graphicx}
-\usepackage{titling}
 
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{fancyhdr}
-
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{James Burton}
 \lhead{ID: 4251529}
-\fancyfoot[CE,CO]{\thepage}
+\fancyfoot[C]{\thepage}
 
-\setlength{\droptitle}{-10em}
-
+\usepackage{titling}
 \title
 { 
     G53IDS - Interim Report \\
@@ -23,14 +27,24 @@
     Describing Recipes in Haskell
 }
 
+\setlength{\droptitle}{-10em}
+
 \author{James Burton - 4251529 - psyjb6}
 
 \begin{document}
     \maketitle
     \newpage
 
-    \section{First Section}
+    \tableofcontents
+    \newpage
 
+    \section{Introduction}
+
+    \section{Describing Recipes}
+
+    \section{Executing a Recipe}
+
+    \section{Progress}
     While implementing the function to map a Recipe to a tree of Actions it became apparent that the initial
     combinators that were being used had some significant issues. The main problem is having an explicit Sequence
     combinator. The problem with this is that most of the Recipes infer order already. This is necessary for the
@@ -45,6 +59,13 @@
     
     A further issue is that the Combine combinator has too many responsibilities. We have removed the case where it
     is used with Wait to indicate performing a Recipe for a certain time but it is also used for all kinds of mixing,
-    assembling etc. Include SPJ quote.    
+    assembling etc. Include SPJ quote. 
+
+    \section{Related Work}
+
+    \newpage
+    \begin{thebibliography}{0}
+        
+    \end{thebibliography}   
      
 \end{document}
