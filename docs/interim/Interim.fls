@@ -117,6 +117,12 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
+INPUT actions_time.png
+INPUT ./actions_time.png
+INPUT ./actions_time.png
+INPUT recipe_flow.png
+INPUT ./recipe_flow.png
+INPUT ./recipe_flow.png
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmti10.tfm
 INPUT Interim.aux
 INPUT ./Interim.out

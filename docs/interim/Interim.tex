@@ -66,7 +66,7 @@
     more efficient? No doubt you have done this, maybe subconsciously,
     while cooking at home. Furthermore which steps can be done
     concurrently in the event that multiple people are cooking e.g.
-    in a professional kitchen with a full brigade?
+    in a professional kitchen with a full brigade? \\
 
     Perhaps closer to computer science, we could also ask, how could
     we instruct a robot to do this? After doing some research on
@@ -80,7 +80,7 @@
     learning to cook. Recipes can then be performed using a sequence
     of these actions. Representing recipes like this would allow us
     to take a robot programmed to perform each of the fundamental
-    actions and tell it how to cook literally anything.
+    actions and tell it how to cook literally anything. \\
 
     So we've established that if we can structure recipes in a more
     formal way then we will have a great amount of freedom in terms
@@ -114,12 +114,128 @@
     \end{itemize}
 
     \section{Describing Recipes}
+    In this section I shall outline the EDSL for describing recipes.
+    The EDSL is implemented in the functional programming language
+    called Haskell. Haskell has been used for many EDSLs in the past \cite{hudak}.
+    Michael Snoyman, creator of Yesod (a Haskell Web Framework), stated
+    many advantages of using Haskell for EDSLs among which were that
+    the type system helps catch mistakes and Haskell allows us to
+    overload almost any syntax \cite{snoyman}.
+
+    \subsection{A Cup of Tea}
+    Consider our cup of tea example from earlier. We can start by
+    defining all of our ingredients:
+
+    \begin{tt}
+    \begin{lstlisting}
+        milk, teabag, water :: Recipe
+        milk = Ingredient "milk"
+        teabag = Ingredient "teabag"
+        water = Ingredient "water"
+    \end{lstlisting}
+    \end{tt}
+
+    The next step is to start describing what we want to transform
+    those ingredients into for example:
+
+    \begin{tt}
+    \begin{lstlisting}
+        boilingWater, blackTea :: Recipe
+        boilingWater = heat 100 water
+        blackTea = (teabag >< boilingWater) >>> Wait 5
+    \end{lstlisting}
+    \end{tt}
+
+    We've introduced three things here. \texttt{heat} is simply
+    a function meaning heat the given recipe to the given temperature.
+    \texttt{><} is our combine operator and simply means mix the
+    given recipes together. Finally \texttt{>>>} is our sequencing
+    operator meaning do the first recipe then the second. The types
+    for these are as follows: 
+    
+    \begin{tt}
+    \begin{lstlisting}
+        heat :: Temperature -> Recipe -> Recipe
+        (><) :: Recipe -> Recipe -> Recipe
+        (>>>) :: Recipe -> Recipe -> Recipe
+    \end{lstlisting}
+    \end{tt}
+
+    We can now use the above to define our cup of tea recipe as follows:
+
+    \begin{tt}
+    \begin{lstlisting}
+        cupOfTea :: Recipe
+        cupOfTea = blackTea >< milk
+    \end{lstlisting}
+    \end{tt}
+
+    Now you may notice that we haven't mentioned preparation of ingredients
+    for example measuring how much of them to use. While experimenting with
+    the basic representation of a recipe and the different ways to interpret
+    it we thought it would be beneficial to keep the combinators as simple
+    and abstract as possible. This means that, for now, we will be describing
+    recipes "cooking show" style where we presume everything is conveniently
+    measured and prepared in a bowl next to the chef.
+
+    \subsection{Currying - But Not What You Think}
+    In this section I shall introduce the full set of combinators we are
+    currently working with and proceed to build up a more complex recipe.
+
+    \begin{table}
+        \centering
+            \begin{tabular}{| l | r |}
+            \hline
+            combinator1
+            &
+            combinator2 \\
+
+            combinator3
+            &
+            combinator4\\
+            \hline
+            \end{tabular}
+        \caption{Combinators for defining recipes}
+    \end{table}
+
+    \subsection{Conditionals}
+
+    \subsection{Moving Forward}
+    At the time of writing this interim report, the combinators we
+    have are decent but not perfect. There are several crucial pieces
+    of information not captured such as measurements and, as mentioned
+    above, conditionals and optional recipes are not yet implemented.
+
+    Now that we have a more detailed idea of the components of the project,
+    we can move towards implementing them. That will naturally provide
+    an opportunity to scrutinise the set of combinators we are working
+    with by analysing any issues we run into.
 
     \section{Executing a Recipe}
+    \begin{figure}[h]
+        \centering
+            \includegraphics[width=\textwidth,keepaspectratio]{actions_time.png}
+        \caption{Number of possible actions over time.}
+    \end{figure}
 
+    \begin{figure}[h]
+        \centering
+            \includegraphics[width=\textwidth,keepaspectratio]{recipe_flow.png}
+        \caption{Components of the recipe system.}
+    \end{figure}
+
+    
     \section{Implementation}
 
     \section{Progress}
+    This project shall use the scrum development methodology. With the
+    gaps between supervisor meetings acting as the sprints. The scrum
+    methodology seems most appropriate for this project as it is naturally
+    very flexibly and doesn't require a huge amount of detailed planning
+    in advance. This suits the research nature of the project as it is
+    impossible to precisely state what will be done and when. Each sprint
+    offers an opporuntity to re-prioritise and alter tasks based upon
+    the progress and findings of the previous sprint.
     \subsection{Project Management}
     \subsection{Contributions and Reflections}
 
@@ -127,9 +243,27 @@
 
     \newpage
     \begin{thebibliography}{0}
+
         \bibitem{robot}
         The Guardian. 2015. \textit{Future of food: how we cook}.
         \url{https://www.theguardian.com/technology/2015/sep/13/future-of-food-how-we-cook}
+
+        \bibitem{hudak}
+        Paul Hudak. Domain Specific Languages. Department of Computer
+        Science, Yale University, December 15, 1997.
+
+        \bibitem{snoyman}
+        Michael Snoynman. O'Reilly Webcast: Designing Domain Specific
+        Languages with Haskell. January 4, 2013.
+        \url{https://www.youtube.com/watch?v=8k_SU1t50M8}
+
+        \bibitem{contracts}
+        Simon Peyton Jones, Microsoft Research, Cambridge.
+        Jean-Marc Eber, LexiFi Technologies, Paris. Julian Seward,
+        University of Glasgow. Composing contracts: an adventure in
+        financial engineering. August 17, 2000.
+
+
     \end{thebibliography}   
      
 \end{document}
