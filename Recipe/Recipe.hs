@@ -73,6 +73,7 @@ data Recipe = Ingredient String
             | Wait Int
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
+            deriving Show
             -- | forall a. Condition a => Recipe `Until` a
 
 type Quantity = Int
@@ -218,12 +219,10 @@ data Tree a = Leaf a | SNode a (Tree a) | DNode a (Tree a) (Tree a)
 -- translate Recipe into Tree Action
 toActions :: Recipe -> Tree Action
 toActions r@(Ingredient s)   = Leaf (Get r)
-toActions r@(Heat t r)       = SNode PlaceInHeat $ SNode (Preheat t) (toActions r)
+toActions r@(Heat t r')      = SNode (PlaceInHeat r') (SNode (Preheat t) (toActions r'))
 toActions r@(Wait t)         = Leaf $ DoNothing
-toActions r@(Combine r1 r2)  = DNode Mix (toActions r1) (toActions r2)
-toActions r@(Sequence r1 r2) = case toActions r2 of
-    Leaf a    -> SNode a (toActions r1)
-    SNode a t -> SNode  
+toActions r@(Combine r1 r2)  = DNode (Mix r1 r2) (toActions r1) (toActions r2)
+toActions r@(Sequence r1 r2) = DNode DoNothing (toActions r1) (toActions r2) 
 
 -- Collect leaves into lists of Actions
 
@@ -243,7 +242,8 @@ data Action = Get Recipe
     | PlaceAbove Recipe Recipe
     | PlaceIn Recipe Recipe
     | PourOver Recipe Recipe
-    | Mix
+    | Mix Recipe Recipe
+    deriving Show
 
 --semantics :: Recipe -> RP
 
