@@ -12,6 +12,9 @@
 
 \usepackage{graphicx}
 
+\usepackage{multicol}
+\setlength{\columnseprule}{0.4pt}
+
 \usepackage{listings}
 
 \usepackage[english]{babel}
@@ -182,23 +185,36 @@
     In this section I shall introduce the full set of combinators we are
     currently working with and proceed to build up a more complex recipe.
 
-    \begin{table}
+    \begin{figure}
         \centering
-            \begin{tabular}{| l | r |}
-            \hline
-            combinator1
-            &
-            combinator2 \\
+            \begin{multicols}{2}
+                \texttt{ingredient :: String -> Recipe}
+                The recipe \texttt{(ingredient s)} simply represents an ingredient
+                with the name s.
 
-            combinator3
-            &
-            combinator4\\
-            \hline
-            \end{tabular}
+                \texttt{heat :: Temperature -> Recipe -> Recipe}
+                \texttt{heat t r} means to heat r to the temperature t. 
+
+                \texttt{wait :: Time -> Recipe}
+                \texttt{wait t} simply means do nothing for t amount of time.
+                The decision to for \texttt{wait} to not include a recipe as
+                an argument was very deliberate (Section 3.3).
+
+                \texttt{(><) :: Recipe -> Recipe -> Recipe}
+                The recipe \texttt{r1 >< r2} is the combination of r1 and r2.
+                The details of the method you use to combine the recipes are
+                not yet captured.
+
+                \texttt{(>>>) :: Recipe -> Recipe -> Recipe}
+                \texttt{r1 >>> r2} represents the sequence of r1 and r2 i.e.
+                perform recipe r1 followed by recipe r2.
+            \end{multicols}
         \caption{Combinators for defining recipes}
-    \end{table}
+    \end{figure}
 
     \subsection{Conditionals}
+
+    Mention wait combination.
 
     \subsection{Moving Forward}
     At the time of writing this interim report, the combinators we
