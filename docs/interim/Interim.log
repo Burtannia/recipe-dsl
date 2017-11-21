@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  21 NOV 2017 00:14
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  21 NOV 2017 00:16
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -687,7 +687,17 @@ File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 96.
- [3] [4] [5]
+ [3] [4]
+Underfull \hbox (badness 10000) in paragraph at lines 223--225
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 226--230
+
+ []
+
+[5]
 Underfull \hbox (badness 10000) in paragraph at lines 240--242
 
  []
@@ -707,7 +717,7 @@ Overfull \hbox (49.4992pt too wide) in paragraph at lines 281--283
 [][][][][][][][][][][][][][][][][][][][][] 
  []
 
-
+[6]
 Overfull \hbox (87.29913pt too wide) in paragraph at lines 284--285
 [][][][][][][][][][][][][][][][][][][][][] 
  []
@@ -717,7 +727,7 @@ Overfull \hbox (24.29926pt too wide) in paragraph at lines 285--287
 [][][][][][][][][][][][][][][][][] 
  []
 
-[6]
+
 Overfull \hbox (11.69928pt too wide) in paragraph at lines 288--289
 [][][][][][][][][][][][][][][][][][][][][] 
  []
@@ -758,13 +768,13 @@ Underfull \hbox (badness 10000) in paragraph at lines 313--317
 
  []
 
-<actions_time.png, id=158, 1027.84pt x 770.88pt>
+<actions_time.png, id=155, 1027.84pt x 770.88pt>
 File: actions_time.png Graphic file (type png)
  <use actions_time.png>
 Package pdftex.def Info: actions_time.png used on input line 326.
 (pdftex.def)             Requested size: 360.0pt x 270.00024pt.
 
-<recipe_flow.png, id=160, 1027.84pt x 770.88pt>
+<recipe_flow.png, id=157, 1027.84pt x 770.88pt>
 File: recipe_flow.png Graphic file (type png)
  <use recipe_flow.png>
 Package pdftex.def Info: recipe_flow.png used on input line 332.
@@ -810,7 +820,7 @@ pe1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
 blic/amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/a
 msfonts/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
 s/cm/cmtt9.pfb>
-Output written on Interim.pdf (10 pages, 230556 bytes).
+Output written on Interim.pdf (10 pages, 230519 bytes).
 PDF statistics:
  257 PDF objects out of 1000 (max. 8388607)
  228 compressed objects within 3 object streams
