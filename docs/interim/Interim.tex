@@ -50,6 +50,7 @@
     Consider the following recipe to make a cup of tea:
 
     \begin{tt}
+    \small
     \begin{lstlisting}
     - Boil some water
     - Pour over a teabag
@@ -119,7 +120,7 @@
     \section{Describing Recipes}
     In this section I shall outline the EDSL for describing recipes.
     The EDSL is implemented in the functional programming language
-    called Haskell. Haskell has been used for many EDSLs in the past \cite{hudak}.
+    called Haskell which has been used for many EDSLs in the past \cite{hudak}.
     Michael Snoyman, creator of Yesod (a Haskell Web Framework), stated
     many advantages of using Haskell for EDSLs among which were that
     the type system helps catch mistakes and Haskell allows us to
@@ -130,6 +131,7 @@
     defining all of our ingredients:
 
     \begin{tt}
+    \small
     \begin{lstlisting}
         milk, teabag, water :: Recipe
         milk = Ingredient "milk"
@@ -142,6 +144,7 @@
     those ingredients into for example:
 
     \begin{tt}
+    \small
     \begin{lstlisting}
         boilingWater, blackTea :: Recipe
         boilingWater = heat 100 water
@@ -157,6 +160,7 @@
     for these are as follows: 
     
     \begin{tt}
+    \small
     \begin{lstlisting}
         heat :: Temperature -> Recipe -> Recipe
         (><) :: Recipe -> Recipe -> Recipe
@@ -167,13 +171,14 @@
     We can now use the above to define our cup of tea recipe as follows:
 
     \begin{tt}
+    \small
     \begin{lstlisting}
         cupOfTea :: Recipe
         cupOfTea = blackTea >< milk
     \end{lstlisting}
     \end{tt}
 
-    Now you may notice that we haven't mentioned preparation of ingredients
+    Now you may notice that we haven't mentioned preparation of ingredients,
     for example measuring how much of them to use. While experimenting with
     the basic representation of a recipe and the different ways to interpret
     it we thought it would be beneficial to keep the combinators as simple
@@ -188,39 +193,127 @@
     \begin{figure}
         \centering
             \begin{multicols}{2}
-                \texttt{ingredient :: String -> Recipe}
+                \raggedright
+                \footnotesize
+                \texttt{ingredient :: String -> Recipe} \\
                 The recipe \texttt{(ingredient s)} simply represents an ingredient
                 with the name s.
 
-                \texttt{heat :: Temperature -> Recipe -> Recipe}
-                \texttt{heat t r} means to heat r to the temperature t. 
+                \texttt{heat :: Temperature -> Recipe -> Recipe} \\
+                \texttt{heat t r} means to heat the recipe r to the temperature t.
 
-                \texttt{wait :: Time -> Recipe}
+                \texttt{wait :: Time -> Recipe} \\
                 \texttt{wait t} simply means do nothing for t amount of time.
                 The decision to for \texttt{wait} to not include a recipe as
-                an argument was very deliberate (Section 3.3).
+                an argument was very deliberate and will be discussed later
+                in this subsection.
 
-                \texttt{(><) :: Recipe -> Recipe -> Recipe}
+                \texttt{(><) :: Recipe -> Recipe -> Recipe} \\
                 The recipe \texttt{r1 >< r2} is the combination of r1 and r2.
                 The details of the method you use to combine the recipes are
                 not yet captured.
 
-                \texttt{(>>>) :: Recipe -> Recipe -> Recipe}
+                \texttt{(>>>) :: Recipe -> Recipe -> Recipe} \\
                 \texttt{r1 >>> r2} represents the sequence of r1 and r2 i.e.
                 perform recipe r1 followed by recipe r2.
             \end{multicols}
         \caption{Combinators for defining recipes}
     \end{figure}
 
+    For the sake of conciseness I shalln't bother listing all the ingredient
+    declarations here as they are relatively straightforward.
+
+    We could just create a complex recipe outright however, this would be rather
+    verbose and is likely to repeat a lot of code which somewhat goes against
+    the core principles of DSLs and Haskell. Therefore we shall begin by defining
+    some extra combinators made from our fundamental combinators.
+
+    Marinating is a frequently used recipe so let's write a function for it:
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    marinate :: Recipe -> [Recipe] -> Recipe
+    marinate r' (r:rs) = r' >< marinade
+        where marinade = foldr (><) r rs
+    \end{lstlisting}
+    \end{tt}
+    \texttt{marinate r' rs} means marinate \texttt{r'} in a marinade composed
+    of the list of recipes \texttt{rs}. \\
+
+    Due to the compositional nature of our combinators it is easy to create new
+    ones like \texttt{marinate} thus allowing us to avoid repeating common
+    sequences of recipes. There is no need to adjust any of our functions that
+    work on recipes to work with \texttt{marinate} because it's just a combination
+    of the combinators we already support. \\
+
+    A huge number of recipes start by heating olive oil in a pan then adding something.
+    We define the following combinator for this:
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    preheatOil :: Temeperature -> Recipe -> Recipe
+    preheatOil t r = oil >< r
+        where oil = heat t oliveOil
+    \end{lstlisting}
+    \end{tt}
+    That is \texttt{preheatOil Medium onion} means heat some olive oil on medium heat
+    then add some onion. \\
+
+    I'm now going to explain the reasoning behind \texttt{wait} not taking a recipe as
+    an argument. What this allows us to do is use \texttt{wait} in multiple ways.
+    \texttt{wait t >< r} means perform recipe r for t amount of time whereas
+    \texttt{r >>> wait t} means perform recipe r then wait for t. Using this we
+    can define another combinator to allow use to heat a recipe at a given temperature
+    but also for a certain time:
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    heatFor :: Temperature -> Recipe -> Time -> Recipe
+    heatFor temp r time = (heat temp r) >< (wait time)
+    \end{lstlisting}
+    \end{tt}
+
+    So let's get to that more complex recipe I mentioned earlier, Chicken Jalfrezi!
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    spicedChicken :: Recipe
+    spicedChicken = marinate chicken [cumin, coriander, turmeric]
+
+    chickenAndPeppers :: Recipe
+    chickenAndPeppers = heatFor Medium (cookedChicken >< redPeppers) 10
+        where cookedChicken = heatFor Medium spicedChicken 10
+
+    jalfreziSauce :: Recipe
+    jalfreziSauce = heatFor Medium (sauceBase >< spices) 10
+        where
+            onionMix = onion >< garlic >< greenChilli
+            cookedOnions = heatFor Medium (preheatOil Medium onionMix) 5
+            spices = cumin >< coriander >< turmeric >< garamMasala
+            sauceBase = cookedOnions >< water >< tinnedTomatoes >< spices
+
+    chickenJalfrezi :: Recipe
+    chickenJalfrezi = heatFor Medium chickenJalfrezi' 5
+        where chickenJalfrezi' = chickenAndPeppers >< jalfreziSauce >< cherryTomatoes
+    \end{lstlisting}
+    \end{tt}
+    And there we have it. Quite a large recipe expressed formally with
+    multiple reusable components. As the project continues, the set of
+    combinators will continue to evolve as we run in to issues. Some of
+    these issues have already been discovered and will be discussed later
+    (Sections 3.3 & 5.2).
+
     \subsection{Conditionals}
 
     Mention wait combination.
+
+    (Heat Medium oliveOil) >< onion, are we still heating the onion!?
 
     \subsection{Moving Forward}
     At the time of writing this interim report, the combinators we
     have are decent but not perfect. There are several crucial pieces
     of information not captured such as measurements and, as mentioned
-    above, conditionals and optional recipes are not yet implemented.
+    above, conditionals and optional recipes are not yet implemented. \\
 
     Now that we have a more detailed idea of the components of the project,
     we can move towards implementing them. That will naturally provide
@@ -228,13 +321,13 @@
     with by analysing any issues we run into.
 
     \section{Executing a Recipe}
-    \begin{figure}[h]
+    \begin{figure}[ht]
         \centering
             \includegraphics[width=\textwidth,keepaspectratio]{actions_time.png}
         \caption{Number of possible actions over time.}
     \end{figure}
 
-    \begin{figure}[h]
+    \begin{figure}[ht]
         \centering
             \includegraphics[width=\textwidth,keepaspectratio]{recipe_flow.png}
         \caption{Components of the recipe system.}
