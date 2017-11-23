@@ -315,26 +315,65 @@
     of information not captured such as measurements and, as mentioned
     above, conditionals and optional recipes are not yet implemented. \\
 
-    Now that we have a more detailed idea of the components of the project,
-    we can move towards implementing them. That will naturally provide
-    an opportunity to scrutinise the set of combinators we are working
-    with by analysing any issues we run into.
+    As the project continues we will naturally be provided with an
+    opportunity to scrutinise the set of combinators we are working
+    with by analysing any issues we run into. \\
 
     \section{Executing a Recipe}
+
+    Our set of combinators allow us to describe a recipe, but how do
+    we actual perform a recipe? We need some way to represent the
+    semantics of a recipe. Again if we can make these compositional
+    then we will only need to change our definition in the event of a
+    new fundamental combinator. \\
+    
+    If we consider our description of a recipe as a tree then the actions
+    we can choose to complete first are the leaves of the tree. This means
+    that we have a set of actions that we can possibly perform at any given
+    time and this set of actions becomes smaller as we move to the root of
+    the tree i.e. as time progresses. \\
+    
     \begin{figure}[ht]
         \centering
             \includegraphics[width=\textwidth,keepaspectratio]{actions_time.png}
         \caption{Number of possible actions over time.}
     \end{figure}
+    
+    We can model this relationship by translating our description of a recipe into a recipe process.
+    A recipe process is a mapping of time to a recipe action \texttt{RP = Time -> RA}.
+    A recipe action is a list of the possible actions you could be doing,
+    \texttt{RA = [Action]}, actions being fundamental things such as getting
+    an ingredient or stirring something. At this point a full set of actions
+    has not been created but here are some initial thoughts:
 
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    data Action = Get Recipe
+        -- Heat
+        | Preheat Int
+        | Refrigerate Recipe
+        | PlaceInHeat Recipe --can infer oven or stove from Temp being Medium or 180
+        | LeaveRoomTemp Recipe
+        | Freeze Recipe
+        -- Wait
+        | DoNothing
+        -- Combine
+        | PlaceAbove Recipe Recipe
+        | PlaceIn Recipe Recipe
+        | PourOver Recipe Recipe
+        | Mix Recipe Recipe
+        deriving Show
+    \end{lstlisting}
+    \end{tt}
+
+    
+    \section{Implementation}
     \begin{figure}[ht]
         \centering
             \includegraphics[width=\textwidth,keepaspectratio]{recipe_flow.png}
         \caption{Components of the recipe system.}
     \end{figure}
-
-    
-    \section{Implementation}
 
     \section{Progress}
     This project shall use the scrum development methodology. With the
