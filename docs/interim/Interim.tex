@@ -84,7 +84,10 @@
     learning to cook. Recipes can then be performed using a sequence
     of these actions. Representing recipes like this would allow us
     to take a robot programmed to perform each of the fundamental
-    actions and tell it how to cook literally anything. \\
+    actions and tell it how to cook literally anything. This is the
+    same principle as taking code written in a high level language
+    and compiling it down into a sequence of low level actions in
+    assembly language. \\
 
     So we've established that if we can structure recipes in a more
     formal way then we will have a great amount of freedom in terms
@@ -251,7 +254,7 @@
     \begin{tt}
     \small
     \begin{lstlisting}
-    preheatOil :: Temeperature -> Recipe -> Recipe
+    preheatOil :: Temperature -> Recipe -> Recipe
     preheatOil t r = oil >< r
         where oil = heat t oliveOil
     \end{lstlisting}
@@ -319,11 +322,36 @@
     opportunity to scrutinise the set of combinators we are working
     with by analysing any issues we run into. \\
 
-    \section{Executing a Recipe}
+    \section{Meaning of a Recipe}
 
-    Our set of combinators allow us to describe a recipe, but how do
-    we actual perform a recipe? We need some way to represent the
-    semantics of a recipe. Again if we can make these compositional
+    Our set of combinators allow us to describe a recipe, but what does
+    a recipe actually mean? What are the different ways it can be
+    interpreted? In this section we will discuss these possible interpretations.
+    
+    \subsection{Ingredient Analysis}
+
+    The end result of all recipes is just the result of transforming and combining
+    the initial ingredients in some way. Extracting a list of ingredients from
+    one of our recipes would be really simple as \texttt{Ingredient} is it's own
+    constructor in our recipe type. Once we have this list we can process it in
+    a variety of ways. \\
+    
+    One such interpretation could be to evaluate the cost of the recipe and create
+    a shopping list of sorts. Even the cost of a recipe has multiple interpretations.
+    For example the recipe may only use 50g of flour however, if we don't already have
+    some flour then we would have to buy an entire bag so we may wish to use that cost
+    instead. \\
+
+    If we had access to some sort of database with details about ingredients we could
+    work out the nutritional values of a recipe, which diets it supports and the range
+    of flavours present in the dish. This could then possibly be used to recommend
+    susbstitutes to meet certain requirements or, going back to our shopping list idea,
+    in the event that an item is out of stock. \\
+
+    \subsection{Executing a Recipe}
+
+    How do we actually perform a recipe? We need to translate our declarative
+    recipe into a set of actions. Again if we can make these compositional
     then we will only need to change our definition in the event of a
     new fundamental combinator. \\
     
@@ -333,6 +361,8 @@
     time and this set of actions becomes smaller as we move to the root of
     the tree i.e. as time progresses. \\
     
+    \newpage
+
     \begin{figure}[ht]
         \centering
             \includegraphics[width=\textwidth,keepaspectratio]{actions_time.png}
@@ -349,11 +379,12 @@
     \begin{tt}
     \small
     \begin{lstlisting}
-    data Action = Get Recipe
+    data Action =
+        Get Recipe
         -- Heat
         | Preheat Int
         | Refrigerate Recipe
-        | PlaceInHeat Recipe --can infer oven or stove from Temp being Medium or 180
+        | PlaceInHeat Recipe
         | LeaveRoomTemp Recipe
         | Freeze Recipe
         -- Wait
@@ -370,12 +401,16 @@
     \section{Implementation}
 
     Now we can look at the different concrete implementations of this system,
-    
+
     \begin{figure}[ht]
         \centering
             \includegraphics[width=\textwidth,keepaspectratio]{recipe_flow.png}
         \caption{Components of the recipe system.}
     \end{figure}
+
+    \subsection{Kitchens}
+
+    \subsection{Optimisations, Graphs and Simulations}
 
     \section{Progress}
     This project shall use the scrum development methodology. With the
@@ -412,7 +447,6 @@
         Jean-Marc Eber, LexiFi Technologies, Paris. Julian Seward,
         University of Glasgow. Composing contracts: an adventure in
         financial engineering. August 17, 2000.
-
 
     \end{thebibliography}   
      
