@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  26 NOV 2017 23:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  27 NOV 2017 20:16
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -688,162 +688,127 @@ File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 99.
  [3] [4]
-Underfull \hbox (badness 10000) in paragraph at lines 226--228
+Underfull \hbox (badness 10000) in paragraph at lines 222--224
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 225--229
 
  []
 
 [5]
-Underfull \hbox (badness 10000) in paragraph at lines 229--233
+Underfull \hbox (badness 10000) in paragraph at lines 240--242
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 243--245
+Underfull \hbox (badness 10000) in paragraph at lines 243--248
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 246--251
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 262--264
+Underfull \hbox (badness 10000) in paragraph at lines 259--261
 
  []
 
 [6]
-Overfull \hbox (49.4992pt too wide) in paragraph at lines 284--286
-[][][][][][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (87.29913pt too wide) in paragraph at lines 287--288
-[][][][][][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (24.29926pt too wide) in paragraph at lines 288--290
-[][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (11.69928pt too wide) in paragraph at lines 291--292
-[][][][][][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (93.59912pt too wide) in paragraph at lines 294--295
-[][][][][][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (55.7992pt too wide) in paragraph at lines 295--296
-[][][][][][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (99.89911pt too wide) in paragraph at lines 296--298
-[][][][][][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (175.49896pt too wide) in paragraph at lines 300--301
-[][][][][][][][][][][][][][][][][][][][] 
- []
-
-/home/james/Dissertation/recipeDSL/docs/interim/Interim.tex:307: Misplaced alig
-nment tab character &.
-l.307     (Sections 3.3 &
-                          5.2).
-I can't figure out why you would want to use a tab mark
-here. If you just want an ampersand, the remedy is
-simple: Just type `I\&' now. But if some right brace
-up above has ended a previous alignment prematurely,
-you're probably due for more error messages, and you
-might try typing `S' now just to see what is salvageable.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 316--320
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 321--324
+Underfull \hbox (badness 10000) in paragraph at lines 337--341
 
  []
 
 [7]
-Underfull \hbox (badness 10000) in paragraph at lines 333--338
+Underfull \hbox (badness 10000) in paragraph at lines 342--345
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 339--344
+Underfull \hbox (badness 10000) in paragraph at lines 354--359
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 345--350
+Underfull \hbox (badness 10000) in paragraph at lines 360--365
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 353--357
+Underfull \hbox (badness 10000) in paragraph at lines 366--371
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 358--363
+Underfull \hbox (badness 10000) in paragraph at lines 374--378
 
  []
 
-[8] <actions_time.png, id=192, 536.0025pt x 237.88875pt>
+[8]
+Underfull \hbox (badness 10000) in paragraph at lines 379--384
+
+ []
+
+[9] <actions_time.png, id=221, 536.0025pt x 237.88875pt>
 File: actions_time.png Graphic file (type png)
 
 <use actions_time.png>
-Package pdftex.def Info: actions_time.png used on input line 368.
+Package pdftex.def Info: actions_time.png used on input line 389.
 (pdftex.def)             Requested size: 360.0pt x 159.77301pt.
- <recipe_flow.png, id=194, 932.48375pt x 549.05125pt>
+ [10 <./actions_time.png>]
+<recipe_flow.png, id=246, 932.48375pt x 549.05125pt>
 File: recipe_flow.png Graphic file (type png)
-
-<use recipe_flow.png>
-Package pdftex.def Info: recipe_flow.png used on input line 407.
+ <use recipe_flow.png>
+Package pdftex.def Info: recipe_flow.png used on input line 434.
 (pdftex.def)             Requested size: 360.0pt x 211.96764pt.
- [9 <./actions_time.png>] [10 <./recipe_flow.png>]
-Underfull \hbox (badness 5245) in paragraph at lines 433--435
+
+[11 <./recipe_flow.png>] [12]
+<gantt_chart.jpg, id=270, 1387.1825pt x 273.02pt>
+File: gantt_chart.jpg Graphic file (type jpg)
+ <use gantt_chart.jpg>
+Package pdftex.def Info: gantt_chart.jpg used on input line 516.
+(pdftex.def)             Requested size: 360.0pt x 70.85437pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 520--526
+
+ []
+
+[13 <./gantt_chart.jpg>] <gantt_chart2.jpg, id=286, 1521.685pt x 266.9975pt>
+File: gantt_chart2.jpg Graphic file (type jpg)
+
+<use gantt_chart2.jpg>
+Package pdftex.def Info: gantt_chart2.jpg used on input line 560.
+(pdftex.def)             Requested size: 360.0pt x 63.16403pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 566--571
+
+ []
+
+[14 <./gantt_chart2.jpg>] [15]
+Underfull \hbox (badness 5245) in paragraph at lines 600--602
 []\OT1/cmr/m/n/10.95 The Guardian. 2015. \OT1/cmr/m/it/10.95 Fu-ture of food: h
 ow we cook\OT1/cmr/m/n/10.95 . []$\OT1/cmtt/m/n/10.95 https :
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 433--435
+Underfull \hbox (badness 10000) in paragraph at lines 600--602
 \OT1/cmtt/m/n/10.95 / / www . theguardian . com / technology / 2015 / sep / 13 
 / future -[] of -[]
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 453.
-[11]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 453.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 624.
+[16]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 624.
  (./Interim.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 453.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 453.
-
-
-Package rerunfilecheck Warning: File `Interim.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `Interim.out':
-(rerunfilecheck)             Before: FA0B28A23AF9BB1999D6DDD3006EF623;845
-(rerunfilecheck)             After:  84C83B398CEA20D01B0E3336558FD920;990.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 453.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 624.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 624.
+Package rerunfilecheck Info: File `Interim.out' has not changed.
+(rerunfilecheck)             Checksum: 5F0023CB2D4FEB261F2C3FECD3742A7D;999.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 624.
  ) 
 Here is how much of TeX's memory you used:
- 7783 strings out of 493029
- 109356 string characters out of 6136234
- 213302 words of memory out of 5000000
- 11141 multiletter control sequences out of 15000+600000
+ 7843 strings out of 493029
+ 110014 string characters out of 6136234
+ 214334 words of memory out of 5000000
+ 11152 multiletter control sequences out of 15000+600000
  9959 words of font info for 36 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  29i,11n,43p,234b,1798s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -857,10 +822,10 @@ pe1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
 blic/amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/a
 msfonts/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
 s/cm/cmtt9.pfb>
-Output written on Interim.pdf (11 pages, 232088 bytes).
+Output written on Interim.pdf (16 pages, 471599 bytes).
 PDF statistics:
- 296 PDF objects out of 1000 (max. 8388607)
- 266 compressed objects within 3 object streams
- 106 named destinations out of 1000 (max. 500000)
- 123 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 387 PDF objects out of 1000 (max. 8388607)
+ 349 compressed objects within 4 object streams
+ 152 named destinations out of 1000 (max. 500000)
+ 149 words of extra memory for PDF output out of 10000 (max. 10000000)
 

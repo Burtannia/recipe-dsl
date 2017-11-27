@@ -189,7 +189,7 @@
     In this section I shall introduce the full set of combinators we are
     currently working with and proceed to build up a more complex recipe.
 
-    \begin{figure}
+    \begin{figure}[ht]
         \centering
             \begin{multicols}{2}
                 \raggedright
@@ -232,8 +232,9 @@
     \small
     \begin{lstlisting}
     marinate :: Recipe -> [Recipe] -> Recipe
-    marinate r' (r:rs) = r' >< marinade
-        where marinade = foldr (><) r rs
+    marinate r' []     = r'
+    marinate r' [r]    = r' >< r
+    marinate r' (r:rs) = marinate r' (foldr (><) r rs)
     \end{lstlisting}
     \end{tt}
     \texttt{marinate r' rs} means marinate \texttt{r'} in a marinade composed
@@ -277,36 +278,60 @@
     \small
     \begin{lstlisting}
     spicedChicken :: Recipe
-    spicedChicken = marinate chicken [cumin, coriander, turmeric]
+    spicedChicken = marinate chicken
+        [cumin, coriander, turmeric]
 
     chickenAndPeppers :: Recipe
-    chickenAndPeppers = heatFor Medium (cookedChicken >< redPeppers) 10
-        where cookedChicken = heatFor Medium spicedChicken 10
+    chickenAndPeppers = heatFor Medium
+        (cookedChicken >< redPeppers) 10
+        where cookedChicken = heatFor Medium
+                              spicedChicken 10
 
     jalfreziSauce :: Recipe
-    jalfreziSauce = heatFor Medium (sauceBase >< spices) 10
+    jalfreziSauce = heatFor Medium
+                    (sauceBase >< spices) 10
         where
-            onionMix = onion >< garlic >< greenChilli
-            cookedOnions = heatFor Medium (preheatOil Medium onionMix) 5
-            spices = cumin >< coriander >< turmeric >< garamMasala
-            sauceBase = cookedOnions >< water >< tinnedTomatoes >< spices
+            onionMix     = onion >< garlic
+                        >< greenChilli
+            cookedOnions = heatFor Medium
+                           (preheatOil Medium onionMix) 5
+            spices       = cumin >< coriander
+                           >< turmeric >< garamMasala
+            sauceBase    = cookedOnions >< water
+                           >< tinnedTomatoes >< spices
 
     chickenJalfrezi :: Recipe
     chickenJalfrezi = heatFor Medium chickenJalfrezi' 5
-        where chickenJalfrezi' = chickenAndPeppers >< jalfreziSauce >< cherryTomatoes
+        where chickenJalfrezi' = chickenAndPeppers
+                                 >< jalfreziSauce
+                                 >< cherryTomatoes
     \end{lstlisting}
     \end{tt}
     And there we have it. Quite a large recipe expressed formally with
     multiple reusable components. As the project continues, the set of
     combinators will continue to evolve as we run in to issues. Some of
     these issues have already been discovered and will be discussed later
-    (Sections 3.3 & 5.2).
+    (Sections 3.3 and 5.2).
 
     \subsection{Conditionals}
 
-    Mention wait combination.
+    Many recipes have some sort of condition attached to them which dictate
+    whether or not they are completed.This could be reaching a certain
+    temperature or a certain amount of time elapsing. This functionality
+    is not currently captured by our combinators so we need to introduce
+    the concept of a conditional recipe. The current plan is to implement
+    another constructor:
 
-    (Heat Medium oliveOil) >< onion, are we still heating the onion!?
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    forall a. Eq a => Recipe `Until` a
+    \end{lstlisting}
+    \end{tt}
+
+    That is for any type that supports equality, allow us to use it as a
+    condition for our recipe so \texttt{r `Until` c} would mean "perform
+    recipe r until conditon c evaluates to true".
 
     \subsection{Moving Forward}
     At the time of writing this interim report, the combinators we
@@ -394,6 +419,9 @@
     \end{lstlisting}
     \end{tt}
 
+    While a recipe action is described as a list of recipes above. It may turn out that some
+    sort of tree structure is more appropriate.
+
     \section{Concrete Implementation}
 
     If we want to have an effective method of scheduling / optimising these actions then it would
@@ -429,15 +457,65 @@
 
     \section{Progress}
 
-    Currently the project is progressing well. While certain areas such as the concrete implementation have
-    not been developed or fully planned yet, there is at least an idea of the direction the project will go
-    over the remainder of its duration. The scrum development methodology seems to be working well. As mentioned
-    in the project proposal, the versatile nature of this methodology fits the research nature of the project.
+    This section focuses on the schedule of the project and the progress made so far.
     
     \subsection{Project Management}
 
-    old chart
-    new chart
+    The original project plan that was submitted with the project proposal is included below:
+
+    \begin{enumerate}
+        
+        \item Create project proposal and email to supervisor
+        (deadline 13th October).
+
+        \item Submit completed ethics clearance form to supervisor
+        (deadline 23rd October).
+
+        \item Amend project proposal based on feedback from
+        supervisor and submit amended version (deadline 23rd October).
+
+        \item Read \cite{hudak, contracts, pretty} to gain a better
+        understanding of the DSL design process.
+
+        \item Boil down, if you'll forgive the pun, a few recipes
+        into their components and recreate the recipes in terms
+        of a set of combinators. Try to create other more complex
+        recipes and repeat until a satisfactory set of combinators
+        is found.
+
+        \item Define algebraic properties of the combinators.
+
+        \item Consider various representations of recipes and the
+        combinators e.g. as functions or as data structures.
+
+        \item Write and submit interim report (deadline 8th December).
+
+        \item Mainly revise for other modules over Christmas and during
+        exams.
+
+        \item Once the core components of the DSL are in place
+        consider specifics such as temperature being centigrade,
+        farenheit or gas mark.
+
+        \item Create system to output recipes from the DSL into a format
+        similar to that of a regular recipe.
+
+        \item Create parser to read recipe formatted text into the DSL.
+
+        \item Experiment with various applications of the DSL such
+        as finding steps that can be executed concurrently.
+
+        \item Outline contents for final report.
+
+        \item Write and submit final report (deadline 24th April).
+
+    \end{enumerate}
+
+    \begin{figure}[ht]
+        \centering
+            \includegraphics[width=\textwidth,keepaspectratio]{gantt_chart.jpg}
+        \caption{Project plan gantt chart from the project proposal.}
+    \end{figure}
 
     There has been some adjustment to the original project schedule. Initially I thought that I would spend
     the first half of the project designing the combinators from Section 2.2 however, my supervisor suggested
@@ -445,19 +523,78 @@
     rest of the project. This was in order to prevent being stuck refining the combinators forever and not having
     anything else to show. Refining the combinators while developing other sections is also useful because issues
     can often be brought to light that would otherwise have gone unnoticed. \\
-    
-    Quite a bit of time was spent thinking of how to represent the semantics of a recipe. I am now in the process
-    of implementing the recipe process system (Section 3.2). A part of that is how to represent a recipe action.
-    In Section 3.2 it was described as a list however, a tree structure may be more appropriate.
+
+    Below is an updated plan for the remainder of the project:
+
+    \begin{enumerate}
+
+        \item Continue to refine and adjust the set of combinators and set of
+        actions as other areas of the project are developed.
+
+        \item Finish implementation of denotational semantics and recipe processes.
+
+        \item Catch up on other coursework.
+
+        \item Mainly revise for other modules over Christmas and during
+        exams.
+
+        \item Create kitchen data type for concrete implementation.
+
+        \item Create systems to print recipes in a variety of ways.
+
+        \item Define operational semantics to see if any optimisations are possible
+        then work on the scheduling of a recipe.
+
+        \item Once the core components of the DSL are in place
+        consider specifics such as units of temperature and allowing the
+        measuring of ingredients / recipes.
+
+        \item Outline contents for final report.
+
+        \item Write and submit final report (deadline 24th April).
+
+    \end{enumerate}
+
+    \begin{figure}[ht]
+        \centering
+            \includegraphics[width=\textwidth,keepaspectratio]{gantt_chart2.jpg}
+        \caption{Updated project plan gantt chart.}
+    \end{figure}
 
     \subsection{Contributions and Reflections}
 
+    Currently the project is progressing well. While certain areas such as the concrete implementation have
+    not been developed or fully designed yet, there is at least a firm idea of the direction the project will go
+    over the remainder of its duration. The scrum development methodology seems to be effective in allowing
+    flexibility. For example quite a bit of time was spent thinking of how to represent the semantics of a
+    recipe and I am now in the process of implementing that system. \\
     
+    As far as I am aware there is no exsiting EDSL for describing recipes or manipulating recipes. While DSLs
+    and various forms of semantics are certainly not new, exactly how to apply them to recipes is relatively
+    unexplored. The contributions made so far are as follows:
+
+    \begin{itemize}
+        \item A small set of combinators that can be used to describe a wide variety of recipes.
+
+        \item A partial implementation of recipe processes which detail how to actually perform a recipe.
+
+        \item A plan to model kitchens as a set of stations in order to schedule or simulate a recipe
+        in a certain environment.
+    \end{itemize}
+
+    These will be further developed and expanded on over the remainder of the project.
 
     \section{Related Work}
 
+    As stated in the previous section, a recipe DSL is something that has not been done before.
+    However, the various componenets such as the concept of a DSL have been around for a long time.
+    A DSL that has some similarities to the recipe DSL is that for financial contracts \cite{contracts}.
+    Reading that paper provided a lot of inspiration and guidance regarding how to break down recipes
+    and proceed with the design of the language. There has also been research done into DSLs
+    in general for example \cite{hudak} and \cite{snoyman}.
+
     \newpage
-    \begin{thebibliography}{0}
+    \begin{thebibliography}{5}
 
         \bibitem{robot}
         The Guardian. 2015. \textit{Future of food: how we cook}.
@@ -477,6 +614,10 @@
         Jean-Marc Eber, LexiFi Technologies, Paris. Julian Seward,
         University of Glasgow. Composing contracts: an adventure in
         financial engineering. August 17, 2000.
+
+        \bibitem{pretty}
+        John Hughes. The Design of a Pretty-printing Library.
+        Chalmers Teniska Hogskola, Goteborg, Sweden. 1995.
 
     \end{thebibliography}   
      

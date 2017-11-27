@@ -128,6 +128,12 @@ INPUT ./actions_time.png
 INPUT recipe_flow.png
 INPUT ./recipe_flow.png
 INPUT ./recipe_flow.png
+INPUT gantt_chart.jpg
+INPUT ./gantt_chart.jpg
+INPUT ./gantt_chart.jpg
+INPUT gantt_chart2.jpg
+INPUT ./gantt_chart2.jpg
+INPUT ./gantt_chart2.jpg
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmti10.tfm
 INPUT Interim.aux
 INPUT ./Interim.out

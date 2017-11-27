@@ -73,8 +73,8 @@ data Recipe = Ingredient String
             | Wait Int
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
+            -- | forall a. Eq a => Recipe `Until` a
             deriving Show
-            -- | forall a. Condition a => Recipe `Until` a
 
 type Quantity = Int
 type Time = Int
