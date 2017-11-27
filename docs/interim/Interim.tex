@@ -114,10 +114,6 @@
         We can then express this in several ways including printing steps,
         drawing the cooking process as a graph or simulating the recipe
         within the given kitchen setup (Section 4).
-
-        \item It may also be useful to provide an intermediate language
-        between informal English and our combinators, some sort of markup
-        language, that can then be parsed in.
     \end{itemize}
 
     \section{Describing Recipes}
@@ -398,10 +394,13 @@
     \end{lstlisting}
     \end{tt}
 
-    \section{Implementation}
+    \section{Concrete Implementation}
 
-    Now we can look at the different concrete implementations of this system,
-
+    If we want to have an effective method of scheduling / optimising these actions then it would
+    be useful to know more about the environment in which they are being performed. We will do this
+    by providing a model in the form of a kitchen data type that can be used to store relevant
+    information. Overall the structure of the project is now looking something like the following:
+    
     \begin{figure}[ht]
         \centering
             \includegraphics[width=\textwidth,keepaspectratio]{recipe_flow.png}
@@ -410,19 +409,50 @@
 
     \subsection{Kitchens}
 
+    In a home kitchen we only have a small set of "paths of execution", which we'll refer to as stations,
+    "stations" for example one oven, one human etc. Each of these stations is only capable of performing
+    certain actions. The oven can only heat something whereas the human has to put that thing into the oven.
+    In a brigade system we would have many stations each responsible for various things. The kitchen data
+    type will also need to contain functions to call in order to get any relevant information to be used
+    in our conditionals such as the current temperature of an oven or the current time. At this point in
+    the project this data type has not been designed except for the basic concept as just detailed.
+
     \subsection{Optimisations, Graphs and Simulations}
 
+    So we've described a recipe in a declarative sense, compiled it into a set of actions and modelled
+    the environment in which we're cooking. Now we can start looking at how to process and display this
+    information in a useful way to the user. The first would be to optimise the recipe and schedule it.
+    By this we mean trying to perform as many tasks concurrently as possible. We could also run through
+    the process of this schedule either in the form of a simulation or actually controlling some automated
+    system. It may also be sufficient to just print out the schedule either as a list of steps for each
+    station or displayed as a tree / graph of some sort.
+
     \section{Progress}
-    This project shall use the scrum development methodology. With the
-    gaps between supervisor meetings acting as the sprints. The scrum
-    methodology seems most appropriate for this project as it is naturally
-    very flexibly and doesn't require a huge amount of detailed planning
-    in advance. This suits the research nature of the project as it is
-    impossible to precisely state what will be done and when. Each sprint
-    offers an opporuntity to re-prioritise and alter tasks based upon
-    the progress and findings of the previous sprint.
+
+    Currently the project is progressing well. While certain areas such as the concrete implementation have
+    not been developed or fully planned yet, there is at least an idea of the direction the project will go
+    over the remainder of its duration. The scrum development methodology seems to be working well. As mentioned
+    in the project proposal, the versatile nature of this methodology fits the research nature of the project.
+    
     \subsection{Project Management}
+
+    old chart
+    new chart
+
+    There has been some adjustment to the original project schedule. Initially I thought that I would spend
+    the first half of the project designing the combinators from Section 2.2 however, my supervisor suggested
+    it would be better to quickly define an initial set of combinators then use them to design and develop the
+    rest of the project. This was in order to prevent being stuck refining the combinators forever and not having
+    anything else to show. Refining the combinators while developing other sections is also useful because issues
+    can often be brought to light that would otherwise have gone unnoticed. \\
+    
+    Quite a bit of time was spent thinking of how to represent the semantics of a recipe. I am now in the process
+    of implementing the recipe process system (Section 3.2). A part of that is how to represent a recipe action.
+    In Section 3.2 it was described as a list however, a tree structure may be more appropriate.
+
     \subsection{Contributions and Reflections}
+
+    
 
     \section{Related Work}
 
