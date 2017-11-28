@@ -29,6 +29,7 @@
 \usepackage{titling}
 \title
 { 
+    \vspace{10em}
     G53IDS - Interim Report \\
     \hfill \break
     \large Embedded Domain Specific Language for \\
@@ -311,7 +312,7 @@
     multiple reusable components. As the project continues, the set of
     combinators will continue to evolve as we run in to issues. Some of
     these issues have already been discovered and will be discussed later
-    (Sections 3.3 and 5.2).
+    (Section 3.3).
 
     \subsection{Conditionals}
 
@@ -381,12 +382,10 @@
     that we have a set of actions that we can possibly perform at any given
     time and this set of actions becomes smaller as we move to the root of
     the tree i.e. as time progresses. \\
-    
-    \newpage
 
     \begin{figure}[ht]
         \centering
-            \includegraphics[width=\textwidth,keepaspectratio]{actions_time.png}
+            \includegraphics[width=7cm,keepaspectratio]{actions_time.png}
         \caption{Number of possible actions over time.}
     \end{figure}
     
@@ -421,6 +420,43 @@
 
     While a recipe action is described as a list of recipes above. It may turn out that some
     sort of tree structure is more appropriate.
+
+    \subsection{Some Issues}
+
+    While writing the function to translate a recipe into a tree of actions it became apparent
+    that there were some issues with the fundamental combinators. Consider the following
+    recipe \texttt{(r1 >< r2) >>> (r3 >< r4)}, that is "combine r1 and r2" then "combine r3 and r4".
+    This would translate into the following tree of actions:
+
+    \begin{figure}[ht]
+        \centering
+            \includegraphics[width=5cm,keepaspectratio]{issue1.png}
+        \caption{Action tree for the above recipe.}
+    \end{figure}
+
+    The issue is, what should the action at node N be? The cause of this issue is
+    that we have added meaning to a recipe that doesn't exist in the form of the sequencing
+    operator. This contradicts the statement that "a DSL should capture the semantics of the
+    domain and nothing more" \cite{hudak}. Sequencing of steps only matters in a recipe if
+    the steps interact with each other. This is automatically captured by the tree like nature
+    of our combinators. What has happened in this recipe is we have tried to enforce sequencing
+    on two unrelated recipes. \\
+
+    One could argue that this is an issue that should be ruled out by a type checker. As SPJ
+    said "we can’t expect abstract syntax to rule out all bag programs, that’s what type
+    checkers are for" \cite{core}. On the other hand I would argue that what is being talked
+    about here is the prevention of programs that make no sense for example subtracting an integer
+    from a string. In our case the recipe should make sense and as mentioned there is evidence
+    of a more fundamental issue with the DSL design therefore it makes sense to directly address
+    and fix this issue. \\
+    
+    It may seem as though we can just remove the sequencing combinator to fix this issue however,
+    sequencing or combining our wait combinator with a recipe is our way of determining the
+    difference between "do r then wait" and "do r for x amount of time". This highlights another
+    issue which is that our combine combinator has too many purposes. In the presentation that
+    accompanied the financial contracts language it was stated that combinators should have
+    one responsibility \cite{contracts-pp}. Our solution is to provide this functionality 
+    with our concept of conditional recipes (Section 2.3). \\
 
     \section{Concrete Implementation}
 
@@ -618,6 +654,18 @@
         \bibitem{pretty}
         John Hughes. The Design of a Pretty-printing Library.
         Chalmers Teniska Hogskola, Goteborg, Sweden. 1995.
+
+        \bibitem{contracts-pp}
+        Simon Peyton Jones, Microsoft Research, Cambridge.
+        Jean-Marc Eber, LexiFi Technologies, Paris. Julian Seward,
+        University of Glasgow. Composing contracts: an adventure in
+        financial engineering (PowerPoint Slides). August 17, 2000.
+        \url{https://www.microsoft.com/en-us/research/publication/composing-contracts-an-adventure-in-financial-engineering/}
+
+        \bibitem{core}
+        Simon Peyton Jones. Into the Core - Squeezing Haskell into
+        Nine Constructors. September 14, 2016.
+        \url{https://www.youtube.com/watch?v=uR_VzYxvbxg}
 
     \end{thebibliography}   
      
