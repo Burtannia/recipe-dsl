@@ -216,18 +216,46 @@ calcLabel l r' = case r' of
 data Tree a = Leaf a | Node a [Tree a]
     deriving Show
 
--- translate Recipe into Tree Action
-toActions :: Recipe -> Tree Action
-toActions r@(Ingredient s)   = Leaf (Get r)
-toActions r@(Heat t r')      = Node (PlaceInHeat r') [Node (Preheat t) [toActions r']]
-toActions r@(Wait t)         = Leaf DoNothing
-toActions r@(Combine r1 r2)  = Node (Mix r1 r2) [toActions r1, toActions r2]
-toActions r@(Sequence r1 r2) = Node DoNothing [toActions r1, toActions r2]
+-- Translate Recipe into a tree of actions
+expand :: Recipe -> Tree Action
+expand r@(Ingredient s)   = Leaf (Get r)
+expand r@(Heat t r')      = Node (PlaceInHeat r') [Node (Preheat t) [expand r']]
+expand r@(Wait t)         = Leaf DoNothing
+expand r@(Combine r1 r2)  = Node (Mix r1 r2) [expand r1, expand r2]
+expand r@(Sequence r1 r2) = Node DoNothing [expand r1, expand r2]
 
--- Collect leaves into lists of Actions
+-- Selects the leaves of a tree,
+-- each of these become a node.
+-- The children of one of those nodes N
+-- are the new leaves of the original tree
+-- presuming that node N was removed.
+-- order :: Tree Action -> Tree Action
+-- order (Leaf a)    = id
+-- order (Node a ts) = Node Init []
+
+-- might have to number things with unique id
+
+-- List of the values stored in leaves of the tree
+leaves :: Tree a -> [a]
+leaves (Leaf a)    = [a]
+leaves (Node a ts) = concat $ map leaves ts
+
+testT :: Tree Int
+testT = Node 5 [Leaf 7, Node 5 [Leaf 3, Leaf 2]]
+
+-- Produce a list of nodes that occur at the given depth in a tree
+atDepth :: Tree a -> Int -> [a]
+atDepth (Leaf a) i
+    | i < 0  = []
+    | i == 0 = [a]
+    | i > 0  = []
+atDepth (Node a ts) i
+    | i < 0  = []
+    | i == 0 = [a]
+    | i > 0  = concat $ map (\t -> atDepth t (i-1)) ts
 
 type RP = Time -> RA
-type RA = [Action] -- Leaf Action | Node Action [RA]
+type RA = [Action]
 
 data Action = Get Recipe
     -- Heat
@@ -243,6 +271,8 @@ data Action = Get Recipe
     | PlaceIn Recipe Recipe
     | PourOver Recipe Recipe
     | Mix Recipe Recipe
+    --
+    | Init
     deriving Show
 
 --semantics :: Recipe -> RP
