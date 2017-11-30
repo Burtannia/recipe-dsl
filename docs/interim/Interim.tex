@@ -93,8 +93,8 @@
     So we've established that if we can structure recipes in a more
     formal way then we will have a great amount of freedom in terms
     of how we process them whether it be optimisation for a human
-    chef or full on automation. My contributions / planned contributions
-    to this are the following:
+    chef or full on automation. My contributions to this, some not
+    completed as of this point, are the following:
 
     \begin{itemize}
         \item Define a set of combinators as an EDSL in Haskell and show that
@@ -317,7 +317,7 @@
     \subsection{Conditionals}
 
     Many recipes have some sort of condition attached to them which dictate
-    whether or not they are completed.This could be reaching a certain
+    whether or not they are completed. This could be reaching a certain
     temperature or a certain amount of time elapsing. This functionality
     is not currently captured by our combinators so we need to introduce
     the concept of a conditional recipe. The current plan is to implement
@@ -389,12 +389,16 @@
         \caption{Number of possible actions over time.}
     \end{figure}
     
-    We can model this relationship by translating our description of a recipe into a recipe process.
-    A recipe process is a mapping of time to a recipe action \texttt{RP = Time -> RA}.
-    A recipe action is a list of the possible actions you could be doing,
-    \texttt{RA = [Action]}, actions being fundamental things such as getting
-    an ingredient or stirring something. At this point a full set of actions
-    has not been created but here are some initial thoughts:
+    We can model this relationship using denotational semantics by translating
+    our description of a recipe into a recipe process. A recipe process is a
+    mapping of time to a recipe action \texttt{RP = Time -> RA}. A recipe action
+    is a list of the possible actions you could be doing, \texttt{RA = [Action]}
+    where actions are fundamental things such as getting an ingredient or stirring
+    something. The tree structure of our recipes makes compositional denotational
+    semantics possible which also means we can make use of \texttt{fold} in Haskell
+    to evaluate our recipes or even create a list of steps \cite{hutton-fold}.
+    At this point a full set of actions has not been created but here are some
+    initial thoughts:
 
     \begin{tt}
     \small
@@ -419,7 +423,21 @@
     \end{tt}
 
     While a recipe action is described as a list of recipes above. It may turn out that some
-    sort of tree structure is more appropriate.
+    sort of tree structure is more appropriate. One such representation could be the following:
+
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    data RA = Leaf Action | Node Action [RA]
+    \end{lstlisting}
+    \end{tt}
+
+    One issue with this is that the root node will naturally contain no action, except in the
+    unlikely event that there is only one possible first action. The solution to this would
+    be to add some sort of placeholder \texttt{Init} action. This is not only a solution to
+    the problem but could also prove very useful in the event that we are dealing with
+    robots. Depending on the model we are given (Section 4) it may be necessary to do
+    some sort of initialisation before beginning the actual actions for the recipe.
 
     \subsection{Some Issues}
 
@@ -460,7 +478,7 @@
 
     \section{Concrete Implementation}
 
-    If we want to have an effective method of scheduling / optimising these actions then it would
+    If we want to have an effective method of scheduling and optimising these actions then it would
     be useful to know more about the environment in which they are being performed. We will do this
     by providing a model in the form of a kitchen data type that can be used to store relevant
     information. Overall the structure of the project is now looking something like the following:
@@ -489,7 +507,7 @@
     By this we mean trying to perform as many tasks concurrently as possible. We could also run through
     the process of this schedule either in the form of a simulation or actually controlling some automated
     system. It may also be sufficient to just print out the schedule either as a list of steps for each
-    station or displayed as a tree / graph of some sort.
+    station or displayed as a tree or graph of some sort.
 
     \section{Progress}
 
@@ -583,7 +601,7 @@
 
         \item Once the core components of the DSL are in place
         consider specifics such as units of temperature and allowing the
-        measuring of ingredients / recipes.
+        measuring of ingredients and recipes.
 
         \item Outline contents for final report.
 
@@ -666,6 +684,10 @@
         Simon Peyton Jones. Into the Core - Squeezing Haskell into
         Nine Constructors. September 14, 2016.
         \url{https://www.youtube.com/watch?v=uR_VzYxvbxg}
+
+        \bibitem{hutton-fold}
+        Graham Hutton. Fold and Unfold for Program Semantics. Department of
+        Computer Science, University of Nottingham. September 1998.
 
     \end{thebibliography}   
      
