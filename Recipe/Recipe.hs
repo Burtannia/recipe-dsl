@@ -213,21 +213,21 @@ calcLabel l r' = case r' of
 -- RECIPE SEMANTICS
 -------------------------------------
 
-data Tree a = Leaf a | SNode a (Tree a) | DNode a (Tree a) (Tree a)
+data Tree a = Leaf a | Node a [Tree a]
     deriving Show
 
 -- translate Recipe into Tree Action
 toActions :: Recipe -> Tree Action
 toActions r@(Ingredient s)   = Leaf (Get r)
-toActions r@(Heat t r')      = SNode (PlaceInHeat r') (SNode (Preheat t) (toActions r'))
-toActions r@(Wait t)         = Leaf $ DoNothing
-toActions r@(Combine r1 r2)  = DNode (Mix r1 r2) (toActions r1) (toActions r2)
-toActions r@(Sequence r1 r2) = DNode DoNothing (toActions r1) (toActions r2) 
+toActions r@(Heat t r')      = Node (PlaceInHeat r') [Node (Preheat t) [toActions r']]
+toActions r@(Wait t)         = Leaf DoNothing
+toActions r@(Combine r1 r2)  = Node (Mix r1 r2) [toActions r1, toActions r2]
+toActions r@(Sequence r1 r2) = Node DoNothing [toActions r1, toActions r2]
 
 -- Collect leaves into lists of Actions
 
 type RP = Time -> RA
-type RA = [Action]
+type RA = [Action] -- Leaf Action | Node Action [RA]
 
 data Action = Get Recipe
     -- Heat
