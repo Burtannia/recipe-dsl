@@ -10,6 +10,9 @@
     linktoc = all
 }
 
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
 \usepackage{graphicx}
 
 \usepackage{multicol}
@@ -394,43 +397,32 @@
     mapping of time to a recipe action \texttt{RP = Time -> RA}. A recipe action
     is a list of the possible actions you could be doing, \texttt{RA = [Action]}
     where actions are fundamental things such as getting an ingredient or stirring
-    something. The tree structure of our recipes makes compositional denotational
-    semantics possible which also means we can make use of \texttt{fold} in Haskell
-    to evaluate our recipes or even create a list of steps \cite{hutton-fold}.
-    At this point a full set of actions has not been created but here are some
-    initial thoughts:
+    something. The tree structure of our recipes makes denotational semantics possible,
+    due to their compositional nature, which also means we can make use of \texttt{fold}
+    in Haskell to evaluate our recipes or even create a list of steps \cite{hutton-fold}.
+    
+    % \begin{align}
+    %     \llbracket \texttt{Ingredient s} \rrbracket = \texttt{GET (Ingredient s)} \\
+    %     \llbracket \texttt{Heat t r} \rrbracket = \texttt{Node (PlaceInHeat r) [
+    %         Node (Preheat t) [\llbracket \texttt{r} \rrbracket]]} \\
+    %     \llbracket \texttt{Wait t} \rrbracket = \texttt{Leaf DoNothing} \\
+        
+    % \end{align}
+
+    While a recipe action is described as a list of recipes above and a recipe process is
+    a mapping from time to such a list, tt may turn out that some sort of tree structure is
+    more appropriate. One such representation could be the following:
 
     \begin{tt}
     \small
     \begin{lstlisting}
-    data Action =
-        Get Recipe
-        -- Heat
-        | Preheat Int
-        | Refrigerate Recipe
-        | PlaceInHeat Recipe
-        | LeaveRoomTemp Recipe
-        | Freeze Recipe
-        -- Wait
-        | DoNothing
-        -- Combine
-        | PlaceAbove Recipe Recipe
-        | PlaceIn Recipe Recipe
-        | PourOver Recipe Recipe
-        | Mix Recipe Recipe
-        deriving Show
+    data Tree a = Leaf a | Node a [Tree a]
     \end{lstlisting}
     \end{tt}
 
-    While a recipe action is described as a list of recipes above. It may turn out that some
-    sort of tree structure is more appropriate. One such representation could be the following:
-
-    \begin{tt}
-    \small
-    \begin{lstlisting}
-    data RA = Leaf Action | Node Action [RA]
-    \end{lstlisting}
-    \end{tt}
+    That is at a given node N, the set of actions one could do next are the children of
+    that node. Our function \texttt{RP :: Time -> RA} would therefore give the list of
+    nodes at the depth equal to the time provided. \\
 
     One issue with this is that the root node will naturally contain no action, except in the
     unlikely event that there is only one possible first action. The solution to this would
@@ -441,10 +433,10 @@
 
     \subsection{Some Issues}
 
-    While writing the function to translate a recipe into a tree of actions it became apparent
-    that there were some issues with the fundamental combinators. Consider the following
-    recipe \texttt{(r1 >< r2) >>> (r3 >< r4)}, that is "combine r1 and r2" then "combine r3 and r4".
-    This would translate into the following tree of actions:
+    While writing the denotational semantics it became apparent that there were
+    some issues with the fundamental combinators. Consider the following recipe
+    \texttt{(r1 >< r2) >>> (r3 >< r4)}, that is "combine r1 and r2, then combine
+    r3 and r4". This would translate into the following tree of actions:
 
     \begin{figure}[ht]
         \centering
