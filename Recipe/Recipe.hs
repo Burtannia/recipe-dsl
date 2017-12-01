@@ -2,6 +2,8 @@
 
 module Recipe.Recipe where
 
+import Data.List
+
 -------------------------------------
 -- TEST RECIPES
 -------------------------------------
@@ -224,24 +226,13 @@ expand r@(Wait t)         = Leaf DoNothing
 expand r@(Combine r1 r2)  = Node (Mix r1 r2) [expand r1, expand r2]
 expand r@(Sequence r1 r2) = Node DoNothing [expand r1, expand r2]
 
--- Selects the leaves of a tree,
--- each of these become a node.
--- The children of one of those nodes N
--- are the new leaves of the original tree
--- presuming that node N was removed.
--- order :: Tree Action -> Tree Action
--- order (Leaf a)    = id
--- order (Node a ts) = Node Init []
-
--- might have to number things with unique id
-
 -- List of the values stored in leaves of the tree
 leaves :: Tree a -> [a]
 leaves (Leaf a)    = [a]
-leaves (Node a ts) = concat $ map leaves ts
+leaves (Node a ts) = concatMap leaves ts
 
 testT :: Tree Int
-testT = Node 5 [Leaf 7, Node 5 [Leaf 3, Leaf 2]]
+testT = Node 5 [Leaf 7, Node 6 [Leaf 3, Leaf 2]]
 
 -- Produce a list of nodes that occur at the given depth in a tree
 atDepth :: Tree a -> Int -> [a]
@@ -274,19 +265,6 @@ data Action = Get Recipe
     --
     | Init
     deriving Show
-
---semantics :: Recipe -> RP
-
--- Recipe is a process that models the set of actions you could be doing at a given step
--- This set becomes smaller as time progresses
-
--- e.g. cupOfTea
--- could start by getting milk and measuring it
--- could get water and boil it
--- could get teabag
-
--- by the end of the recipe the only thing we can do
--- is combine the tea and the milk
 
 -------------------------------------
 -- CONCRETE IMPLEMENTATION
