@@ -218,6 +218,34 @@ calcLabel l r' = case r' of
 data Tree a = Node a [Tree a]
     deriving Show
 
+instance Functor Tree where
+    -- fmap :: (a -> b) -> fa -> fb
+    fmap f (Node a ts) = Node (f a) (map (fmap f) ts)
+
+testT :: Tree Int
+testT = Node 1 [Node 2 [Node 3 []], Node 4 []]
+
+-- Node value parent [children]
+data ParentTree a = PNode a (Tree a) [Tree a]
+    deriving Show
+
+-- Label parents of a tree, must specify parent for root node
+parents :: Tree a -> Tree a -> ParentTree a
+parents t@(Node a ts) p = PNode a p ts'
+    where ts' = map (\x -> parents x t) ts
+
+remove :: Tree a -> a -> Tree a
+remove (Node a ts) x = Node a ts''
+    where
+        ts' = [t | t <- ts, getVal t /= a]
+        ts'' = map (\t -> remove t x) ts'
+
+getVal :: Tree a -> a
+getVal (Node a _) = a
+
+-- number tree
+--labelTree :: Tree a -> Tree Int
+
 -- ns = sorted nodes, zs = zero degree nodes
 -- kahn :: Tree a -> [Tree a] -> [Tree a] -> [Tree a]
 -- kahn t ns []                  = []
