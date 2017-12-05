@@ -50,3 +50,63 @@ zeroDegree n =
         then (n:ns)
         else ns
     where ns = concatMap zeroDegree (children n)
+    
+-- Removes any node with the given label from the tree
+-- Children of that node are also removed
+removeNode :: Label -> Tree (Label, a) -> Tree (Label, a)
+removeNode _ Empty       = Empty
+removeNode l (Node a ts) = Node a [t | t <- ts', getLabel t /= l]
+    where ts' = map (removeNode l) ts
+
+-- Get the parent node of the node with the
+-- given label in the given tree, Empty if no parent
+getParent :: Label -> Tree (Label, a) -> Tree (Label, a)
+getParent _ Empty       = Empty
+getParent _ (Node _ []) = Empty
+getParent l n@(Node (l', _) ts)
+    | l == l'   = Empty
+    | otherwise = if True `elem` (map (\t -> getLabel t == l) ts)
+                    then n
+                    else head $ map (getParent l) ts
+
+-- Get label of a given node
+getLabel :: Tree (Label, a) -> Label
+getLabel Empty           = -1
+getLabel (Node (l, _) _) = l
+
+-- Producs a list of Labels of nodes sorted topologically
+kahn :: Tree (Label, a) -> [Label]
+kahn t = kahn' t [] (map getLabel $ zeroDegree t)
+
+-- ns = labels of sorted nodes
+-- zs = labels of zero degree nodes
+-- Presumes values stored in nodes are unique
+kahn' :: Tree (Label, a) -> [Label] -> [Label] -> [Label]
+kahn' _ ns []      = ns
+kahn' t ns (z:zs)  = kahn' t' ns' zs'
+    where
+        -- take a zero degree node z and add to tail of sorted nodes
+        ns' = ns ++ [z]
+        -- get parent of z
+        parentZ = getParent z t
+        pLabel = getLabel parentZ
+        -- remove z
+        t' = removeNode z t
+        -- if no other edges to parent then insert into sorted nodes
+        zOnlyChild = length (children parentZ) <= 1
+        pzNotEmpty = pLabel /= -1 
+        zs' = if zOnlyChild && pzNotEmpty
+                then zs ++ [pLabel]
+                else zs
+
+-- Given a label and a tree, gives the first value found
+-- with the corresponding label, if not found then Nothing
+findLabel :: Label -> Tree (Label, a) -> Maybe a
+findLabel _ Empty             = Nothing
+findLabel l (Node (l', a) ts) =
+    if l == l'
+        then Just a
+        else case [x | x@(Just _) <- xs] of
+            []     -> Nothing
+            (x:xs) -> x
+    where xs = map (findLabel l) ts

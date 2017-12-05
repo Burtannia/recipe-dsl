@@ -216,54 +216,15 @@ wait = Wait
 -- RECIPE SEMANTICS
 -------------------------------------
 
-getLabel :: Tree (Label, a) -> Label
-getLabel Empty           = -1
-getLabel (Node (l, _) _) = l
+filterJust :: [Maybe a] -> [a]
+filterJust xs = [x | (Just x) <- xs]
 
--- Producs a list of Labels of nodes sorted topologically
-kahn :: Tree (Label, a) -> [Label]
-kahn t = kahn' t [] (map getLabel $ zeroDegree t)
-
--- for some reason skips root node
-
--- ns = labels of sorted nodes
--- zs = labels of zero degree nodes
--- Presumes values stored in nodes are unique
-kahn' :: Tree (Label, a) -> [Label] -> [Label] -> [Label]
-kahn' _ ns []      = ns
-kahn' t ns (z:zs)  = kahn' t' ns' zs'
+sortRecipe :: Recipe -> [Action]
+sortRecipe r = filterJust mas
     where
-        -- take a zero degree node z and add to tail of sorted nodes
-        ns' = ns ++ [z]
-        -- get parent of z
-        parentZ = getParent z t
-        pLabel = getLabel parentZ
-        -- remove z
-        t' = removeNode z t
-        -- if no other edges to parent then insert into sorted nodes
-        zOnlyChild = length (children parentZ) <= 1
-        pzNotEmpty = pLabel /= -1 
-        zs' = if zOnlyChild && pzNotEmpty
-                then zs ++ [pLabel]
-                else zs
-
--- Removes any node with the given label from the tree
--- Children of that node are also removed
-removeNode :: Label -> Tree (Label, a) -> Tree (Label, a)
-removeNode _ Empty       = Empty
-removeNode l (Node a ts) = Node a [t | t <- ts', getLabel t /= l]
-    where ts' = map (removeNode l) ts
-
--- Get the parent node of the node with the
--- given label in the given tree, Empty if no parent
-getParent :: Label -> Tree (Label, a) -> Tree (Label, a)
-getParent _ Empty       = Empty
-getParent _ (Node _ []) = Empty
-getParent l n@(Node (l', _) ts)
-    | l == l'   = Empty
-    | otherwise = if True `elem` (map (\t -> getLabel t == l) ts)
-                    then n
-                    else head $ map (getParent l) ts
+        t = labelTree $ expand r
+        ls = kahn t
+        mas = map (\l -> findLabel l t) ls
 
 -- Translate Recipe into a tree of actions
 expand :: Recipe -> Tree Action
