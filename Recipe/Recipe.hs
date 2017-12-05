@@ -215,37 +215,6 @@ calcLabel l r' = case r' of
 -- RECIPE SEMANTICS
 -------------------------------------
 
-data Tree a = Node a [Tree a]
-    deriving Show
-
-instance Functor Tree where
-    -- fmap :: (a -> b) -> fa -> fb
-    fmap f (Node a ts) = Node (f a) (map (fmap f) ts)
-
-testT :: Tree Int
-testT = Node 1 [Node 2 [Node 3 []], Node 4 []]
-
--- Node value parent [children]
-data ParentTree a = PNode a (Tree a) [Tree a]
-    deriving Show
-
--- Label parents of a tree, must specify parent for root node
-parents :: Tree a -> Tree a -> ParentTree a
-parents t@(Node a ts) p = PNode a p ts'
-    where ts' = map (\x -> parents x t) ts
-
-remove :: Tree a -> a -> Tree a
-remove (Node a ts) x = Node a ts''
-    where
-        ts' = [t | t <- ts, getVal t /= a]
-        ts'' = map (\t -> remove t x) ts'
-
-getVal :: Tree a -> a
-getVal (Node a _) = a
-
--- number tree
---labelTree :: Tree a -> Tree Int
-
 -- ns = sorted nodes, zs = zero degree nodes
 -- kahn :: Tree a -> [Tree a] -> [Tree a] -> [Tree a]
 -- kahn t ns []                  = []
@@ -269,21 +238,6 @@ expand r@(Heat t r')      = Node (PlaceInHeat r') [Node (Preheat t) [expand r']]
 expand r@(Wait t)         = Node DoNothing []
 expand r@(Combine r1 r2)  = Node (Mix r1 r2) [expand r1, expand r2]
 expand r@(Sequence r1 r2) = Node DoNothing [expand r1, expand r2]
-
--- Kahn's -> All possible execution paths
--- can then get Time -> possible actions by map (\xs -> xs !! t) execution paths
--- then filter duplicates
-
--- Produce a list of nodes that occur at the given depth in a tree
--- atDepth :: Tree a -> Int -> [a]
--- atDepth (Leaf a) i
---     | i < 0  = []
---     | i == 0 = [a]
---     | i > 0  = []
--- atDepth (Node a ts) i
---     | i < 0  = []
---     | i == 0 = [a]
---     | i > 0  = concat $ map (\t -> atDepth t (i-1)) ts
 
 type RP = Time -> RA
 type RA = [Action]
