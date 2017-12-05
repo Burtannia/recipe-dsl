@@ -217,7 +217,7 @@ wait = Wait
 -------------------------------------
 
 getLabel :: Tree (Label, a) -> Label
-getLabel Empty           = 0
+getLabel Empty           = -1
 getLabel (Node (l, _) _) = l
 
 -- Producs a list of Labels of nodes sorted topologically
@@ -237,18 +237,22 @@ kahn' t ns (z:zs)  = kahn' t' ns' zs'
         ns' = ns ++ [z]
         -- get parent of z
         parentZ = getParent z t
+        pLabel = getLabel parentZ
         -- remove z
-        t' = removeChild parentZ z
+        t' = removeNode z t
         -- if no other edges to parent then insert into sorted nodes
-        zOnlyChild = length (children parentZ) == 1
-        zs' = if zOnlyChild
-                then zs ++ [getLabel parentZ]
+        zOnlyChild = length (children parentZ) <= 1
+        pzNotEmpty = pLabel /= -1 
+        zs' = if zOnlyChild && pzNotEmpty
+                then zs ++ [pLabel]
                 else zs
 
--- Removes any children with the given label from the given node
-removeChild :: Tree (Label, a) -> Label -> Tree (Label, a)
-removeChild Empty _       = Empty
-removeChild (Node a ts) l = Node a [t | t <- ts, getLabel t /= l]
+-- Removes any node with the given label from the tree
+-- Children of that node are also removed
+removeNode :: Label -> Tree (Label, a) -> Tree (Label, a)
+removeNode _ Empty       = Empty
+removeNode l (Node a ts) = Node a [t | t <- ts', getLabel t /= l]
+    where ts' = map (removeNode l) ts
 
 -- Get the parent node of the node with the
 -- given label in the given tree, Empty if no parent
