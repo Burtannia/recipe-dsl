@@ -3,6 +3,7 @@
 module Recipe.Recipe where
 
 import Data.List
+import Recipe.Tree
 
 -------------------------------------
 -- TEST RECIPES
@@ -138,98 +139,127 @@ wait = Wait
 -------------------------------------
 
 -- Create a list of steps of the Recipe
-extractSteps :: Recipe -> [LabelledRecipe]
-extractSteps = extractStepsL . labelRecipe
+-- extractSteps :: Recipe -> [LabelledRecipe]
+-- extractSteps = extractStepsL . labelRecipe
 
--- Create a list of steps of a LabelledRecipe
-extractStepsL :: LabelledRecipe -> [LabelledRecipe]
-extractStepsL (LIngredient _)      = []
-extractStepsL x@(LHeat _ _ r)      = extractStepsL r ++ [x]
-extractStepsL x@(LCombine _ r1 r2) = extractStepsL r1 ++ extractStepsL r2 ++ [x]
-extractStepsL (LSequence r1 r2)    = extractStepsL r1 ++ extractStepsL r2
-extractStepsL r                    = [r]
+-- -- Create a list of steps of a LabelledRecipe
+-- extractStepsL :: LabelledRecipe -> [LabelledRecipe]
+-- extractStepsL (LIngredient _)      = []
+-- extractStepsL x@(LHeat _ _ r)      = extractStepsL r ++ [x]
+-- extractStepsL x@(LCombine _ r1 r2) = extractStepsL r1 ++ extractStepsL r2 ++ [x]
+-- extractStepsL (LSequence r1 r2)    = extractStepsL r1 ++ extractStepsL r2
+-- extractStepsL r                    = [r]
 
--- Create a list of ingredients in a recipe
-getIngredients :: Recipe -> [String]
-getIngredients (Ingredient s)   = [s]
-getIngredients (Heat _ r)       = getIngredients r
-getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
-getIngredients (Wait _)         = []
-getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
+-- -- Create a list of ingredients in a recipe
+-- getIngredients :: Recipe -> [String]
+-- getIngredients (Ingredient s)   = [s]
+-- getIngredients (Heat _ r)       = getIngredients r
+-- getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
+-- getIngredients (Wait _)         = []
+-- getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
 
 -------------------------------------
 -- RECIPE LABELLING
 -------------------------------------
 
-type Label = Int
+-- type Label = Int
 
-data LabelledRecipe = LIngredient String
-                    | LHeat Label Int LabelledRecipe
-                    | LCombine Label LabelledRecipe LabelledRecipe
-                    | LWait Label Int
-                    | LSequence LabelledRecipe LabelledRecipe
-                    deriving (Show)
+-- data LabelledRecipe = LIngredient String
+--                     | LHeat Label Int LabelledRecipe
+--                     | LCombine Label LabelledRecipe LabelledRecipe
+--                     | LWait Label Int
+--                     | LSequence LabelledRecipe LabelledRecipe
+--                     deriving (Show)
 
--- type ST Recipe = State -> (State, Recipe)
+-- -- type ST Recipe = State -> (State, Recipe)
 
-getLabel :: LabelledRecipe -> Label
-getLabel (LIngredient _)  = 0
-getLabel (LHeat l _ _)    = l
-getLabel (LCombine l _ _) = l
-getLabel (LWait l _)      = l
-getLabel (LSequence _ _)  = 0
+-- getLabel :: LabelledRecipe -> Label
+-- getLabel (LIngredient _)  = 0
+-- getLabel (LHeat l _ _)    = l
+-- getLabel (LCombine l _ _) = l
+-- getLabel (LWait l _)      = l
+-- getLabel (LSequence _ _)  = 0
 
-labelRecipe :: Recipe -> LabelledRecipe
-labelRecipe = labelRecipe' 1
+-- labelRecipe :: Recipe -> LabelledRecipe
+-- labelRecipe = labelRecipe' 1
 
-labelRecipe' :: Label -> Recipe -> LabelledRecipe
-labelRecipe' _ (Ingredient s)   = LIngredient s
+-- labelRecipe' :: Label -> Recipe -> LabelledRecipe
+-- labelRecipe' _ (Ingredient s)   = LIngredient s
 
-labelRecipe' l (Heat t r)       = LHeat l' t r'
-              where
-                r' = labelRecipe' l r
-                l' = calcLabel l r'
+-- labelRecipe' l (Heat t r)       = LHeat l' t r'
+--               where
+--                 r' = labelRecipe' l r
+--                 l' = calcLabel l r'
 
-labelRecipe' l (Combine r1 r2)  = LCombine l'' lr1 lr2
-              where
-                lr1 = labelRecipe' l r1
-                lr2 = labelRecipe' l' r2
-                l'  = calcLabel l lr1
-                l'' = calcLabel l' lr2
+-- labelRecipe' l (Combine r1 r2)  = LCombine l'' lr1 lr2
+--               where
+--                 lr1 = labelRecipe' l r1
+--                 lr2 = labelRecipe' l' r2
+--                 l'  = calcLabel l lr1
+--                 l'' = calcLabel l' lr2
 
-labelRecipe' l (Wait t) = LWait l t
+-- labelRecipe' l (Wait t) = LWait l t
 
-labelRecipe' l (Sequence r1 r2) = LSequence lr1 lr2
-              where
-                lr1 = labelRecipe' l r1
-                lr2 = labelRecipe' l' r2
-                l'  = calcLabel l lr1
+-- labelRecipe' l (Sequence r1 r2) = LSequence lr1 lr2
+--               where
+--                 lr1 = labelRecipe' l r1
+--                 lr2 = labelRecipe' l' r2
+--                 l'  = calcLabel l lr1
 
-calcLabel :: Label -> LabelledRecipe -> Label
-calcLabel l r' = case r' of
-    (LIngredient _)  -> l
-    (LSequence _ r2) -> getLabel r2 + 1
-    _                -> getLabel r' + 1
+-- calcLabel :: Label -> LabelledRecipe -> Label
+-- calcLabel l r' = case r' of
+--     (LIngredient _)  -> l
+--     (LSequence _ r2) -> getLabel r2 + 1
+--     _                -> getLabel r' + 1
 
 -------------------------------------
 -- RECIPE SEMANTICS
 -------------------------------------
 
--- ns = sorted nodes, zs = zero degree nodes
--- kahn :: Tree a -> [Tree a] -> [Tree a] -> [Tree a]
--- kahn t ns []                  = []
--- kahn (Node r ts) ns (z:zs) = 
---     where
---         ns' = ns ++ [z]
+getLabel :: Tree (Label, a) -> Label
+getLabel Empty           = 0
+getLabel (Node (l, _) _) = l
 
--- Calculate the degree of a node in the tree
-calcDegree :: Tree a -> Int
-calcDegree (Node _ ts) = length ts
+-- Producs a list of Labels of nodes sorted topologically
+kahn :: Tree (Label, a) -> [Label]
+kahn t = kahn' t [] (map getLabel $ zeroDegree t)
 
--- Produce a list of nodes with a degree of zero
-zeroDegree :: Tree a -> [Tree a]
-zeroDegree n@(Node r []) = [n]
-zeroDegree (Node r ts)   = concatMap zeroDegree ts
+-- for some reason skips root node
+
+-- ns = labels of sorted nodes
+-- zs = labels of zero degree nodes
+-- Presumes values stored in nodes are unique
+kahn' :: Tree (Label, a) -> [Label] -> [Label] -> [Label]
+kahn' _ ns []      = ns
+kahn' t ns (z:zs)  = kahn' t' ns' zs'
+    where
+        -- take a zero degree node z and add to tail of sorted nodes
+        ns' = ns ++ [z]
+        -- get parent of z
+        parentZ = getParent z t
+        -- remove z
+        t' = removeChild parentZ z
+        -- if no other edges to parent then insert into sorted nodes
+        zOnlyChild = length (children parentZ) == 1
+        zs' = if zOnlyChild
+                then zs ++ [getLabel parentZ]
+                else zs
+
+-- Removes any children with the given label from the given node
+removeChild :: Tree (Label, a) -> Label -> Tree (Label, a)
+removeChild Empty _       = Empty
+removeChild (Node a ts) l = Node a [t | t <- ts, getLabel t /= l]
+
+-- Get the parent node of the node with the
+-- given label in the given tree, Empty if no parent
+getParent :: Label -> Tree (Label, a) -> Tree (Label, a)
+getParent _ Empty       = Empty
+getParent _ (Node _ []) = Empty
+getParent l n@(Node (l', _) ts)
+    | l == l'   = Empty
+    | otherwise = if True `elem` (map (\t -> getLabel t == l) ts)
+                    then n
+                    else head $ map (getParent l) ts
 
 -- Translate Recipe into a tree of actions
 expand :: Recipe -> Tree Action
