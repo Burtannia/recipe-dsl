@@ -411,7 +411,7 @@
                 [Node \: (Preheat \: t) \: [], \llbracket r \rrbracket]) \\
             \llbracket Wait \: t \rrbracket &= Node \: (DoNothing \: t) \: [] \\
             \llbracket Combine \: r1 \: r2 \rrbracket &=
-                Node \: Mix \: [\llbracket r1 \rrbracket , \llbracket r2 \rrbracket] \\
+                Node \: (Mix \: r1 \: r2) \: [\llbracket r1 \rrbracket , \llbracket r2 \rrbracket] \\
             \llbracket Sequence \: r1 \: r2 \rrbracket &=
                 Node \: (DoNothing \: 0) \: [\llbracket r1 \rrbracket , \llbracket r2 \rrbracket]
             \end{align*}
@@ -443,19 +443,13 @@
 
     \subsection{Some Issues}
 
-    One issue with our tree type above is that the root node will naturally contain no action,
-    except in the unlikely event that there is only one possible first action. Rather
-    than adjusting the data type, the solution to this could be to add some sort of
-    placeholder \texttt{Init} action. This is not only a solution to the problem but
-    could also prove very useful in the event that we are dealing with robots. Depending
-    on the model we are given (Section 4) it may be necessary to do some sort of
-    initialisation before beginning the actual actions for the recipe. \\
-
-    Secondly, while writing the denotational semantics it became apparent that there were
+    While writing the denotational semantics it became apparent that there were
     some issues with the fundamental combinators. Consider the following recipe
     \texttt{(r1 >< r2) >>> (r3 >< r4)}, that is "combine r1 and r2, then combine
     r3 and r4". This would translate into the following tree of actions:
 
+    \newpage
+    
     \begin{figure}[ht]
         \centering
             \includegraphics[width=5cm,keepaspectratio]{issue1.png}
@@ -791,8 +785,6 @@
         | PlaceIn Recipe Recipe
         | PourOver Recipe Recipe
         | Mix Recipe Recipe
-        --
-        | Init
         deriving Show
     
     -------------------------------------

@@ -70,7 +70,7 @@ data Action = Get Recipe
     -- Heat
     | Preheat Temperature
     | Refrigerate Recipe
-    | PlaceInHeat Recipe --can infer oven or stove from Temp being Medium or 180
+    | PlaceInHeat Recipe
     | LeaveRoomTemp Recipe
     | Freeze Recipe
     -- Wait
@@ -80,8 +80,6 @@ data Action = Get Recipe
     | PlaceIn Recipe Recipe
     | PourOver Recipe Recipe
     | Mix Recipe Recipe
-    --
-    | Init
     deriving Show
 
 -------------------------------------
