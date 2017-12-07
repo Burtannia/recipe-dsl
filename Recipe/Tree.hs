@@ -1,6 +1,6 @@
 module Recipe.Tree where
 
-import Control.Monad.State
+import Control.Monad.State.Lazy
 import Data.List (permutations)
 
 data Tree a = Empty | Node a [Tree a]
