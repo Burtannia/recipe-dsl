@@ -150,7 +150,7 @@
     \small
     \begin{lstlisting}
         boilingWater, blackTea :: Recipe
-        boilingWater = heat 100 water
+        boilingWater = heat (Deg 100) water
         blackTea = (teabag >< boilingWater) >>> Wait 5
     \end{lstlisting}
     \end{tt}
@@ -160,7 +160,7 @@
     \texttt{><} is our combine operator and simply means mix the
     given recipes together. Finally \texttt{>>>} is our sequencing
     operator meaning do the first recipe then the second. The types
-    for these are as follows: 
+    for these are as follows:
     
     \begin{tt}
     \small
@@ -235,14 +235,14 @@
     \begin{tt}
     \small
     \begin{lstlisting}
-    marinate :: Recipe -> [Recipe] -> Recipe
-    marinate r' []     = r'
-    marinate r' [r]    = r' >< r
-    marinate r' (r:rs) = marinate r' (foldr (><) r rs)
+    marinate :: Recipe -> [Recipe] -> Time -> Recipe
+    marinate r' [] t     = r' >>> wait t
+    marinate r' [r] t    = (r' >< r) >>> wait t
+    marinate r' (r:rs) t = marinate r' [foldr (><) r rs] t
     \end{lstlisting}
     \end{tt}
-    \texttt{marinate r' rs} means marinate \texttt{r'} in a marinade composed
-    of the list of recipes \texttt{rs}. \\
+    \texttt{marinate r' rs t} means marinate \texttt{r'} in a marinade composed
+    of the list of recipes \texttt{rs} for an amount of time \texttt{t}. \\
 
     Due to the compositional nature of our combinators it is easy to create new
     ones like \texttt{marinate} thus allowing us to avoid repeating common
@@ -399,41 +399,59 @@
     where actions are fundamental things such as getting an ingredient or stirring
     something. The tree structure of our recipes makes denotational semantics possible,
     due to their compositional nature, which also means we can make use of \texttt{fold}
-    in Haskell to evaluate our recipes or even create a list of steps \cite{hutton-fold}.
+    in Haskell to evaluate our recipes or to create a stack of steps \cite{hutton-fold}. \\
     
-    % \begin{align}
-    %     \llbracket \texttt{Ingredient s} \rrbracket = \texttt{GET (Ingredient s)} \\
-    %     \llbracket \texttt{Heat t r} \rrbracket = \texttt{Node (PlaceInHeat r) [
-    %         Node (Preheat t) [\llbracket \texttt{r} \rrbracket]]} \\
-    %     \llbracket \texttt{Wait t} \rrbracket = \texttt{Leaf DoNothing} \\
+    \newpage
+
+    \begin{figure}[ht]
+        \centering\small
+            \begin{align*}
+            \llbracket Ingredient \: s \rrbracket &= Node \: (Get \: (Ingredient \: s)) \: [] \\
+            \llbracket Heat \: t \: r \rrbracket &= Node \:(PlaceInHeat \: r) \:
+                [Node \: (Preheat \: t) \: [], \llbracket r \rrbracket]) \\
+            \llbracket Wait \: t \rrbracket &= Node \: (DoNothing \: t) \: [] \\
+            \llbracket Combine \: r1 \: r2 \rrbracket &=
+                Node \: Mix \: [\llbracket r1 \rrbracket , \llbracket r2 \rrbracket] \\
+            \llbracket Sequence \: r1 \: r2 \rrbracket &=
+                Node \: (DoNothing \: 0) \: [\llbracket r1 \rrbracket , \llbracket r2 \rrbracket]
+            \end{align*}
+        \caption{Denotational semantics for recipes.}
+    \end{figure}
+
+    Now you may notice that the definition \texttt{Sequence} is a bit strange. The
+    \texttt{DoNothing 0} action is just a bit of a hack so that parts of the project
+    discussed below could be started. The issue leading to the need for this hack
+    is discussed in Section 3.3. \\
         
-    % \end{align}
-
-    While a recipe action is described as a list of recipes above and a recipe process is
-    a mapping from time to such a list, tt may turn out that some sort of tree structure is
-    more appropriate. One such representation could be the following:
-
+    The current approach to this is to first translate the recipe into a tree of actions.
+    The tree data type is as follows: \\
     \begin{tt}
     \small
     \begin{lstlisting}
-    data Tree a = Leaf a | Node a [Tree a]
+    data Tree a = Empty | Node a [Tree a]
     \end{lstlisting}
     \end{tt}
 
-    That is at a given node N, the set of actions one could do next are the children of
-    that node. Our function \texttt{RP :: Time -> RA} would therefore give the list of
-    nodes at the depth equal to the time provided. \\
-
-    One issue with this is that the root node will naturally contain no action, except in the
-    unlikely event that there is only one possible first action. The solution to this would
-    be to add some sort of placeholder \texttt{Init} action. This is not only a solution to
-    the problem but could also prove very useful in the event that we are dealing with
-    robots. Depending on the model we are given (Section 4) it may be necessary to do
-    some sort of initialisation before beginning the actual actions for the recipe.
+    Then we find all the possible ways the tree could be topologically sorted which
+    gives us all the possible orderings of the actions that maintain the natural
+    ordering of the tree, thus not changing the recipe. The type at this point would
+    be \texttt{[[Action]]}, transposing this list of lists would then allow us to
+    define our recipe process as \texttt{xs !! t} where \texttt{xs} is the transposed
+    list of topological sorts and \texttt{t} is the current time. Note that this
+    is a simplified notion of time in that \texttt{t == 0} would mean start the first
+    action, \texttt{t == 1} the second action and so on.
 
     \subsection{Some Issues}
 
-    While writing the denotational semantics it became apparent that there were
+    One issue with our tree type above is that the root node will naturally contain no action,
+    except in the unlikely event that there is only one possible first action. Rather
+    than adjusting the data type, the solution to this could be to add some sort of
+    placeholder \texttt{Init} action. This is not only a solution to the problem but
+    could also prove very useful in the event that we are dealing with robots. Depending
+    on the model we are given (Section 4) it may be necessary to do some sort of
+    initialisation before beginning the actual actions for the recipe. \\
+
+    Secondly, while writing the denotational semantics it became apparent that there were
     some issues with the fundamental combinators. Consider the following recipe
     \texttt{(r1 >< r2) >>> (r3 >< r4)}, that is "combine r1 and r2, then combine
     r3 and r4". This would translate into the following tree of actions:
@@ -682,5 +700,417 @@
         Computer Science, University of Nottingham. September 1998.
 
     \end{thebibliography}   
-     
+
+    \newpage
+
+    \appendix
+
+    \section{Recipe.Recipe}
+
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    module Recipe.Recipe where
+    
+    import Data.List
+    import Recipe.Tree
+    
+    -------------------------------------
+    -- RECIPE DEFINITION
+    -------------------------------------
+    
+    data Recipe = Ingredient String
+                | Heat Temperature Recipe
+                | Wait Int
+                | Combine Recipe Recipe
+                | Sequence Recipe Recipe
+                -- | forall a. Eq a => Recipe `Until` a
+                deriving Show
+    
+    type Quantity = Int
+    type Time = Int
+    
+    data Temperature = Deg Int | Low | Medium | High
+        deriving (Show, Eq)
+    
+    -- measure :: Quantity -> Recipe -> Recipe
+    -- measure = Measure
+    
+    heat :: Temperature -> Recipe -> Recipe
+    heat = Heat
+    
+    (><) :: Recipe -> Recipe -> Recipe
+    (><) = Combine
+    
+    -- r1 then r2
+    (>>>) :: Recipe -> Recipe -> Recipe
+    (>>>) = Sequence
+    
+    wait :: Quantity -> Recipe
+    wait = Wait
+    
+    -------------------------------------
+    -- RECIPE SEMANTICS
+    -------------------------------------
+    
+    filterJust :: [Maybe a] -> [a]
+    filterJust xs = [x | (Just x) <- xs]
+    
+    sortRecipe :: Recipe -> [Action]
+    sortRecipe r = filterJust mas
+        where
+            t = labelTree $ expand r
+            ls = kahn t
+            mas = map (\l -> findLabel l t) ls
+    
+    -- Translate Recipe into a tree of actions
+    expand :: Recipe -> Tree Action
+    expand r@(Ingredient s)   = Node (Get r) []
+    expand r@(Heat t r')      =
+        Node (PlaceInHeat r') [Node (Preheat t) [], expand r']
+    expand r@(Wait t)         = Node (DoNothing t) []
+    expand r@(Combine r1 r2)  =
+        Node (Mix r1 r2) [expand r1, expand r2]
+    expand r@(Sequence r1 r2) =
+        Node (DoNothing 0) [expand r1, expand r2]
+    
+    type RP = Time -> RA
+    type RA = [Action]
+    
+    data Action = Get Recipe
+        -- Heat
+        | Preheat Temperature
+        | Refrigerate Recipe
+        | PlaceInHeat Recipe
+        | LeaveRoomTemp Recipe
+        | Freeze Recipe
+        -- Wait
+        | DoNothing Time
+        -- Combine
+        | PlaceAbove Recipe Recipe
+        | PlaceIn Recipe Recipe
+        | PourOver Recipe Recipe
+        | Mix Recipe Recipe
+        --
+        | Init
+        deriving Show
+    
+    -------------------------------------
+    -- CONCRETE IMPLEMENTATION
+    -------------------------------------
+    
+    -- TODO
+    
+    -------------------------------------
+    -- UTILITY FUNCTIONS
+    -------------------------------------
+    
+    -- Create a list of ingredients used in a recipe
+    getIngredients :: Recipe -> [String]
+    getIngredients (Ingredient s)   = [s]
+    getIngredients (Heat _ r)       = getIngredients r
+    getIngredients (Combine r1 r2)  =
+        getIngredients r1 ++ getIngredients r2
+    getIngredients (Wait _)         = []
+    getIngredients (Sequence r1 r2) =
+        getIngredients r1 ++ getIngredients r2
+    \end{lstlisting}
+    \end{tt}
+
+    \section{Recipe.Tree}
+
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    module Recipe.Tree where
+    
+    import Control.Monad.State
+    
+    data Tree a = Empty | Node a [Tree a]
+        deriving Show
+    
+    testT :: Tree Int
+    testT = Node 1 [Node 2 [Node 3 []], Node 4 []]
+    
+    instance Functor Tree where
+        -- fmap :: (a -> b) -> fa -> fb
+        fmap _ Empty       = Empty
+        fmap f (Node a ts) = Node (f a) (map (fmap f) ts)
+    
+    type Label = Int
+    
+    -- Label tree from 0 breadth-first 
+    labelTree :: Tree a -> Tree (Label, a)
+    labelTree Empty = Empty
+    labelTree t = evalState (labelTree' t) 0
+    
+    labelTree' :: Tree a -> State Label (Tree (Label, a))
+    labelTree' Empty       = return Empty
+    labelTree' (Node a ts) = do
+        l <- get
+        put (l + 1)
+        ts' <- mapM labelTree' ts
+        return $ Node (l, a) ts'
+        
+    -- Returns children of a node
+    children :: Tree a -> [Tree a]
+    children Empty       = []
+    children (Node _ ts) = ts
+    
+    -- True if node has no children
+    leaf :: Tree a -> Bool
+    leaf (Node _ (t:ts)) = False
+    leaf _               = True
+    
+    -- Calculate the degree of a node in the tree
+    calcDegree :: Tree a -> Int
+    calcDegree Empty       = 0
+    calcDegree (Node _ ts) = length ts
+    
+    -- Produce a list of nodes with a degree of zero
+    zeroDegree :: Tree a -> [Tree a]
+    zeroDegree n =
+        if calcDegree n == 0
+            then (n:ns)
+            else ns
+        where ns = concatMap zeroDegree (children n)
+        
+    -- Removes any node with the given label from the tree
+    -- Children of that node are also removed
+    removeNode :: Label -> Tree (Label, a) -> Tree (Label, a)
+    removeNode _ Empty       = Empty
+    removeNode l (Node a ts) = Node a [t | t <- ts', getLabel t /= l]
+        where ts' = map (removeNode l) ts
+    
+    -- Get the parent node of the node with the
+    -- given label in the given tree, Empty if no parent
+    getParent :: Label -> Tree (Label, a) -> Tree (Label, a)
+    getParent _ Empty       = Empty
+    getParent _ (Node _ []) = Empty
+    getParent l n@(Node (l', _) ts)
+        | l == l'   = Empty
+        | otherwise = if True `elem` (map (\t -> getLabel t == l) ts)
+                        then n
+                        else head $ map (getParent l) ts
+    
+    -- Get label of a given node
+    getLabel :: Tree (Label, a) -> Label
+    getLabel Empty           = -1
+    getLabel (Node (l, _) _) = l
+    
+    -- Producs a list of Labels of nodes sorted topologically
+    kahn :: Tree (Label, a) -> [Label]
+    kahn t = kahn' t [] (map getLabel $ zeroDegree t)
+    
+    -- ns = labels of sorted nodes
+    -- zs = labels of zero degree nodes
+    -- Presumes values stored in nodes are unique
+    kahn' :: Tree (Label, a) -> [Label] -> [Label] -> [Label]
+    kahn' _ ns []      = ns
+    kahn' t ns (z:zs)  = kahn' t' ns' zs'
+        where
+            -- take a zero degree node z and add to tail of sorted nodes
+            ns' = ns ++ [z]
+            -- get parent of z
+            parentZ = getParent z t
+            pLabel = getLabel parentZ
+            -- remove z
+            t' = removeNode z t
+            -- if no other edges to parent then insert into sorted nodes
+            zOnlyChild = length (children parentZ) <= 1
+            pzNotEmpty = pLabel /= -1 
+            zs' = if zOnlyChild && pzNotEmpty
+                    then zs ++ [pLabel]
+                    else zs
+    
+    -- Given a label and a tree, gives the first value found
+    -- with the corresponding label, if not found then Nothing
+    findLabel :: Label -> Tree (Label, a) -> Maybe a
+    findLabel _ Empty             = Nothing
+    findLabel l (Node (l', a) ts) =
+        if l == l'
+            then Just a
+            else case [x | x@(Just _) <- xs] of
+                []     -> Nothing
+                (x:xs) -> x
+        where xs = map (findLabel l) ts
+    \end{lstlisting}
+    \end{tt}
+
+    \section{Recipe.Printer}
+
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    module Recipe.Printer where
+    
+    import           Recipe.Recipe
+    
+    -- data Recipe = Ingredient String
+    --             | Heat Temperature Recipe
+    --             | Combine Recipe Recipe
+    --             | Wait Time
+    --             | Sequence Recipe Recipe
+    --             deriving (Show)
+    
+    -------------------------------------
+    -- PRINTING RECIPES
+    -------------------------------------
+    
+    toString :: Recipe -> String
+    toString (Ingredient s)   = s
+    toString (Heat t r)       =
+        "Heat (" ++ toString r ++ ") to " ++ show t
+    toString (Combine r1 r2)  =
+        "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 ++ ")"
+    toString (Wait t)         = "Wait for " ++ show t
+    toString (Sequence r1 r2) =
+        "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
+    
+    printRecipe :: Recipe -> IO ()
+    printRecipe x@(Ingredient _)   = putStrLn $ toString x
+    printRecipe x@(Heat _ r)       = printRecipe r
+                                        >> putStrLn (toString x)
+    printRecipe x@(Combine r1 r2)  = printRecipe r1
+                                        >> printRecipe r2
+                                        >> putStrLn (toString x)
+    printRecipe x@(Wait _)         = putStrLn $ toString x
+    printRecipe x@(Sequence r1 r2) = printRecipe r1
+                                        >> putStrLn (toString x)
+                                        >> printRecipe r2
+    
+    -------------------------------------
+    -- PRINTING INGREDIENTS
+    -------------------------------------
+    
+    -- Print the list of ingredients in a recipe
+    printIngredients :: Recipe -> IO ()
+    printIngredients r = mapM_ putStrLn (getIngredients r)
+    
+    -------------------------------------
+    -- PRICE
+    -------------------------------------
+    
+    type Price = Float
+    type PricedItem = (String, Price)
+    type PriceList = [PricedItem]
+    
+    class Priced a where
+        findCost :: a -> PriceList -> Price
+    
+    instance Priced Recipe where
+        findCost (Ingredient s) ps =
+            case prices of
+                [] -> 0
+                _  -> head prices
+            where prices = [p | (x, p) <- ps, x == s]
+        findCost (Heat _ r) ps       = findCost r ps
+        findCost (Combine r1 r2) ps  =
+            findCost r1 ps + findCost r2 ps
+        findCost (Wait _) _          = 0
+        findCost (Sequence r1 r2) ps =
+            findCost r1 ps + findCost r2 ps
+    
+    testList :: PriceList
+    testList = [ ("milk", 1.00)
+                , ("teabag", 6.70)
+                ]
+    
+    -- Need to amend this once we have the measurement constructor
+    -- We don't need a full pack of teabags to make a cup of tea
+    \end{lstlisting}
+    \end{tt}
+
+    \section{Recipe.Demo}
+
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    module Recipe.Demo where
+    
+    import Recipe.Recipe
+    import Recipe.Printer
+    
+    -------------------------------------
+    -- TEST RECIPES
+    -------------------------------------
+    
+    -- Cup of Tea
+    
+    milk, teabag, water :: Recipe
+    milk = Ingredient "milk"
+    teabag = Ingredient "teabag"
+    water = Ingredient "water"
+    
+    boilingWater, blackTea :: Recipe
+    boilingWater = heat (Deg 100) water
+    blackTea = (teabag >< boilingWater) >>> Wait 5
+
+    cupOfTea :: Recipe
+    cupOfTea = blackTea >< milk
+    
+    -- Chicken Jalfrezi
+    
+    oliveOil, chicken, cumin, coriander, turmeric :: Recipe
+    redPeppers, garamMasala, tinnedTomatoes, onion :: Recipe
+    garlic, greenChilli, cherryTomatoes :: Recipe
+    chicken = Ingredient "chicken"
+    cumin = Ingredient "cumin"
+    coriander = Ingredient "coriander"
+    turmeric = Ingredient "turmeric"
+    redPeppers = Ingredient "red peppers"
+    garamMasala = Ingredient "garam masala"
+    tinnedTomatoes = Ingredient "tinned tomatoes"
+    onion = Ingredient "onion"
+    garlic = Ingredient "garlic"
+    greenChilli = Ingredient "green chilli"
+    cherryTomatoes = Ingredient "cherry tomatoes"
+    oliveOil = Ingredient "olive oil"
+    
+    spicedChicken :: Recipe
+    spicedChicken = marinate chicken
+        [cumin, coriander, turmeric] 30
+    
+    chickenAndPeppers :: Recipe
+    chickenAndPeppers = heatFor Medium
+        (cookedChicken >< redPeppers) 10
+        where cookedChicken = heatFor Medium
+                                spicedChicken 10
+    
+    jalfreziSauce :: Recipe
+    jalfreziSauce = heatFor Medium
+                    (sauceBase >< spices) 10
+        where
+            onionMix     = onion >< garlic >< greenChilli
+            cookedOnions = heatFor Medium
+                            (preheatOil Medium onionMix) 5
+            spices       = cumin >< coriander
+                            >< turmeric >< garamMasala
+            sauceBase    = cookedOnions >< water
+                            >< tinnedTomatoes >< spices
+    
+    chickenJalfrezi :: Recipe
+    chickenJalfrezi = heatFor Medium chickenJalfrezi' 5
+        where chickenJalfrezi' = chickenAndPeppers
+                                    >< jalfreziSauce
+                                    >< cherryTomatoes
+    
+    -------------------------------------
+    -- CUSTOM COMBINATORS
+    -------------------------------------
+    
+    marinate :: Recipe -> [Recipe] -> Time -> Recipe
+    marinate r' [] t     = r' >>> wait t
+    marinate r' [r] t    = (r' >< r) >>> wait t
+    marinate r' (r:rs) t = marinate r' [foldr (><) r rs] t
+    
+    preheatOil :: Temperature -> Recipe -> Recipe
+    preheatOil t r = oil >< r
+        where oil = heat t oliveOil
+    
+    heatFor :: Temperature -> Recipe -> Time -> Recipe
+    heatFor temp r time = (heat temp r) >< (wait time)
+    \end{lstlisting}
+    \end{tt}
+
 \end{document}

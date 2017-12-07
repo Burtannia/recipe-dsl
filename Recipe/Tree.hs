@@ -1,6 +1,7 @@
 module Recipe.Tree where
 
 import Control.Monad.State
+import Data.List (permutations)
 
 data Tree a = Empty | Node a [Tree a]
     deriving Show
@@ -73,6 +74,12 @@ getParent l n@(Node (l', _) ts)
 getLabel :: Tree (Label, a) -> Label
 getLabel Empty           = -1
 getLabel (Node (l, _) _) = l
+
+-- Get all topological sorts of a tree
+-- NEEDS FIXING...
+allKahn :: Tree (Label, a) -> [[Label]]
+allKahn t = map (kahn' t []) (permutations zs)
+    where zs = map getLabel $ zeroDegree t
 
 -- Producs a list of Labels of nodes sorted topologically
 kahn :: Tree (Label, a) -> [Label]
