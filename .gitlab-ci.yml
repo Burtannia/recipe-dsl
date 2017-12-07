@@ -3,4 +3,5 @@ image: haskell:8.2.1
 build:
   stage: build
   script:
-    - ghc -O2 Recipe.Demo
+    - ghc-pkg recache
+      && ghc -O2 Recipe.Demo
