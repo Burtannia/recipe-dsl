@@ -418,7 +418,7 @@
         \caption{Denotational semantics for recipes.}
     \end{figure}
 
-    Now you may notice that the definition \texttt{Sequence} is a bit strange. The
+    Now you may notice that the definition for \texttt{Sequence} is a bit strange. The
     \texttt{DoNothing 0} action is just a bit of a hack so that parts of the project
     discussed below could be started. The issue leading to the need for this hack
     is discussed in Section 3.3. \\
@@ -871,7 +871,8 @@
     -- Children of that node are also removed
     removeNode :: Label -> Tree (Label, a) -> Tree (Label, a)
     removeNode _ Empty       = Empty
-    removeNode l (Node a ts) = Node a [t | t <- ts', getLabel t /= l]
+    removeNode l (Node a ts) =
+        Node a [t | t <- ts', getLabel t /= l]
         where ts' = map (removeNode l) ts
     
     -- Get the parent node of the node with the
@@ -881,9 +882,10 @@
     getParent _ (Node _ []) = Empty
     getParent l n@(Node (l', _) ts)
         | l == l'   = Empty
-        | otherwise = if True `elem` (map (\t -> getLabel t == l) ts)
-                        then n
-                        else head $ map (getParent l) ts
+        | otherwise =
+            if True `elem` (map (\t -> getLabel t == l) ts)
+              then n
+              else head $ map (getParent l) ts
     
     -- Get label of a given node
     getLabel :: Tree (Label, a) -> Label
@@ -901,14 +903,16 @@
     kahn' _ ns []      = ns
     kahn' t ns (z:zs)  = kahn' t' ns' zs'
         where
-            -- take a zero degree node z and add to tail of sorted nodes
+            -- take a zero degree node z and
+            -- add to tail of sorted nodes
             ns' = ns ++ [z]
             -- get parent of z
             parentZ = getParent z t
             pLabel = getLabel parentZ
             -- remove z
             t' = removeNode z t
-            -- if no other edges to parent then insert into sorted nodes
+            -- if no other edges to parent then
+            -- insert into sorted nodes
             zOnlyChild = length (children parentZ) <= 1
             pzNotEmpty = pLabel /= -1 
             zs' = if zOnlyChild && pzNotEmpty
@@ -1008,8 +1012,9 @@
                 , ("teabag", 6.70)
                 ]
     
-    -- Need to amend this once we have the measurement constructor
-    -- We don't need a full pack of teabags to make a cup of tea
+    -- Need to amend this once we have the measurement
+    -- constructor, we don't need a full pack of teabags
+    -- to make a cup of tea
     \end{lstlisting}
     \end{tt}
 
