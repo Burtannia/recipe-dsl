@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  7 DEC 2017 02:19
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  7 DEC 2017 16:38
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -1234,7 +1234,7 @@ msfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
 s/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
 mtt9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/stmaryrd/stmary10.pf
 b>
-Output written on Interim.pdf (26 pages, 533790 bytes).
+Output written on Interim.pdf (26 pages, 533788 bytes).
 PDF statistics:
  933 PDF objects out of 1000 (max. 8388607)
  876 compressed objects within 9 object streams
