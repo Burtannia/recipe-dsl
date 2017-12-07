@@ -4,4 +4,4 @@ build:
   stage: build
   script:
     - ghc-pkg recache
-    && ghc -O2 Recipe.Demo
+      && ghc -O2 Recipe.Demo
