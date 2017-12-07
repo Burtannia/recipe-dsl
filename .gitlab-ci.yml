@@ -3,5 +3,6 @@ image: haskell:8.2.1
 build:
   stage: build
   script:
-    - ghc-pkg recache
-      &&ghc -O2 Recipe.Demo
+    - ghc -O2 Recipe.Recipe
+      && ghc -O2 Recipe.Printer
+      && ghc -O2 Recipe.Scheduler
