@@ -19,4 +19,4 @@
 \contentsline {section}{\numberline {A}Recipe.Recipe}{18}{appendix.A}
 \contentsline {section}{\numberline {B}Recipe.Tree}{20}{appendix.B}
 \contentsline {section}{\numberline {C}Recipe.Printer}{23}{appendix.C}
-\contentsline {section}{\numberline {D}Recipe.Demo}{24}{appendix.D}
+\contentsline {section}{\numberline {D}Recipe.Demo}{25}{appendix.D}

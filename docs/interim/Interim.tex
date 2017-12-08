@@ -376,15 +376,55 @@
     \subsection{Executing a Recipe}
 
     How do we actually perform a recipe? We need to translate our declarative
-    recipe into a set of actions. Again if we can make these compositional
-    then we will only need to change our definition in the event of a
-    new fundamental combinator. \\
-    
-    If we consider our description of a recipe as a tree then the actions
-    we can choose to complete first are the leaves of the tree. This means
-    that we have a set of actions that we can possibly perform at any given
-    time and this set of actions becomes smaller as we move to the root of
-    the tree i.e. as time progresses. \\
+    recipe into a set of actions where actions are fundamental things such as
+    getting an ingredient or stirring something. Again if we can make these
+    compositional then we will only need to change our definition in the event
+    of a new core combinator. Given the tree like structure of our recipes it
+    is very easy to expand them into a tree of actions. The tree data type and
+    expand function are as follows:
+    \begin{tt}
+    \small
+    \begin{lstlisting}
+    data Tree a = Empty | Node a [Tree a]
+
+    expand :: Recipe -> Tree Action
+    expand r@(Ingredient s)   = Node (Get s) []
+    expand r@(Heat t r')      =
+        Node PlaceInHeat [Node (Preheat t) [], expand r']
+    expand r@(Wait t)         = Node (DoNothing t) []
+    expand r@(Combine r1 r2)  =
+        Node Mix [expand r1, expand r2]
+    expand r@(Sequence r1 r2) =
+        Node (DoNothing 0) [expand r1, expand r2]
+    \end{lstlisting}
+    \end{tt}
+
+    % \begin{figure}[ht]
+    %     \centering\small
+    %         \begin{align*}
+    %         E\llbracket \rrbracket : Recipe &\rightarrow Tree \: Action \\
+    %         E\llbracket Ingredient \: s \rrbracket &= Node \: (Get \: (Ingredient \: s)) \: [] \\
+    %         E\llbracket Heat \: t \: r \rrbracket &= Node \:(PlaceInHeat \: r) \:
+    %             [Node \: (Preheat \: t) \: [], E\llbracket r \rrbracket]) \\
+    %         E\llbracket Wait \: t \rrbracket &= Node \: (DoNothing \: t) \: [] \\
+    %         E\llbracket Combine \: r1 \: r2 \rrbracket &=
+    %             Node \: (Mix \: r1 \: r2) \: [E\llbracket r1 \rrbracket , E\llbracket r2 \rrbracket] \\
+    %         E\llbracket Sequence \: r1 \: r2 \rrbracket &=
+    %             Node \: (DoNothing \: 0) \: [E\llbracket r1 \rrbracket , E\llbracket r2 \rrbracket]
+    %         \end{align*}
+    %     \caption{Denotational semantics for expanding recipes.}
+    % \end{figure}
+
+    Now you may notice that the definition for \texttt{Sequence} is a bit strange. The
+    \texttt{DoNothing 0} action is just a bit of a hack so that parts of the project
+    discussed below could be started. The issue leading to the need for this hack
+    is discussed in Section 3.3. \\
+
+    While the tree structure provides some ordering to the actions, there are still
+    multiple orders possible. The actions we can choose to complete first are the
+    leaves of the tree. This means that we have a set of actions that we can possibly
+    perform at any given time and this set of actions becomes smaller as we move
+    towards the root of the tree i.e. as time progresses. \\
 
     \begin{figure}[ht]
         \centering
@@ -392,54 +432,48 @@
         \caption{Number of possible actions over time.}
     \end{figure}
     
-    We can model this relationship using denotational semantics by translating
-    our description of a recipe into a recipe process. A recipe process is a
-    mapping of time to a recipe action \texttt{RP = Time -> RA}. A recipe action
-    is a list of the possible actions you could be doing, \texttt{RA = [Action]}
-    where actions are fundamental things such as getting an ingredient or stirring
-    something. The tree structure of our recipes makes denotational semantics possible,
-    due to their compositional nature, which also means we can make use of \texttt{fold}
-    in Haskell to evaluate our recipes or to create a stack of steps \cite{hutton-fold}. \\
-    
-    \newpage
+    We can model this relationship by translating our recipe into a recipe process.
+    A recipe process is a mapping of recipe state to a recipe action \texttt{RP = RS -> RA}.
+    Recipe state contains the current time and the actions completed so far. A recipe
+    action is a list of the possible actions you could be doing, \texttt{RA = [Action]}. \\  
 
-    \begin{figure}[ht]
-        \centering\small
-            \begin{align*}
-            \llbracket Ingredient \: s \rrbracket &= Node \: (Get \: (Ingredient \: s)) \: [] \\
-            \llbracket Heat \: t \: r \rrbracket &= Node \:(PlaceInHeat \: r) \:
-                [Node \: (Preheat \: t) \: [], \llbracket r \rrbracket]) \\
-            \llbracket Wait \: t \rrbracket &= Node \: (DoNothing \: t) \: [] \\
-            \llbracket Combine \: r1 \: r2 \rrbracket &=
-                Node \: (Mix \: r1 \: r2) \: [\llbracket r1 \rrbracket , \llbracket r2 \rrbracket] \\
-            \llbracket Sequence \: r1 \: r2 \rrbracket &=
-                Node \: (DoNothing \: 0) \: [\llbracket r1 \rrbracket , \llbracket r2 \rrbracket]
-            \end{align*}
-        \caption{Denotational semantics for recipes.}
-    \end{figure}
-
-    Now you may notice that the definition for \texttt{Sequence} is a bit strange. The
-    \texttt{DoNothing 0} action is just a bit of a hack so that parts of the project
-    discussed below could be started. The issue leading to the need for this hack
-    is discussed in Section 3.3. \\
-        
-    The current approach to this is to first translate the recipe into a tree of actions.
-    The tree data type is as follows: \\
+    Now we need to find all the possible orderings of the actions that maintain the natural
+    ordering of the tree, thus not changing the recipe. We do this by finding all the
+    ways of topoligcally sorting the tree then filtering it based on the steps already
+    completed. This gives us a list of all the possible lists of actions we could be
+    following at this point. Transposing this list of lists would allow us to
+    define our list actions we could be doing as \texttt{xs !! t} where \texttt{xs}
+    is the transposed, filtered list of topological sorts and \texttt{t} is the current
+    time. Note that this is a simplified notion of time in that \texttt{t == 0} would
+    mean start the first action, \texttt{t == 1} the second action and so on.
+    The following function is defined to produce a recipe process given a list of topoligcal
+    sorts using the methodology described above:
     \begin{tt}
     \small
     \begin{lstlisting}
-    data Tree a = Empty | Node a [Tree a]
+    process :: [TSort] -> RP
+    process ts = \RS{rsTime = time, rsProgress = prog} ->
+        let opts = transpose ords
+            ords = filter (\x ->
+                take (length prog) x == prog) ts
+        in opts `safeIx` time
+    
+    safeIx :: [[a]] -> Int -> [a]
+    xs `safeIx` i
+        | i >= length xs = []
+        | otherwise      = xs !! i
     \end{lstlisting}
     \end{tt}
+    
+    Note that actions have been replaced by labels. This is because certain actions
+    will no doubt be performed multiple times during a recipe and labels provide
+    a unique means of identification. \\
 
-    Then we find all the possible ways the tree could be topologically sorted which
-    gives us all the possible orderings of the actions that maintain the natural
-    ordering of the tree, thus not changing the recipe. The type at this point would
-    be \texttt{[[Action]]}, transposing this list of lists would then allow us to
-    define our recipe process as \texttt{xs !! t} where \texttt{xs} is the transposed
-    list of topological sorts and \texttt{t} is the current time. Note that this
-    is a simplified notion of time in that \texttt{t == 0} would mean start the first
-    action, \texttt{t == 1} the second action and so on.
+    How do we tell if two recipes produce the same result? The compositional structure of our recipes
+    means that we should be able to define some denotational semantics; the recipes match
+    if their semantics match. This also means that we will be able to make use of \texttt{fold}
+    in Haskell to evaluate our recipes \cite{hutton-fold}. Such semantics have not yet
+    been derived at this point in the project.
 
     \subsection{Some Issues}
 
@@ -447,8 +481,6 @@
     some issues with the fundamental combinators. Consider the following recipe
     \texttt{(r1 >< r2) >>> (r3 >< r4)}, that is "combine r1 and r2, then combine
     r3 and r4". This would translate into the following tree of actions:
-
-    \newpage
     
     \begin{figure}[ht]
         \centering
@@ -464,13 +496,10 @@
     of our combinators. What has happened in this recipe is we have tried to enforce sequencing
     on two unrelated recipes. \\
 
-    One could argue that this is an issue that should be ruled out by a type checker. As SPJ
-    said "we can’t expect abstract syntax to rule out all bad programs, that’s what type
-    checkers are for" \cite{core}. On the other hand I would argue that what is being talked
-    about here is the prevention of programs that make no sense for example subtracting an integer
-    from a string. In our case the recipe should make sense and as mentioned there is evidence
-    of a more fundamental issue with the DSL design therefore it is appropriate to directly address
-    and fix this issue. \\
+    One could argue that this is an issue that should be ruled out by a type checker. It could be
+    argued that "we can’t expect abstract syntax to rule out all bad programs, that’s what type
+    checkers are for" \cite{core}. However, as mentioned above there is evidence of a more fundamental
+    issue with the DSL design therefore it is appropriate to directly address and fix this issue. \\
     
     It may seem as though we can just remove the sequencing combinator to fix this issue however,
     sequencing or combining our wait combinator with a recipe is our way of determining the
@@ -478,7 +507,7 @@
     issue which is that our combine combinator has too many purposes. In the presentation that
     accompanied the financial contracts language it was stated that combinators should have
     one responsibility \cite{contracts-pp}. Our solution is to provide this functionality 
-    with our concept of conditional recipes (Section 2.3). \\
+    with our concept of conditional recipes (Section 2.3).
 
     \section{Concrete Implementation}
 
@@ -747,45 +776,60 @@
     -- RECIPE SEMANTICS
     -------------------------------------
     
-    filterJust :: [Maybe a] -> [a]
-    filterJust xs = [x | (Just x) <- xs]
-    
-    sortRecipe :: Recipe -> [Action]
-    sortRecipe r = filterJust mas
-        where
-            t = labelTree $ expand r
-            ls = kahn t
-            mas = map (\l -> findLabel l t) ls
-    
-    -- Translate Recipe into a tree of actions
-    expand :: Recipe -> Tree Action
-    expand r@(Ingredient s)   = Node (Get r) []
-    expand r@(Heat t r')      =
-        Node (PlaceInHeat r') [Node (Preheat t) [], expand r']
-    expand r@(Wait t)         = Node (DoNothing t) []
-    expand r@(Combine r1 r2)  =
-        Node (Mix r1 r2) [expand r1, expand r2]
-    expand r@(Sequence r1 r2) =
-        Node (DoNothing 0) [expand r1, expand r2]
-    
-    type RP = Time -> RA
-    type RA = [Action]
-    
-    data Action = Get Recipe
+    data Action =
+        Get String
         -- Heat
         | Preheat Temperature
-        | Refrigerate Recipe
-        | PlaceInHeat Recipe
-        | LeaveRoomTemp Recipe
-        | Freeze Recipe
+        | Refrigerate
+        | PlaceInHeat
+        | LeaveRoomTemp
+        | Freeze
         -- Wait
         | DoNothing Time
         -- Combine
-        | PlaceAbove Recipe Recipe
-        | PlaceIn Recipe Recipe
-        | PourOver Recipe Recipe
-        | Mix Recipe Recipe
+        | PlaceAbove
+        | PlaceIn
+        | PourOver
+        | Mix
         deriving Show
+
+    -- Translate Recipe into a tree of actions
+    expand :: Recipe -> Tree Action
+    expand r@(Ingredient s)   = Node (Get s) []
+    expand r@(Heat t r')      =
+        Node PlaceInHeat [Node (Preheat t) [], expand r']
+    expand r@(Wait t)         = Node (DoNothing t) []
+    expand r@(Combine r1 r2)  =
+        Node Mix [expand r1, expand r2]
+    expand r@(Sequence r1 r2) =
+        Node (DoNothing 0) [expand r1, expand r2]
+
+    -- filter topological sorts using state
+    -- transpose filtered list 
+    -- !! time with the transposed list
+
+    type RP = RS -> RA
+
+    data RS = RS
+        { rsTime :: Time
+        , rsProgress :: [Label]
+        }
+        deriving Show
+        
+    type RA = [Label]
+    type TSort = [Label]
+
+    process :: [TSort] -> RP
+    process ts = \RS{rsTime = time, rsProgress = prog} ->
+        let opts = transpose ords
+            ords = filter (\x ->
+                take (length prog) x == prog) ts
+        in opts `safeIx` time
+
+    safeIx :: [[a]] -> Int -> [a]
+    xs `safeIx` i
+        | i >= length xs = []
+        | otherwise      = xs !! i
     
     -------------------------------------
     -- CONCRETE IMPLEMENTATION
