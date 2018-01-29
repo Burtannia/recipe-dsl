@@ -102,6 +102,29 @@ xs `safeIx` i
 
 -- TODO
 
+-- The cooking environment is modelled as
+-- a set of stations. Each station being
+-- capable of performing a set of actions
+-- and providing measures of any relevant
+-- conditions such as temperature.
+
+type Env = [Station]
+
+data Obs = ObsTemp Temperature
+
+data Station = Station
+    { stName :: String
+    , stActs :: [Action]
+    , stObs  :: [IO Obs]
+    }
+
+oven :: Station
+oven = Station {stName = "oven", stActs = [], stObs = [ovenTemp]}
+-- Some Actions e.g. Preheat take an argument which could be an issue...
+
+ovenTemp :: IO Obs
+ovenTemp = return $ ObsTemp $ Deg 180
+
 -------------------------------------
 -- UTILITY FUNCTIONS
 -------------------------------------
