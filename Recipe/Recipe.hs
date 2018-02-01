@@ -14,18 +14,6 @@ import Data.Tree.Pretty
 
 -- putStrLn $ drawVerticalTree (toTree cupOfTea)
 
-milk, teabag, water :: Recipe
-milk = Ingredient "milk"
-teabag = Ingredient "teabag"
-water = Ingredient "water"
-
-boilingWater, blackTea :: Recipe
-boilingWater = heat (Deg 100) water
-blackTea = (teabag >< boilingWater) >>> wait 5
-
-cupOfTea :: Recipe
-cupOfTea = blackTea >< milk
-
 toTree :: Recipe -> Tree String
 toTree Void = Node "void" []
 toTree (Ingredient s) = Node s []
@@ -37,7 +25,7 @@ toTree (r `Until` c) = Node ("until " ++ show c) [toTree r]
 data Recipe = Void
             | Ingredient String
             | Heat Temperature Recipe
-            | Wait Time Recipe
+            | Wait Time
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
             | forall a. (Show a, Eq a) => Recipe `Until` a
@@ -73,11 +61,11 @@ heat = Heat
 (>>>) :: Recipe -> Recipe -> Recipe
 (>>>) = Sequence
 
--- wait :: Quantity -> Recipe
--- wait = Wait
+wait :: Quantity -> Recipe
+wait = Wait
 
-wait :: Time -> Recipe
-wait = until Void
+wait' :: Time -> Recipe
+wait' = until Void
 
 until :: (Show a, Eq a) => Recipe -> a -> Recipe
 until = Until
@@ -176,9 +164,9 @@ fridge = Station {stName = "fridge", stActs = [], stObs = []}
 -------------------------------------
 
 -- Create a list of ingredients used in a recipe
--- getIngredients :: Recipe -> [String]
--- getIngredients (Ingredient s)   = [s]
--- getIngredients (Heat _ r)       = getIngredients r
--- getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
--- getIngredients (Wait _)         = []
--- getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
+getIngredients :: Recipe -> [String]
+getIngredients (Ingredient s)   = [s]
+getIngredients (Heat _ r)       = getIngredients r
+getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
+getIngredients (Wait _)         = []
+getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
