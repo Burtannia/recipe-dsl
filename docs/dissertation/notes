@@ -3,7 +3,7 @@ Two events:
  - until
 
 Both types of conditionals. Presumed that previous steps of the recipe ensure that the
-conditions to start a recipe are met e.g. preheat to 200 or leave to marinate for 2 hours.
+conditions to start a recipe are met e.g. leave to marinate for 2 hours.
 
 Conditionals allow us to mix until "mixed". The concrete implementation can then be used
 to link this to a signal from a camera in the case of a robot (or some other decision

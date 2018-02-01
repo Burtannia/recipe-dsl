@@ -2,6 +2,7 @@
 
 module Recipe.Recipe where
 
+import Prelude hiding (until)
 import Data.List
 --import Recipe.Tree
 import Data.Tree
@@ -10,6 +11,8 @@ import Data.Tree.Pretty
 -------------------------------------
 -- RECIPE DEFINITION
 -------------------------------------
+
+-- putStrLn $ drawVerticalTree (toTree cupOfTea)
 
 milk, teabag, water :: Recipe
 milk = Ingredient "milk"
@@ -34,11 +37,10 @@ toTree (r `Until` c) = Node ("until " ++ show c) [toTree r]
 data Recipe = Void
             | Ingredient String
             | Heat Temperature Recipe
-            -- | Wait Int
+            -- | Wait Time Recipe
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
             | forall a. (Show a, Eq a) => Recipe `Until` a
-            -- | Recipe `Until` Bool
 
 instance Show Recipe where
     show Void             = "void"
@@ -75,10 +77,10 @@ heat = Heat
 -- wait = Wait
 
 wait :: Time -> Recipe
-wait t = Void `Until` t
+wait = until Void
 
--- wait :: Time -> Recipe
--- wait t = Void `Until` (\x -> t == x)
+until :: (Show a, Eq a) => Recipe -> a -> Recipe
+until = Until
 
 -------------------------------------
 -- RECIPE SEMANTICS
