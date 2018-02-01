@@ -37,7 +37,7 @@ toTree (r `Until` c) = Node ("until " ++ show c) [toTree r]
 data Recipe = Void
             | Ingredient String
             | Heat Temperature Recipe
-            -- | Wait Time Recipe
+            | Wait Time Recipe
             | Combine Recipe Recipe
             | Sequence Recipe Recipe
             | forall a. (Show a, Eq a) => Recipe `Until` a
