@@ -5,4 +5,5 @@ build:
   script:
     - cabal update
       && cabal install mtl-2.2.1
+      && cabal install pretty-tree
       && ghc -O2 Recipe.Demo
