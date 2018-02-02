@@ -30,7 +30,29 @@ Wait takes a recipe
 Sequencing is removed
 
 HeatAt then needs to be able to take void for temp
-unless we add a generic "Heat" combinator
+
+Unless we have a generic Heat combinator
+Heat "Nothing" with a Condition of the preheat temp
+then combine that with the recipe we want to heatAt
+that temp.
+
+It may then seem intuitive to model Wait as a combination
+of a void recipe wrapped in a time condition and the
+recipe we want to wait after except that there is
+nothing that would prevent the recipe from being executed
+after the wait rather than before since dependency is
+indicated by the parent node being dependent on its child nodes.
+
+Maybe we don't need a special combinator. Ovens have
+a large range of heat settings, hobs have fewer however,
+we could consider a kettle being ON to be a single heat setting.
+
+In which case we can add "on" or something similar as a 
+valid temperature. But we might not even need to.
+A toaster cooks toast when it's "on" but the temperature
+could still be measured in other ways. It turns out it is
+over 600C. You could toast bread in a pan at a lower
+temperature but it would take longer.
 -----------------------
 
 -----------------------

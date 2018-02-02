@@ -28,7 +28,7 @@ data Condition = CondTime Time | CondTemp Temperature
 
 -- Void is used for devices that do not specify a
 -- temperature e.g. a kettle
-data Temperature = Deg Int | Low | Medium | High | Void
+data Temperature = Deg Int | Low | Medium | High
     deriving (Show, Eq)
 
 heatAt :: Temperature -> Recipe -> Recipe

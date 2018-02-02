@@ -16,7 +16,7 @@ teabag = Ingredient "teabag"
 water = Ingredient "water"
 
 boilingWater, blackTea :: Recipe
-boilingWater = cond (CondTemp (Deg 100)) (heatAt Void water)
+boilingWater = cond (CondTemp (Deg 100)) (heatAt (Deg 100) water)
 blackTea = wait 5 $ teabag >< boilingWater
 
 cupOfTea :: Recipe
@@ -29,7 +29,7 @@ bread = Ingredient "bread"
 butter = Ingredient "butter"
 
 toast :: Recipe
-toast = cond (CondTime 3) (heatAt Void bread)
+toast = cond (CondTime 3) (heatAt (Deg 600) bread)
 
 butteredToast :: Recipe
 butteredToast = transaction $ toast >< butter
