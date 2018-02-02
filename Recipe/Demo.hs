@@ -22,6 +22,18 @@ blackTea = wait 5 $ teabag >< boilingWater
 cupOfTea :: Recipe
 cupOfTea = blackTea >< milk
 
+-- Buttered Toast
+
+bread, butter :: Recipe
+bread = Ingredient "bread"
+butter = Ingredient "butter"
+
+toast :: Recipe
+toast = cond (CondTime 3) (heatAt Void bread)
+
+butteredToast :: Recipe
+butteredToast = transaction $ toast >< butter
+
 -- Chicken Jalfrezi
 
 -- oliveOil, chicken, cumin, coriander, turmeric :: Recipe

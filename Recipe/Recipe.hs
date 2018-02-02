@@ -15,6 +15,7 @@ data Recipe = Ingredient String
             | Wait Time Recipe
             | Combine Recipe Recipe
             | Conditional Condition Recipe
+            | Transaction Recipe
             deriving Show
 
 type Quantity = Int
@@ -41,6 +42,9 @@ wait = Wait
 
 cond :: Condition -> Recipe -> Recipe
 cond = Conditional
+
+transaction :: Recipe -> Recipe
+transaction = Transaction
 
 -- With adding the Measure combinator we may be able to extract
 -- any quantifiable combinators into the measure combinator
@@ -149,3 +153,4 @@ getIngredients (HeatAt _ r)      = getIngredients r
 getIngredients (Combine r1 r2)   = getIngredients r1 ++ getIngredients r2
 getIngredients (Wait _ r)        = getIngredients r
 getIngredients (Conditional _ r) = getIngredients r
+getIngredients (Transaction r)   = getIngredients r
