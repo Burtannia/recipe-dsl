@@ -11,3 +11,38 @@ logic).
 
 For time keeping it is probably best to have a global clock so that timings for each
 station can still be compared.
+
+- Optional Step (type of conditional, Decision)
+- Measuring
+- QuickSpec
+- Equivalence?
+- Ways to chop etc.
+- Different ways to combine
+- Transformations e.g. whisk egg or blend fruit
+
+-----------------------
+Do For vs Do then Wait for
+Heat to / for vs Heat at (maybe both)
+
+Do for and heat to / for -> wrap recipe in conditional
+Heat combinator becomes HeatAt
+Wait takes a recipe
+Sequencing is removed
+
+HeatAt then needs to be able to take void for temp
+unless we add a generic "Heat" combinator
+-----------------------
+
+-----------------------
+Wrap in transaction
+
+Issue with wrap in transaction:
+forces everything below in tree to become wrapped,
+could add number of previous steps to wrap (not particularly nice).
+
+Could only wrap immediate children, could chain transactions
+
+Transaction (Combine r1 r2) means do r1 and r2 so that they are completed
+roughly at the same time then immediately combine.
+Might need to do r1 then combine but r2 could have been done earlier.
+-----------------------

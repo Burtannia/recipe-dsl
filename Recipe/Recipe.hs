@@ -4,45 +4,43 @@ module Recipe.Recipe where
 
 import Prelude hiding (until)
 import Data.List
---import Recipe.Tree
-import Data.Tree
-import Data.Tree.Pretty
+import Recipe.Tree
 
 -------------------------------------
 -- RECIPE DEFINITION
 -------------------------------------
 
--- putStrLn $ drawVerticalTree (toTree cupOfTea)
-
-toTree :: Recipe -> Tree String
-toTree Void = Node "void" []
-toTree (Ingredient s) = Node s []
-toTree (Heat t r) = Node ("heat " ++ show t) [toTree r]
-toTree (Combine r1 r2) = Node "combine" [toTree r1, toTree r2]
-toTree (Sequence r1 r2) = Node "seq" [toTree r1, toTree r2]
-toTree (r `Until` c) = Node ("until " ++ show c) [toTree r]
-
-data Recipe = Void
-            | Ingredient String
-            | Heat Temperature Recipe
-            | Wait Time
+data Recipe = Ingredient String
+            | HeatAt Temperature Recipe
+            | Wait Time Recipe
             | Combine Recipe Recipe
-            | Sequence Recipe Recipe
-            | forall a. (Show a, Eq a) => Recipe `Until` a
-
-instance Show Recipe where
-    show Void             = "void"
-    show (Ingredient s)   = s
-    show (Heat t r)       = "heat " ++ show t ++ " (" ++ show r ++ ")"
-    show (Combine r1 r2)  = "combine " ++ " (" ++ show r1 ++ ")" ++ " (" ++ show r2 ++ ")"
-    show (Sequence r1 r2) = "seq " ++ " (" ++ show r1 ++ ")" ++ " (" ++ show r2 ++ ")"
-    show (r `Until` c)    = " (" ++ show r ++ ")" ++ " until " ++ show c
+            | Conditional Condition Recipe
+            deriving Show
 
 type Quantity = Int
 type Time = Int
 
-data Temperature = Deg Int | Low | Medium | High
+data Condition = CondTime Time | CondTemp Temperature
+    deriving Show
+-- allows pattern matching to determine type of condition
+-- is there a way to do that with forall?
+
+-- Void is used for devices that do not specify a
+-- temperature e.g. a kettle
+data Temperature = Deg Int | Low | Medium | High | Void
     deriving (Show, Eq)
+
+heatAt :: Temperature -> Recipe -> Recipe
+heatAt = HeatAt
+
+(><) :: Recipe -> Recipe -> Recipe
+(><) = Combine
+
+wait :: Time -> Recipe -> Recipe
+wait = Wait
+
+cond :: Condition -> Recipe -> Recipe
+cond = Conditional
 
 -- With adding the Measure combinator we may be able to extract
 -- any quantifiable combinators into the measure combinator
@@ -50,25 +48,6 @@ data Temperature = Deg Int | Low | Medium | High
 
 -- measure :: Quantity -> Recipe -> Recipe
 -- measure = Measure
-
-heat :: Temperature -> Recipe -> Recipe
-heat = Heat
-
-(><) :: Recipe -> Recipe -> Recipe
-(><) = Combine
-
--- r1 then r2
-(>>>) :: Recipe -> Recipe -> Recipe
-(>>>) = Sequence
-
-wait :: Quantity -> Recipe
-wait = Wait
-
-wait' :: Time -> Recipe
-wait' = until Void
-
-until :: (Show a, Eq a) => Recipe -> a -> Recipe
-until = Until
 
 -------------------------------------
 -- RECIPE SEMANTICS
@@ -165,8 +144,8 @@ fridge = Station {stName = "fridge", stActs = [], stObs = []}
 
 -- Create a list of ingredients used in a recipe
 getIngredients :: Recipe -> [String]
-getIngredients (Ingredient s)   = [s]
-getIngredients (Heat _ r)       = getIngredients r
-getIngredients (Combine r1 r2)  = getIngredients r1 ++ getIngredients r2
-getIngredients (Wait _)         = []
-getIngredients (Sequence r1 r2) = getIngredients r1 ++ getIngredients r2
+getIngredients (Ingredient s)    = [s]
+getIngredients (HeatAt _ r)      = getIngredients r
+getIngredients (Combine r1 r2)   = getIngredients r1 ++ getIngredients r2
+getIngredients (Wait _ r)        = getIngredients r
+getIngredients (Conditional _ r) = getIngredients r

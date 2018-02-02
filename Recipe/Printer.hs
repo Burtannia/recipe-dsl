@@ -1,36 +1,22 @@
 module Recipe.Printer where
 
 import           Recipe.Recipe
-
--- data Recipe = Ingredient String
---             | Heat Temperature Recipe
---             | Combine Recipe Recipe
---             | Wait Time
---             | Sequence Recipe Recipe
---             deriving (Show)
+import Data.Tree
+import Data.Tree.Pretty
 
 -------------------------------------
 -- PRINTING RECIPES
 -------------------------------------
 
-toString :: Recipe -> String
-toString (Ingredient s)   = s
-toString (Heat t r)       = "Heat (" ++ toString r ++ ") to " ++ show t
-toString (Combine r1 r2)  = "Mix (" ++ toString r1 ++ ") with (" ++ toString r2 ++ ")"
-toString (Wait t)         = "Wait for " ++ show t
-toString (Sequence r1 r2) = "Do (" ++ toString r1 ++ ") then (" ++ toString r2 ++ ")"
+toTree :: Recipe -> Tree String
+toTree (Ingredient s)    = Node s []
+toTree (HeatAt t r)      = Node ("heat at " ++ show t) [toTree r]
+toTree (Wait t r)        = Node ("wait for " ++ show t) [toTree r]
+toTree (Combine r1 r2)   = Node "combine" [toTree r1, toTree r2]
+toTree (Conditional c r) = Node ("condition " ++ show c)  [toTree r]
 
 printRecipe :: Recipe -> IO ()
-printRecipe x@(Ingredient _)   = putStrLn $ toString x
-printRecipe x@(Heat _ r)       = printRecipe r
-                                    >> putStrLn (toString x)
-printRecipe x@(Combine r1 r2)  = printRecipe r1
-                                    >> printRecipe r2
-                                    >> putStrLn (toString x)
-printRecipe x@(Wait _)         = putStrLn $ toString x
-printRecipe x@(Sequence r1 r2) = printRecipe r1
-                                    >> putStrLn (toString x)
-                                    >> printRecipe r2
+printRecipe = putStrLn . drawVerticalTree . toTree
 
 -------------------------------------
 -- PRINTING INGREDIENTS
@@ -41,7 +27,7 @@ printIngredients :: Recipe -> IO ()
 printIngredients r = mapM_ putStrLn (getIngredients r)
 
 -------------------------------------
--- PRICE
+-- PRICE ... this probably should be somewhere else
 -------------------------------------
 
 type Price = Float
@@ -57,10 +43,10 @@ instance Priced Recipe where
             [] -> 0
             _  -> head prices
         where prices = [p | (x, p) <- ps, x == s]
-    findCost (Heat _ r) ps       = findCost r ps
-    findCost (Combine r1 r2) ps  = findCost r1 ps + findCost r2 ps
-    findCost (Wait _) _          = 0
-    findCost (Sequence r1 r2) ps = findCost r1 ps + findCost r2 ps
+    findCost (HeatAt _ r) ps      = findCost r ps
+    findCost (Combine r1 r2) ps   = findCost r1 ps + findCost r2 ps
+    findCost (Wait _ r) ps        = findCost r ps
+    findCost (Conditional _ r) ps = findCost r ps
 
 testList :: PriceList
 testList = [ ("milk", 1.00)
