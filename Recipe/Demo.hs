@@ -89,17 +89,20 @@ butteredToast = transaction $ toast >< butter
 -- CUSTOM COMBINATORS
 -------------------------------------
 
+oliveOil :: Recipe
+oliveOil = Ingredient "olive oil"
+
 optional :: Recipe -> Recipe
 optional = conditional CondOpt
 
--- marinate :: Recipe -> [Recipe] -> Time -> Recipe
--- marinate r' [] t     = r' >>> wait t
--- marinate r' [r] t    = (r' >< r) >>> wait t
--- marinate r' (r:rs) t = marinate r' [foldr (><) r rs] t
+marinate :: Recipe -> [Recipe] -> Time -> Recipe
+marinate r [] t     = wait t r
+marinate r [i] t    = wait t (r >< i)
+marinate r (i:is) t = marinate r [foldr (><) i is] t
 
--- preheatOil :: Temperature -> Recipe -> Recipe
--- preheatOil t r = oil >< r
---     where oil = heat t oliveOil
+preheatOil :: Temperature -> Recipe -> Recipe
+preheatOil t r = oil >< r
+    where oil = heatAt t oliveOil
 
--- heatFor :: Temperature -> Recipe -> Time -> Recipe
--- heatFor temp r time = (heat temp r) >< (wait time)
+heatFor :: Temperature -> Recipe -> Time -> Recipe
+heatFor temp r time = conditional (CondTime time) (heatAt temp r)
