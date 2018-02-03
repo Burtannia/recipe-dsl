@@ -13,12 +13,22 @@ For time keeping it is probably best to have a global clock so that timings for 
 station can still be compared.
 
 - Optional Step (type of conditional, Decision)
-- Measuring
 - QuickSpec
 - Equivalence?
 - Ways to chop etc.
 - Different ways to combine
 - Transformations e.g. whisk egg or blend fruit
+- Grouping during scheduling e.g. two seperate parts of the recipe use a slice of toast
+then we can group that to cook 2 slices of toast at once (potentially).
+- Expandability, new combinators (already possible), new measurements / transformations.
+
+-----------------------
+Measuring:
+
+Default measurements on ingredients or have measurement in ingredient constructor?
+
+"To taste" measurement.
+-----------------------
 
 -----------------------
 Do For vs Do then Wait for
@@ -64,7 +74,11 @@ could add number of previous steps to wrap (not particularly nice).
 
 Could only wrap immediate children, could chain transactions
 
-Transaction (Combine r1 r2) means do r1 and r2 so that they are completed
-roughly at the same time then immediately combine.
-Might need to do r1 then combine but r2 could have been done earlier.
+Transaction means perform r immediately after direct dependencies
+are completed.
+
+For combine, might only care about performing immediately after
+one of the dependencies. Adding this could be messy,
+having a more basic transaction type only results in a slight
+loss of flexibility in scheduling.
 -----------------------

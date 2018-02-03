@@ -1,5 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
-
 module Recipe.Recipe where
 
 import Prelude hiding (until)
@@ -16,9 +14,10 @@ data Recipe = Ingredient String
             | Combine Recipe Recipe
             | Conditional Condition Recipe
             | Transaction Recipe
+            | Measure Measurement Recipe
             deriving Show
 
-type Quantity = Int
+type Measurement = Int
 type Time = Int
 
 data Condition = CondTime Time | CondTemp Temperature
@@ -26,8 +25,6 @@ data Condition = CondTime Time | CondTemp Temperature
 -- allows pattern matching to determine type of condition
 -- is there a way to do that with forall?
 
--- Void is used for devices that do not specify a
--- temperature e.g. a kettle
 data Temperature = Deg Int | Low | Medium | High
     deriving (Show, Eq)
 
@@ -46,12 +43,8 @@ cond = Conditional
 transaction :: Recipe -> Recipe
 transaction = Transaction
 
--- With adding the Measure combinator we may be able to extract
--- any quantifiable combinators into the measure combinator
--- e.g. Wait is a quantity of time, heat int recipe is a quantity of heat
-
--- measure :: Quantity -> Recipe -> Recipe
--- measure = Measure
+measure :: Measurement -> Recipe -> Recipe
+measure = Measure
 
 -------------------------------------
 -- RECIPE SEMANTICS
@@ -147,6 +140,7 @@ fridge = Station {stName = "fridge", stActs = [], stObs = []}
 -------------------------------------
 
 -- Create a list of ingredients used in a recipe
+-- Doesn't yet show quantities
 getIngredients :: Recipe -> [String]
 getIngredients (Ingredient s)    = [s]
 getIngredients (HeatAt _ r)      = getIngredients r
@@ -154,3 +148,4 @@ getIngredients (Combine r1 r2)   = getIngredients r1 ++ getIngredients r2
 getIngredients (Wait _ r)        = getIngredients r
 getIngredients (Conditional _ r) = getIngredients r
 getIngredients (Transaction r)   = getIngredients r
+getIngredients (Measure _ r)     = getIngredients r

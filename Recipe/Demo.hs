@@ -15,8 +15,11 @@ milk = Ingredient "milk"
 teabag = Ingredient "teabag"
 water = Ingredient "water"
 
+pintOfWater :: Recipe 
+pintOfWater = measure 570 water
+
 boilingWater, blackTea :: Recipe
-boilingWater = cond (CondTemp (Deg 100)) (heatAt (Deg 100) water)
+boilingWater = cond (CondTemp (Deg 100)) (heatAt (Deg 100) pintOfWater)
 blackTea = wait 5 $ teabag >< boilingWater
 
 cupOfTea :: Recipe

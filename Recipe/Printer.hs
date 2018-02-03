@@ -16,6 +16,8 @@ toTree (Combine r1 r2)   = Node "combine" [toTree r1, toTree r2]
 toTree (Conditional c r) = Node ("condition " ++ show c)  [toTree r]
 toTree (Transaction r)   = let Node s xs = toTree r
     in Node (s ++ " (T)") xs
+toTree (Measure m r)     = let Node s xs = toTree r
+    in Node (s ++ " - " ++ show m) xs
 
 printRecipe :: Recipe -> IO ()
 printRecipe = putStrLn . drawVerticalTree . toTree
@@ -50,6 +52,7 @@ instance Priced Recipe where
     findCost (Wait _ r) ps        = findCost r ps
     findCost (Conditional _ r) ps = findCost r ps
     findCost (Transaction r) ps   = findCost r ps
+    findCost (Measure _ r) ps     = findCost r ps
 
 testList :: PriceList
 testList = [ ("milk", 1.00)
