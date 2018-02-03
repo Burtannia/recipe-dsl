@@ -20,7 +20,7 @@ data Recipe = Ingredient String
 type Measurement = Int
 type Time = Int
 
-data Condition = CondTime Time | CondTemp Temperature
+data Condition = CondTime Time | CondTemp Temperature | CondOpt
     deriving Show
 -- allows pattern matching to determine type of condition
 -- is there a way to do that with forall?
@@ -37,8 +37,8 @@ heatAt = HeatAt
 wait :: Time -> Recipe -> Recipe
 wait = Wait
 
-cond :: Condition -> Recipe -> Recipe
-cond = Conditional
+conditional :: Condition -> Recipe -> Recipe
+conditional = Conditional
 
 transaction :: Recipe -> Recipe
 transaction = Transaction

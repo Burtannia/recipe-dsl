@@ -14,16 +14,18 @@ milk, teabag, water :: Recipe
 milk = Ingredient "milk"
 teabag = Ingredient "teabag"
 water = Ingredient "water"
+sugar = Ingredient "sugar"
 
 pintOfWater :: Recipe 
 pintOfWater = measure 570 water
 
 boilingWater, blackTea :: Recipe
-boilingWater = cond (CondTemp (Deg 100)) (heatAt (Deg 100) pintOfWater)
+boilingWater = conditional (CondTemp (Deg 100)) (heatAt (Deg 100) pintOfWater)
 blackTea = wait 5 $ teabag >< boilingWater
 
 cupOfTea :: Recipe
-cupOfTea = blackTea >< milk
+cupOfTea = optional $ milkTea >< sugar
+    where milkTea = optional $ blackTea >< milk
 
 -- Buttered Toast
 
@@ -32,7 +34,7 @@ bread = Ingredient "bread"
 butter = Ingredient "butter"
 
 toast :: Recipe
-toast = cond (CondTime 3) (heatAt (Deg 600) bread)
+toast = conditional (CondTime 3) (heatAt (Deg 600) bread)
 
 butteredToast :: Recipe
 butteredToast = transaction $ toast >< butter
@@ -86,6 +88,9 @@ butteredToast = transaction $ toast >< butter
 -------------------------------------
 -- CUSTOM COMBINATORS
 -------------------------------------
+
+optional :: Recipe -> Recipe
+optional = conditional CondOpt
 
 -- marinate :: Recipe -> [Recipe] -> Time -> Recipe
 -- marinate r' [] t     = r' >>> wait t
