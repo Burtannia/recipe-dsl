@@ -23,6 +23,25 @@ then we can group that to cook 2 slices of toast at once (potentially).
 - Give things a nicer name e.g. special heatTo combinator instead of: conditional CondTemp
 
 -----------------------
+Temporary / Removeable Recipes e.g. Bay Leaf
+
+Mark recipe as removeable.
+Remove later.
+Remove presumes a corresponding removeable was already added.
+Or specify when to remove as a conditional.
+-----------------------
+
+-----------------------
+Scheduling / Actions:
+
+Can allocate parts of recipe to stations then translate into appropriate actions.
+This creates a schedule where each station has its set of actions running in parallel.
+Need to schedule movement between stations.
+
+- Interactions between stations e.g. stirring while in pan.
+-----------------------
+
+-----------------------
 Measuring:
 
 Default measurements on ingredients or have measurement in ingredient constructor?

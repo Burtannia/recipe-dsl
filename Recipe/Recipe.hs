@@ -118,22 +118,28 @@ type Env = [Station]
 data Obs = ObsTemp Temperature
 
 data Station = Station
-    { stName :: String
-    , stActs :: [Action]
-    , stObs  :: [IO Obs]
+    { stName    :: String
+    , stMethods :: [(Recipe, Method)]
+    , stObs     :: [IO Obs]
     }
 
+type Method = [Action]
+
 oven :: Station
-oven = Station {stName = "oven", stActs = [], stObs = [ovenTemp]}
--- Some Actions e.g. Preheat take an argument which could be an issue...
+oven = Station {stName = "oven", stMethods = [], stObs = [ovenTemp]}
 
 ovenTemp :: IO Obs
 ovenTemp = return $ ObsTemp $ Deg 180
 
 fridge :: Station
-fridge = Station {stName = "fridge", stActs = [], stObs = []}
+fridge = Station {stName = "fridge", stMethods = [], stObs = []}
 -- need some way to model strict ranges of temperatures
 -- fridge "heats" but only to 4 degrees or whatever the temp is.
+
+chef :: Station
+chef = Station {stName = "chef", stMethods = [], stObs = []}
+
+data Capability = Heat Int Int | Transfer
 
 -------------------------------------
 -- UTILITY FUNCTIONS
