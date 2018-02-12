@@ -98,18 +98,6 @@ data Action =
 -- CONCRETE IMPLEMENTATION
 -------------------------------------
 
--- TODO
-
--- The cooking environment is modelled as
--- a set of stations. Each station being
--- capable of performing a set of actions
--- and providing measures of any relevant
--- conditions such as temperature.
-
--- 2 passes:
--- 1) assign stations for recipe
--- 2) determine if transfer node needed
-
 data Env = Env
     { eStations :: [Station]
     , eEntries  :: [(Recipe, Station)] -- where things start
@@ -122,9 +110,9 @@ data Obs = ObsTemp Temperature
 data Station = Station
     { stName     :: String
     , stInputs   :: [String] -- List of names of stations
-    , stOutputs  :: [String]
+    , stOutputs  :: [String] -- Better to name Connections String In|Out ?
     , stConstrF  :: ConstraintF
-    , stTransfer :: Bool -- Is transfer node?
+    , stTransfer :: Bool -- Is transfer node? could end up being Maybe f where f is how to transfer
     , stObs      :: [IO Obs]
     }
 
@@ -132,57 +120,8 @@ data Station = Station
 -- returns a list of actions for the recipe if possible
 type ConstraintF = Recipe -> Maybe [Action]
 
-addEvalCond :: Condition -> [Action] -> [Action]
-addEvalCond c as = init as ++ [EvalCond c, Output]
-
-oven :: Station
-oven = Station {stName = "oven", stInputs = [], stOutputs = [],
-    stConstrF = ovenConstr, stTransfer = False, stObs = [ovenTemp]}
-
-ovenTemp :: IO Obs
-ovenTemp = return $ ObsTemp $ Deg 180
-
-ovenConstr :: ConstraintF
-ovenConstr (Ingredient _)    = Just []
-ovenConstr (HeatAt (Deg t) _)
-    | t > 120 && t < 120     = Just [Preheat (Deg t), Input, Output]
-    | otherwise              = Nothing
-ovenConstr (Conditional c r) = ovenConstr r >>= (\mx -> return $ addEvalCond c mx)
-ovenConstr _                 = Nothing
-
-fridge :: Station
-fridge = Station {stName = "fridge", stInputs = [], stOutputs = [],
-    stConstrF = fridgeConstr, stTransfer = False, stObs = [fridgeTemp]}
-
-fridgeTemp :: IO Obs
-fridgeTemp = return $ ObsTemp $ Deg 4
-
-fridgeConstr :: ConstraintF
-fridgeConstr (Ingredient _)     = Just []
-fridgeConstr (HeatAt (Deg 4) _) = Just [Input, Output]
-fridgeConstr (Conditional c r)  = fridgeConstr r >>= (\mx -> return $ addEvalCond c mx)
-fridgeConstr _                  = Nothing
-
-workSurface :: Station
-workSurface = Station {stName = "work surface", stInputs = [], stOutputs = [],
-    stConstrF = workConstr, stTransfer = False, stObs = []}
-
-workConstr :: ConstraintF
-workConstr (Ingredient _)    = Just []
-workConstr (Wait t _)        = Just [Input, DoNothing t, Output]
-workConstr (Conditional c r) = workConstr r >>= (\mx -> return $ addEvalCond c mx)
-workConstr _                 = Nothing
-
-chef :: Station
-chef = Station {stName = "chef", stInputs = [], stOutputs = [],
-    stConstrF = chefConstr, stTransfer = True, stObs = []}
-
-chefConstr :: ConstraintF
-chefConstr (Ingredient _)    = Just []
-chefConstr (Combine r1 r2)   = Just [Input, Mix r1 r2, Output]
-chefConstr (Wait t _)        = Just [Input, DoNothing t, Output]
-chefConstr (Conditional c r) = chefConstr r >>= (\mx -> return $ addEvalCond c mx)
-chefConstr _                 = Nothing
+addEvalCond :: Condition -> [Action] -> Maybe [Action]
+addEvalCond c as = return $ init as ++ [EvalCond c, Output]
 
 -------------------------------------
 -- UTILITY FUNCTIONS

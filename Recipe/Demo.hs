@@ -39,52 +39,6 @@ toast = conditional (CondTime 3) (heatAt (Deg 600) bread)
 butteredToast :: Recipe
 butteredToast = transaction $ toast >< butter
 
--- Chicken Jalfrezi
-
--- oliveOil, chicken, cumin, coriander, turmeric :: Recipe
--- redPeppers, garamMasala, tinnedTomatoes, onion :: Recipe
--- garlic, greenChilli, cherryTomatoes :: Recipe
--- chicken = Ingredient "chicken"
--- cumin = Ingredient "cumin"
--- coriander = Ingredient "coriander"
--- turmeric = Ingredient "turmeric"
--- redPeppers = Ingredient "red peppers"
--- garamMasala = Ingredient "garam masala"
--- tinnedTomatoes = Ingredient "tinned tomatoes"
--- onion = Ingredient "onion"
--- garlic = Ingredient "garlic"
--- greenChilli = Ingredient "green chilli"
--- cherryTomatoes = Ingredient "cherry tomatoes"
--- oliveOil = Ingredient "olive oil"
-
--- spicedChicken :: Recipe
--- spicedChicken = marinate chicken
---     [cumin, coriander, turmeric] 30
-
--- chickenAndPeppers :: Recipe
--- chickenAndPeppers = heatFor Medium
---     (cookedChicken >< redPeppers) 10
---     where cookedChicken = heatFor Medium
---                             spicedChicken 10
-
--- jalfreziSauce :: Recipe
--- jalfreziSauce = heatFor Medium
---                 (sauceBase >< spices) 10
---     where
---         onionMix     = onion >< garlic >< greenChilli
---         cookedOnions = heatFor Medium
---                         (preheatOil Medium onionMix) 5
---         spices       = cumin >< coriander
---                         >< turmeric >< garamMasala
---         sauceBase    = cookedOnions >< water
---                         >< tinnedTomatoes >< spices
-
--- chickenJalfrezi :: Recipe
--- chickenJalfrezi = heatFor Medium chickenJalfrezi' 5
---     where chickenJalfrezi' = chickenAndPeppers
---                              >< jalfreziSauce
---                              >< cherryTomatoes
-
 -------------------------------------
 -- CUSTOM COMBINATORS
 -------------------------------------
@@ -106,3 +60,87 @@ preheatOil t r = oil >< r
 
 heatFor :: Temperature -> Recipe -> Time -> Recipe
 heatFor temp r time = conditional (CondTime time) (heatAt temp r)
+
+-------------------------------------
+-- TEST STATIONS
+-------------------------------------
+
+env :: Env
+env = Env { eStations = [kettle, workSurface, fridge]
+          , eEntries  = [ (Ingredient "water", tap)
+                        , (Ingredient "milk", fridge)
+                        , (Ingredient "teabag", workSurface)
+                        ]
+          }
+
+tap :: Station
+tap = Station {stName = "tap", stInputs = [], stOutputs = [],
+    stConstrF = tapConstr, stTransfer = False, stObs = []}
+
+tapConstr :: ConstraintF
+tapConstr (Ingredient "water") = Just []
+tapConstr _                    = Nothing
+
+kettle :: Station
+kettle = Station {stName = "kettle", stInputs = [], stOutputs = [],
+    stConstrF = kettleConstr, stTransfer = False, stObs = [kettleTemp]}
+
+kettleTemp :: IO Obs
+kettleTemp = return $ ObsTemp $ Deg 100
+
+kettleConstr :: ConstraintF
+kettleConstr (Ingredient _)       = Just []
+kettleConstr (HeatAt (Deg t) (Ingredient s))
+    | t == 100 && s == "water"    = Just [Input, Output] -- is turning the kettle on part of input?
+    | otherwise                   = Nothing              -- and turning off part of output?
+kettleConstr (Conditional c r)    = kettleConstr r >>= addEvalCond c
+kettleConstr _                    = Nothing
+
+fridge :: Station
+fridge = Station {stName = "fridge", stInputs = [], stOutputs = [],
+    stConstrF = fridgeConstr, stTransfer = False, stObs = [fridgeTemp]}
+
+fridgeTemp :: IO Obs
+fridgeTemp = return $ ObsTemp $ Deg 4
+
+fridgeConstr :: ConstraintF
+fridgeConstr (Ingredient _)     = Just []
+fridgeConstr (HeatAt (Deg 4) _) = Just [Input, Output]
+fridgeConstr (Conditional c r)  = fridgeConstr r >>= addEvalCond c
+fridgeConstr _                  = Nothing
+
+workSurface :: Station
+workSurface = Station {stName = "work surface", stInputs = [], stOutputs = [],
+    stConstrF = workConstr, stTransfer = False, stObs = []}
+
+workConstr :: ConstraintF
+workConstr (Ingredient _)    = Just []
+workConstr (Wait t _)        = Just [Input, DoNothing t, Output]
+workConstr (Conditional c r) = workConstr r >>= addEvalCond c
+workConstr _                 = Nothing
+
+chef :: Station
+chef = Station {stName = "chef", stInputs = [], stOutputs = [],
+    stConstrF = chefConstr, stTransfer = True, stObs = []}
+
+chefConstr :: ConstraintF
+chefConstr (Ingredient _)    = Just []
+chefConstr (Combine r1 r2)   = Just [Input, Mix r1 r2, Output]
+chefConstr (Wait t _)        = Just [Input, DoNothing t, Output]
+chefConstr (Conditional c r) = chefConstr r >>= addEvalCond c
+chefConstr _                 = Nothing
+
+oven :: Station
+oven = Station {stName = "oven", stInputs = [], stOutputs = [],
+    stConstrF = ovenConstr, stTransfer = False, stObs = [ovenTemp]}
+
+ovenTemp :: IO Obs
+ovenTemp = return $ ObsTemp $ Deg 180
+
+ovenConstr :: ConstraintF
+ovenConstr (Ingredient _)    = Just []
+ovenConstr (HeatAt (Deg t) _)
+    | t > 120 && t < 120     = Just [Preheat (Deg t), Input, Output]
+    | otherwise              = Nothing
+ovenConstr (Conditional c r) = ovenConstr r >>= addEvalCond c
+ovenConstr _                 = Nothing

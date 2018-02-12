@@ -21,6 +21,7 @@ station can still be compared.
 then we can group that to cook 2 slices of toast at once (potentially).
 - Expandability, new combinators (already possible), new measurements / transformations.
 - Give things a nicer name e.g. special heatTo combinator instead of: conditional CondTemp
+- Tools for performing actions e.g. spoon / measuring jug / knife
 
 -----------------------
 Temporary / Removeable Recipes e.g. Bay Leaf
