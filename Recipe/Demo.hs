@@ -66,10 +66,10 @@ heatFor temp r time = conditional (CondTime time) (heatAt temp r)
 -------------------------------------
 
 env :: Env
-env = Env { eStations = [kettle, workSurface, fridge]
-          , eEntries  = [ (Ingredient "water", tap)
-                        , (Ingredient "milk", fridge)
-                        , (Ingredient "teabag", workSurface)
+env = Env { eStations = [kettle, workSurface, fridge, chef]
+          , eEntries  = [ (Ingredient "water", "tap")
+                        , (Ingredient "milk", "fridge")
+                        , (Ingredient "teabag", "work surface")
                         ]
           }
 

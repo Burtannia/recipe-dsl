@@ -12,6 +12,7 @@ logic).
 For time keeping it is probably best to have a global clock so that timings for each
 station can still be compared.
 
+- Merge topological sorting with new station/action system
 - QuickSpec
 - Equivalence?
 - Ways to chop etc.

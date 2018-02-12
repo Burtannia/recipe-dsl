@@ -1,7 +1,7 @@
 module Recipe.Recipe where
 
-import Prelude hiding (until)
 import Data.List
+import Data.Maybe (listToMaybe, fromJust, isJust)
 import Recipe.Tree
 
 -------------------------------------
@@ -15,13 +15,13 @@ data Recipe = Ingredient String
             | Conditional Condition Recipe
             | Transaction Recipe
             | Measure Measurement Recipe
-            deriving Show
+            deriving (Show, Eq)
 
 type Measurement = Int
 type Time = Int
 
 data Condition = CondTime Time | CondTemp Temperature | CondOpt
-    deriving Show
+    deriving (Show, Eq)
 -- allows pattern matching to determine type of condition
 -- is there a way to do that with forall?
 
@@ -51,13 +51,14 @@ measure = Measure
 -------------------------------------
 
 data Action =
-    Input --input and output take Recipe?
+    Input -- input and output take Recipe?
     | Output
     | Preheat Temperature
     | DoNothing Time
     | Mix Recipe Recipe
     | EvalCond Condition
     | MeasureOut Measurement Recipe
+    | Hold Recipe -- tap "Holds" water
     deriving Show
 
 -- Translate Recipe into a tree of actions
@@ -100,8 +101,10 @@ data Action =
 
 data Env = Env
     { eStations :: [Station]
-    , eEntries  :: [(Recipe, Station)] -- where things start
+    , eEntries  :: [(Recipe, StName)] -- where things start
     }
+
+type StName = String
 
 data Obs = ObsTemp Temperature
 
@@ -109,8 +112,8 @@ data Obs = ObsTemp Temperature
 -- accessible in some way by a transfer node e.g. human
 data Station = Station
     { stName     :: String
-    , stInputs   :: [String] -- List of names of stations
-    , stOutputs  :: [String] -- Better to name Connections String In|Out ?
+    , stInputs   :: [StName] -- List of names of stations
+    , stOutputs  :: [StName] -- Better to name Connections String In|Out ?
     , stConstrF  :: ConstraintF
     , stTransfer :: Bool -- Is transfer node? could end up being Maybe f where f is how to transfer
     , stObs      :: [IO Obs]
@@ -120,8 +123,50 @@ data Station = Station
 -- returns a list of actions for the recipe if possible
 type ConstraintF = Recipe -> Maybe [Action]
 
+-- bit of an issue with CondOpt as needs to be added
+-- before action i.e. after Input
 addEvalCond :: Condition -> [Action] -> Maybe [Action]
 addEvalCond c as = return $ init as ++ [EvalCond c, Output]
+
+-- 2 passes:
+-- 1) assign stations for recipe
+-- 2) determine if transfer node needed
+
+type Schedule = [(StName, [Action])]
+
+-- no concurrency
+-- nothing fancy
+-- just find a station for each recipe
+-- do things one at a time
+-- schedule :: Env -> Recipe -> Maybe Schedule
+-- schedule env r@(Ingredient s)  =
+--     findRecipe env r >>= (\s -> [(s, [Hold r])])
+-- schedule env r@(HeatAt _ _)    = schedule' env r
+-- schedule env r@(Combine _ _)   = schedule' env r
+-- schedule env r@(Wait _ _)      = schedule' env r
+-- schedule env r@(Conditional c r') = 
+
+-- schedule' :: Env -> Recipe -> Maybe Schedule
+-- schedule' env r = assignStation env r >>=
+--     (\sa -> case findRecipe env r of
+--         Just s  -> [(s, [Hold r]), sa]
+--         Nothing -> schedule env r ++ [sa])
+        --this is an infinite loop you pillock...
+        --need to call schedule env r' where
+        --r' is the child recipe.
+
+assignStation :: Env -> Recipe -> Maybe (StName, [Action])
+assignStation env r = listToMaybe
+    [(stName st, fromJust ma) | st <- eStations env,
+                                let ma = (stConstrF st) r,
+                                isJust ma]
+
+-- Check if the recipe is stored somewhere
+-- in the environment already
+findRecipe :: Env -> Recipe -> Maybe StName
+findRecipe env r = listToMaybe
+    [snd x | x <- eEntries env, fst x == r]
+
 
 -------------------------------------
 -- UTILITY FUNCTIONS
