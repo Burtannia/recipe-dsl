@@ -3,6 +3,7 @@ module Recipe.Recipe where
 import Data.List
 import Data.Maybe (listToMaybe, fromJust, isJust)
 import Recipe.Tree
+import Control.Applicative
 
 -------------------------------------
 -- RECIPE DEFINITION
@@ -128,32 +129,34 @@ type ConstraintF = Recipe -> Maybe [Action]
 addEvalCond :: Condition -> [Action] -> Maybe [Action]
 addEvalCond c as = return $ init as ++ [EvalCond c, Output]
 
--- 2 passes:
--- 1) assign stations for recipe
--- 2) determine if transfer node needed
-
 type Schedule = [(StName, [Action])]
 
--- no concurrency
--- nothing fancy
--- just find a station for each recipe
--- do things one at a time
--- schedule :: Env -> Recipe -> Maybe Schedule
--- schedule env r@(Ingredient s)  =
---     findRecipe env r >>= (\s -> [(s, [Hold r])])
--- schedule env r@(HeatAt _ _)    = schedule' env r
--- schedule env r@(Combine _ _)   = schedule' env r
--- schedule env r@(Wait _ _)      = schedule' env r
--- schedule env r@(Conditional c r') = 
+entryPoint :: Env -> Recipe -> Maybe StName
+entryPoint env r = listToMaybe $ findRecipe env r
 
--- schedule' :: Env -> Recipe -> Maybe Schedule
--- schedule' env r = assignStation env r >>=
---     (\sa -> case findRecipe env r of
---         Just s  -> [(s, [Hold r]), sa]
---         Nothing -> schedule env r ++ [sa])
-        --this is an infinite loop you pillock...
-        --need to call schedule env r' where
-        --r' is the child recipe.
+-- Check if the recipe is stored somewhere
+-- in the environment already
+findRecipe :: Env -> Recipe -> [StName]
+findRecipe env r = [snd x | x <- eEntries env,
+                            fst x == r]
+
+makeSchedule :: Env -> Recipe -> Maybe Schedule
+makeSchedule env r = case r of
+    (Ingredient _)     -> makeSchedule' (const Nothing)
+    (HeatAt _ r')      -> makeSchedule' (singleChild r')
+    (Combine r1 r2)    -> makeSchedule' (doubleChild r1 r2)
+    (Wait _ r')        -> makeSchedule' (singleChild r')
+    (Conditional _ r') -> makeSchedule' (singleChild r')
+    (Transaction r')   -> makeSchedule' (singleChild r')
+    (Measure _ r')     -> makeSchedule' (singleChild r')
+    where
+        makeSchedule' scheduleCons = case entryPoint env r of
+            Nothing -> assignStation env r >>= scheduleCons
+            Just s  -> Just [(s, [Hold r])]
+        singleChild r' sa = (++) <$> makeSchedule env r' <*> Just [sa]
+        doubleChild r1 r2 sa = (++) <$> ((++)
+            <$> makeSchedule env r1 <*>
+            makeSchedule env r2) <*> Just [sa]
 
 assignStation :: Env -> Recipe -> Maybe (StName, [Action])
 assignStation env r = listToMaybe
@@ -161,12 +164,14 @@ assignStation env r = listToMaybe
                                 let ma = (stConstrF st) r,
                                 isJust ma]
 
--- Check if the recipe is stored somewhere
--- in the environment already
-findRecipe :: Env -> Recipe -> Maybe StName
-findRecipe env r = listToMaybe
-    [snd x | x <- eEntries env, fst x == r]
+-- 1) determine entry point for a recipe
+-- 2) assign stations for recipe
+-- 3) determine if transfer node needed
 
+-- schedule :: Env -> Recipe -> Maybe Schedule
+-- schedule env r = 
+--     where
+--         s = makeSchedule env r
 
 -------------------------------------
 -- UTILITY FUNCTIONS
