@@ -147,7 +147,7 @@ makeSchedule env r = case r of
     (Combine r1 r2)    -> makeSchedule' (doubleChild r1 r2)
     (Wait _ r')        -> makeSchedule' (singleChild r')
     (Conditional _ r') -> makeSchedule' (singleChild r')
-    (Transaction r')   -> makeSchedule' (singleChild r')
+    (Transaction r')   -> makeSchedule' (singleChild r') -- does this matter atm as we are doing things in order anyway?
     (Measure _ r')     -> makeSchedule' (singleChild r')
     where
         makeSchedule' scheduleCons = case entryPoint env r of
