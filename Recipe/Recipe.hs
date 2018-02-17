@@ -45,7 +45,8 @@ conditional :: Condition -> Recipe -> Recipe
 conditional = Conditional
 
 transaction :: Recipe -> Recipe
-transaction = Transaction
+transaction r@(Ingredient _) = r
+transaction r = Transaction r
 
 measure :: Measurement -> Recipe -> Recipe
 measure = Measure
@@ -67,22 +68,23 @@ createTable r = evalState (createTable' r) 0
             Conditional _ r' -> singleChild r r'
             Transaction r' -> singleChild r r'
             Measure _ r' -> singleChild r r'
-        incKey = do
-            k <- get
-            put (k + 1)
-            return k
-        singleChild par ch = do
-            k <- incKey
-            let hmapP = HMap.singleton k par
-            hmapC <- createTable' ch
-            return $ HMap.union hmapP hmapC
-        doubleChild par ch1 ch2 = do
-            k <- incKey
-            let hmapP = HMap.singleton k par
-            hmapC1 <- createTable' ch1
-            hmapC2 <- createTable' ch2
-            return $ HMap.union hmapP
-                (HMap.union hmapC1 hmapC2)
+            where
+                incKey = do
+                    k <- get
+                    put (k + 1)
+                    return k
+                singleChild par ch = do
+                    k <- incKey
+                    let hmapP = HMap.singleton k par
+                    hmapC <- createTable' ch
+                    return $ HMap.union hmapP hmapC
+                doubleChild par ch1 ch2 = do
+                    k <- incKey
+                    let hmapP = HMap.singleton k par
+                    hmapC1 <- createTable' ch1
+                    hmapC2 <- createTable' ch2
+                    return $ HMap.union hmapP
+                        (HMap.union hmapC1 hmapC2)
 
 -------------------------------------
 -- RECIPE SEMANTICS

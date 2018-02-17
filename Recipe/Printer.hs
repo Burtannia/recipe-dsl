@@ -3,6 +3,7 @@ module Recipe.Printer where
 import           Recipe.Recipe
 import Data.Tree
 import Data.Tree.Pretty
+import Control.Monad.State
 
 -------------------------------------
 -- PRINTING RECIPES
@@ -21,6 +22,116 @@ toTree (Measure m r)     = let Node s xs = toTree r
 
 printRecipe :: Recipe -> IO ()
 printRecipe = putStrLn . drawVerticalTree . toTree
+
+-- Transaction (Combine r1 r2) should read
+-- 1) do the following then immediately combine
+--    a) r1
+--    b) r2
+
+
+
+{-
+f:
+Ingredient s = s
+HeatAt t r = Heat (labelOf r) at t
+Wait t r = Wait for t
+Combine r1 r2 = Mix (labelOf r1) with (labelOf r2)
+Conditional c r = (f r) (optional) / for time / until it reaches temp
+Transaction r = Perform the following then immediately (f r):
+                    (f child)
+                    (f child)...
+Measure m r = Measure m of (labelOf r)
+
+labelOf r should return s for (Ingredient s)
+-}
+
+toString :: Recipe -> [String]
+toString r = reverse $ evalState (toString' r) 0
+    where
+        toString' :: Recipe -> State Int [String]
+        toString' r = case r of
+            Ingredient s -> return []
+
+            HeatAt t r' -> do
+                chStrs <- toString' r'
+                chLab <- getChildLabel r'
+                l <- get
+                put (l + 1)
+                let parStr = show l ++ ") Heat (" ++ chLab ++ ") at " ++ show t
+                return $ parStr : chStrs
+
+            Wait t r' -> do
+                chStrs <- toString' r'
+                l <- get
+                put (l + 1)
+                let parStr = show l ++ ") Wait for " ++ show t
+                return $ parStr : chStrs
+
+            Combine r1 r2 -> do
+                chStrs1 <- toString' r1
+                chLab1 <- getChildLabel r1
+
+                chStrs2 <- toString' r2
+                chLab2 <- getChildLabel r2
+
+                l <- get
+                put (l + 1)
+                let parStr = show l ++ ") Combine (" ++ chLab1 ++ ") with (" ++ chLab2 ++ ")"
+                return $ partStr : (chStrs1 ++ chStrs2)
+
+            Conditional c r' -> do
+                chStrs <- toString' r'
+
+                let condSuff = case c of
+                        CondTime t -> " for " ++ show t
+                        CondTemp t -> " until " ++ show t
+                        CondOpt -> " (optional)"
+
+                case chStrs of
+                    [] -> return []
+                    (x:xs) -> do
+                        let parStr = x ++ condSuff
+                        return $ parStr : xs
+            Transaction r' -> do
+                l <- get
+                
+                chStrs <- toString r'
+                chLab <- getChildLabel r'
+
+                put (l + 1)
+
+                let stepsStr = if chLab == show (l + 1)
+                    then chLab
+                    else show (l + 1) ++ ") to (" ++ chLab
+
+                let parStr = show l ++ ") Perform (" ++ stepsStr ++ ") then immediately"
+
+                case chStrs of
+                    [] -> return []
+                    (x:xs) -> do
+                        let x' = parStr ++ dropLabel x
+                        return $ x' : xs
+                
+            Measure m r' -> do
+                chStrs <- toString r'
+                chLab <- getChildLabel r'
+
+                l <- get
+                put (l + 1)
+
+                let parStr = show l ++ ") Measure " ++ show m ++ " of (" ++ chLab ++ ")"
+                return $ parStr : chStrs
+            where
+                dropLabel ""       = ""
+                dropLabel (' ':cs) = cs
+                dropLabel (c:cs)   = dropLabel cs
+                getChildLabel (Ingredient s) = return s
+                getChildLabel _ = get >>= (\i -> return . show (i - 1))
+
+                
+
+-- printSeq :: Recipe -> IO ()
+-- printSeq r = 
 
 -------------------------------------
 -- PRINTING INGREDIENTS
