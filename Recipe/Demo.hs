@@ -37,7 +37,7 @@ toast :: Recipe
 toast = conditional (CondTime 3) (heatAt (Deg 600) bread)
 
 butteredToast :: Recipe
-butteredToast = transaction $ toast >< butter
+butteredToast = transaction $ toast >< (HeatAt (Deg 15) $ measure 3 butter)
 
 -------------------------------------
 -- CUSTOM COMBINATORS

@@ -1,6 +1,7 @@
 module Recipe.Printer where
 
 import           Recipe.Recipe
+import Data.Char
 import Data.Tree
 import Data.Tree.Pretty
 import Control.Monad.State
@@ -23,13 +24,6 @@ toTree (Measure m r)     = let Node s xs = toTree r
 printRecipe :: Recipe -> IO ()
 printRecipe = putStrLn . drawVerticalTree . toTree
 
--- Transaction (Combine r1 r2) should read
--- 1) do the following then immediately combine
---    a) r1
---    b) r2
-
-
-
 {-
 f:
 Ingredient s = s
@@ -45,8 +39,11 @@ Measure m r = Measure m of (labelOf r)
 labelOf r should return s for (Ingredient s)
 -}
 
+printSteps :: Recipe -> IO ()
+printSteps r = mapM_ putStrLn (toString r)
+
 toString :: Recipe -> [String]
-toString r = reverse $ evalState (toString' r) 0
+toString r = reverse $ evalState (toString' r) 1
     where
         toString' :: Recipe -> State Int [String]
         toString' r = case r of
@@ -77,7 +74,7 @@ toString r = reverse $ evalState (toString' r) 0
                 l <- get
                 put (l + 1)
                 let parStr = show l ++ ") Combine (" ++ chLab1 ++ ") with (" ++ chLab2 ++ ")"
-                return $ partStr : (chStrs1 ++ chStrs2)
+                return $ parStr : (chStrs2 ++ chStrs1)
 
             Conditional c r' -> do
                 chStrs <- toString' r'
@@ -92,13 +89,11 @@ toString r = reverse $ evalState (toString' r) 0
                     (x:xs) -> do
                         let parStr = x ++ condSuff
                         return $ parStr : xs
+                        
             Transaction r' -> do
                 l <- get
-                
-                chStrs <- toString r'
+                chStrs <- toString' r'
                 chLab <- getChildLabel r'
-
-                put (l + 1)
 
                 let stepsStr = if chLab == show (l + 1)
                     then chLab
@@ -110,10 +105,19 @@ toString r = reverse $ evalState (toString' r) 0
                     [] -> return []
                     (x:xs) -> do
                         let x' = parStr ++ dropLabel x
-                        return $ x' : xs
+
+                        let numCs = numChildRecipes r'
+                        
+                        let cs = drop numCs xs
+                        let ys = take numCs xs
+
+                        let cs' = map incLabel cs
+                        let cs'' = map ('\t':) cs'
+
+                        return $ cs'' ++ (x' : ys)
                 
             Measure m r' -> do
-                chStrs <- toString r'
+                chStrs <- toString' r'
                 chLab <- getChildLabel r'
 
                 l <- get
@@ -122,16 +126,31 @@ toString r = reverse $ evalState (toString' r) 0
                 let parStr = show l ++ ") Measure " ++ show m ++ " of (" ++ chLab ++ ")"
                 return $ parStr : chStrs
             where
+                incLabel (c:cs) = intToDigit i : cs
+                    where i = (digitToInt c) + 1
                 dropLabel ""       = ""
-                dropLabel (' ':cs) = cs
+                dropLabel (')':cs) = cs
                 dropLabel (c:cs)   = dropLabel cs
+                getChildLabel :: Recipe -> State Int String
                 getChildLabel (Ingredient s) = return s
-                getChildLabel _ = get >>= (\i -> return . show (i - 1))
+                getChildLabel _ = get >>= (\i -> return $ show (i - 1))
 
-                
+numChildRecipes :: Recipe -> Int
+numChildRecipes = (length . getChildRecipes)
 
--- printSeq :: Recipe -> IO ()
--- printSeq r = 
+getChildRecipes :: Recipe -> [Recipe]
+getChildRecipes r = filter notIng rs
+    where
+        rs = case r of
+            Ingredient s     -> []
+            HeatAt _ r'      -> [r']
+            Wait _ r'        -> [r']
+            Combine r1 r2    -> [r1, r2]
+            Conditional _ r' -> [r']
+            Transaction r'   -> [r']
+            Measure _ r'     -> [r']
+        notIng (Ingredient _) = False
+        notIng _              = True
 
 -------------------------------------
 -- PRINTING INGREDIENTS
