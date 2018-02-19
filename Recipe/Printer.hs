@@ -2,6 +2,7 @@ module Recipe.Printer where
 
 import           Recipe.Recipe
 import Data.Char
+import Data.List
 import Data.Tree
 import Data.Tree.Pretty
 import Control.Monad.State
@@ -89,32 +90,16 @@ toString r = reverse $ evalState (toString' r) 1
                     (x:xs) -> do
                         let parStr = x ++ condSuff
                         return $ parStr : xs
-                        
+
             Transaction r' -> do
-                l <- get
                 chStrs <- toString' r'
-                chLab <- getChildLabel r'
-
-                let stepsStr = if chLab == show (l + 1)
-                    then chLab
-                    else show (l + 1) ++ ") to (" ++ chLab
-
-                let parStr = show l ++ ") Perform (" ++ stepsStr ++ ") then immediately"
+                let numCs = numChildRecipes r'
 
                 case chStrs of
                     [] -> return []
                     (x:xs) -> do
-                        let x' = parStr ++ dropLabel x
-
-                        let numCs = numChildRecipes r'
-                        
-                        let cs = drop numCs xs
-                        let ys = take numCs xs
-
-                        let cs' = map incLabel cs
-                        let cs'' = map ('\t':) cs'
-
-                        return $ cs'' ++ (x' : ys)
+                        let indented = indent $ x : take numCs xs
+                        return $ indented ++ drop numCs xs
                 
             Measure m r' -> do
                 chStrs <- toString' r'
@@ -126,31 +111,37 @@ toString r = reverse $ evalState (toString' r) 1
                 let parStr = show l ++ ") Measure " ++ show m ++ " of (" ++ chLab ++ ")"
                 return $ parStr : chStrs
             where
-                incLabel (c:cs) = intToDigit i : cs
-                    where i = (digitToInt c) + 1
-                dropLabel ""       = ""
-                dropLabel (')':cs) = cs
-                dropLabel (c:cs)   = dropLabel cs
+                indent = map (\s -> '\t' : s)
                 getChildLabel :: Recipe -> State Int String
                 getChildLabel (Ingredient s) = return s
                 getChildLabel _ = get >>= (\i -> return $ show (i - 1))
 
 numChildRecipes :: Recipe -> Int
-numChildRecipes = (length . getChildRecipes)
+numChildRecipes = (length . childRecipes)
 
-getChildRecipes :: Recipe -> [Recipe]
-getChildRecipes r = filter notIng rs
+childRecipes :: Recipe -> [Recipe]
+childRecipes r = filter notIng rs
     where
         rs = case r of
             Ingredient s     -> []
             HeatAt _ r'      -> [r']
             Wait _ r'        -> [r']
             Combine r1 r2    -> [r1, r2]
-            Conditional _ r' -> [r']
-            Transaction r'   -> [r']
+            Conditional _ r' -> childRecipes r'
+            Transaction r'   -> childRecipes r'
             Measure _ r'     -> [r']
         notIng (Ingredient _) = False
         notIng _              = True
+
+countAll :: Recipe -> Int
+countAll r = case r of
+    Ingredient _     -> 0
+    HeatAt _ r'      -> 1 + countAll r'
+    Wait _ r'        -> 1 + countAll r'
+    Combine r1 r2    -> 2 + countAll r1 + countAll r2
+    Conditional _ r' -> 1 + countAll r'
+    Transaction r'   -> countAll r'
+    Measure _ r'     -> countAll r'
 
 -------------------------------------
 -- PRINTING INGREDIENTS

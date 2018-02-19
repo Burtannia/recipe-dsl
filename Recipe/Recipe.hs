@@ -26,8 +26,6 @@ type Time = Int
 
 data Condition = CondTime Time | CondTemp Temperature | CondOpt
     deriving (Show, Eq)
--- allows pattern matching to determine type of condition
--- is there a way to do that with forall?
 
 data Temperature = Deg Int | Low | Medium | High
     deriving (Show, Eq)
