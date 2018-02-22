@@ -99,40 +99,6 @@ data Action =
     | Hold Recipe -- tap "Holds" water
     deriving Show
 
--- Translate Recipe into a tree of actions
--- expand :: Recipe -> Tree Action
--- expand r@(Ingredient s)   = Node (Get s) []
--- expand r@(Heat t r')      = Node PlaceInHeat [Node (Preheat t) [], expand r']
--- expand r@(Wait t)         = Node (DoNothing t) []
--- expand r@(Combine r1 r2)  = Node Mix [expand r1, expand r2]
--- expand r@(Sequence r1 r2) = Node (DoNothing 0) [expand r1, expand r2]
-
--- filter topological sorts using state
--- transpose filtered list 
--- !! time with the transposed list
-
--- type RP = RS -> RA
-
--- data RS = RS
---     { rsTime :: Time
---     , rsProgress :: [Label]
---     }
---     deriving Show
-    
--- type RA = [Label]
--- type TSort = [Label]
-
--- process :: [TSort] -> RP
--- process ts = \RS{rsTime = time, rsProgress = prog} ->
---     let opts = transpose ords
---         ords = filter (\x -> take (length prog) x == prog) ts
---     in opts `safeIx` time
-
--- safeIx :: [[a]] -> Int -> [a]
--- xs `safeIx` i
---     | i >= length xs = []
---     | otherwise      = xs !! i
-
 -------------------------------------
 -- CONCRETE IMPLEMENTATION
 -------------------------------------
@@ -204,11 +170,6 @@ assignStation env r = listToMaybe
 -- 1) determine entry point for a recipe
 -- 2) assign stations for recipe
 -- 3) determine if transfer node needed
-
--- schedule :: Env -> Recipe -> Maybe Schedule
--- schedule env r = 
---     where
---         s = makeSchedule env r
 
 -------------------------------------
 -- UTILITY FUNCTIONS
