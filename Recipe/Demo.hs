@@ -3,6 +3,7 @@ module Recipe.Demo where
 import Recipe.Recipe
 import Recipe.Tree
 import Recipe.Printer
+import Recipe.QS
 
 -------------------------------------
 -- TEST RECIPES

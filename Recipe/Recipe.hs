@@ -37,13 +37,15 @@ heatAt = HeatAt
 (><) = Combine
 
 wait :: Time -> Recipe -> Recipe
-wait = Wait
+wait t (Wait t' r) = wait (t + t') r
+wait t r = Wait t r
 
 conditional :: Condition -> Recipe -> Recipe
 conditional = Conditional
 
 transaction :: Recipe -> Recipe
 transaction r@(Ingredient _) = r
+transaction r@(Transaction _) = r
 transaction r = Transaction r
 
 measure :: Measurement -> Recipe -> Recipe

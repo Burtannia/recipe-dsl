@@ -43,7 +43,7 @@ genRecipe = generate arbitrary
 
 sig =
     signature 
-    { maxTermSize = Just 9
+    { maxTermSize = Just 7
     , constants =
         [ constant "Ingredient" (Ingredient :: String -> Recipe)
         , constant "HeatAt" (HeatAt :: Temperature -> Recipe -> Recipe)
@@ -55,5 +55,5 @@ sig =
         ]
     }
 
-main :: IO Signature
-main = quickSpec sig
+qsRecipe :: IO Signature
+qsRecipe = quickSpec sig

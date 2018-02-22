@@ -13,8 +13,6 @@ For time keeping it is probably best to have a global clock so that timings for 
 station can still be compared.
 
 - Merge topological sorting with new station/action system
-- QuickSpec
-- Equivalence?
 - Ways to chop etc.
 - Different ways to combine
 - Transformations e.g. whisk egg or blend fruit
@@ -30,7 +28,6 @@ Temporary / Removeable Recipes e.g. Bay Leaf
 Mark recipe as removeable.
 Remove later.
 Remove presumes a corresponding removeable was already added.
-Or specify when to remove as a conditional.
 -----------------------
 
 -----------------------
