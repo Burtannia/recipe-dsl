@@ -2,6 +2,8 @@ module Recipe.Tree where
 
 import Control.Monad.State
 import Data.List (permutations)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HMap
 
 data Tree a = Empty | Node a [Tree a]
     deriving Show
@@ -117,3 +119,13 @@ findLabel l (Node (l', a) ts) =
             []     -> Nothing
             (x:xs) -> x
     where xs = map (findLabel l) ts
+
+--recurse through recipe creating tree with label from table
+-- recipeToTree :: Recipe -> Tree Int
+-- recipeToTree r = Node i ts
+--     where
+--         table = createTable r
+--         i = 
+
+-- get int from table and make node
+-- map over child recipes to get child nodes

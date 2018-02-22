@@ -5,8 +5,6 @@ import Data.Maybe (listToMaybe, fromJust, isJust)
 import Recipe.Tree
 import Control.Applicative
 import Control.Monad.State
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HMap
 
 -------------------------------------
 -- RECIPE DEFINITION
@@ -55,36 +53,41 @@ measure = Measure
 -- RECIPE LABELLING
 -------------------------------------
 
-createTable :: Recipe -> HashMap Int Recipe
-createTable r = evalState (createTable' r) 0
+mapRecipe :: Monoid a => (Recipe -> a) -> Recipe -> a
+mapRecipe f r = f r `mappend` (foldMap (mapRecipe f) cs)
+    where cs = childRecipes r
+
+childRecipes :: Recipe -> [Recipe]
+childRecipes r = case r of
+    Ingredient s     -> []
+    HeatAt _ r'      -> [r']
+    Wait _ r'        -> [r']
+    Combine r1 r2    -> [r1,r2]
+    Conditional _ r' -> [r']
+    Transaction r'   -> [r']
+    Measure _ r'     -> [r']
+
+parts :: Recipe -> [Recipe]
+parts r = mapRecipe (: []) r
+
+createTable :: Recipe -> [(Label, Recipe)]
+createTable r = zip [1..length ps] ps
     where
-        createTable' r = case r of
-            Ingredient _ -> do
-                k <- incKey
-                return $ HMap.singleton k r
-            HeatAt _ r' -> singleChild r r'
-            Wait _ r' -> singleChild r r'
-            Combine r1 r2 -> doubleChild r r1 r2
-            Conditional _ r' -> singleChild r r'
-            Transaction r' -> singleChild r r'
-            Measure _ r' -> singleChild r r'
-            where
-                incKey = do
-                    k <- get
-                    put (k + 1)
-                    return k
-                singleChild par ch = do
-                    k <- incKey
-                    let hmapP = HMap.singleton k par
-                    hmapC <- createTable' ch
-                    return $ HMap.union hmapP hmapC
-                doubleChild par ch1 ch2 = do
-                    k <- incKey
-                    let hmapP = HMap.singleton k par
-                    hmapC1 <- createTable' ch1
-                    hmapC2 <- createTable' ch2
-                    return $ HMap.union hmapP
-                        (HMap.union hmapC1 hmapC2)
+        ps = rmdups $ parts r
+
+rmdups :: Eq a => [a] -> [a]
+rmdups xs = rmdups' xs []
+    where
+        rmdups' [] ys = ys
+        rmdups' (x:xs) ys = if x `elem` ys
+            then rmdups' xs ys
+            else rmdups' xs (ys ++ [x])
+
+ppList :: Show a => [a] -> IO ()
+ppList [] = return ()
+ppList (x:xs) = print x
+    >> putStrLn ""
+    >> ppList xs
 
 -------------------------------------
 -- RECIPE SEMANTICS

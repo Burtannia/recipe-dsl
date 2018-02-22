@@ -119,19 +119,19 @@ toString r = reverse $ evalState (toString' r) 1
 numChildRecipes :: Recipe -> Int
 numChildRecipes = (length . childRecipes)
 
-childRecipes :: Recipe -> [Recipe]
-childRecipes r = filter notIng rs
-    where
-        rs = case r of
-            Ingredient s     -> []
-            HeatAt _ r'      -> [r']
-            Wait _ r'        -> [r']
-            Combine r1 r2    -> [r1, r2]
-            Conditional _ r' -> childRecipes r'
-            Transaction r'   -> childRecipes r'
-            Measure _ r'     -> [r']
-        notIng (Ingredient _) = False
-        notIng _              = True
+-- childRecipes :: Recipe -> [Recipe]
+-- childRecipes r = filter notIng rs
+--     where
+--         rs = case r of
+--             Ingredient s     -> []
+--             HeatAt _ r'      -> [r']
+--             Wait _ r'        -> [r']
+--             Combine r1 r2    -> [r1, r2]
+--             Conditional _ r' -> childRecipes r'
+--             Transaction r'   -> childRecipes r'
+--             Measure _ r'     -> [r']
+--         notIng (Ingredient _) = False
+--         notIng _              = True
 
 countAll :: Recipe -> Int
 countAll r = case r of
