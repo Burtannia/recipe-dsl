@@ -53,6 +53,8 @@ measure = Measure
 -- RECIPE LABELLING
 -------------------------------------
 
+-- abstract this into mapping of Recipes to Properties
+
 type Label = Int
 
 createTable :: Recipe -> [(Label, Recipe)]
@@ -171,9 +173,8 @@ assignStation env r = listToMaybe
 -- UTILITY FUNCTIONS
 -------------------------------------
 
--- Depth First
-mapRecipe :: Monoid a => (Recipe -> a) -> Recipe -> a
-mapRecipe f r = f r `mappend` (foldMap (mapRecipe f) cs)
+mapRecipe :: (Recipe -> a) -> Recipe -> [a]
+mapRecipe f r = f r : concatMap (mapRecipe f) cs
     where cs = childRecipes r
 
 childRecipes :: Recipe -> [Recipe]
@@ -187,7 +188,7 @@ childRecipes r = case r of
     Measure _ r'     -> [r']
 
 parts :: Recipe -> [Recipe]
-parts r = mapRecipe (: []) r
+parts = mapRecipe id
 
 rmdups :: Eq a => [a] -> [a]
 rmdups xs = rmdups' xs []
@@ -206,7 +207,6 @@ ppList (x:xs) = print x
 -- Create a list of ingredients used in a recipe
 -- Doesn't yet show quantities
 getIngredients :: Recipe -> [String]
-getIngredients = mapRecipe f
-    where
-        f (Ingredient s) = [s]
-        f _ = []
+getIngredients (Ingredient s) = [s]
+getIngredients r =
+    concatMap getIngredients (childRecipes r)
