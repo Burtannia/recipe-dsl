@@ -2,7 +2,7 @@ module Recipe.Recipe where
 
 import Data.List
 import Data.Maybe (listToMaybe, fromJust, isJust)
-import Recipe.Tree
+import Data.Tree
 import Control.Applicative
 import Control.Monad.State
 
@@ -53,41 +53,32 @@ measure = Measure
 -- RECIPE LABELLING
 -------------------------------------
 
-mapRecipe :: Monoid a => (Recipe -> a) -> Recipe -> a
-mapRecipe f r = f r `mappend` (foldMap (mapRecipe f) cs)
-    where cs = childRecipes r
-
-childRecipes :: Recipe -> [Recipe]
-childRecipes r = case r of
-    Ingredient s     -> []
-    HeatAt _ r'      -> [r']
-    Wait _ r'        -> [r']
-    Combine r1 r2    -> [r1,r2]
-    Conditional _ r' -> [r']
-    Transaction r'   -> [r']
-    Measure _ r'     -> [r']
-
-parts :: Recipe -> [Recipe]
-parts r = mapRecipe (: []) r
+type Label = Int
 
 createTable :: Recipe -> [(Label, Recipe)]
 createTable r = zip [1..length ps] ps
     where
         ps = rmdups $ parts r
 
-rmdups :: Eq a => [a] -> [a]
-rmdups xs = rmdups' xs []
-    where
-        rmdups' [] ys = ys
-        rmdups' (x:xs) ys = if x `elem` ys
-            then rmdups' xs ys
-            else rmdups' xs (ys ++ [x])
+-- Unsafe
+getLabel :: [(Label, Recipe)] -> Recipe -> Label
+getLabel lrs r = fst $ head lrs'
+    where lrs' = filter (\x -> snd x == r) lrs
 
-ppList :: Show a => [a] -> IO ()
-ppList [] = return ()
-ppList (x:xs) = print x
-    >> putStrLn ""
-    >> ppList xs
+-- Unsafe
+getRecipe :: [(Label, Recipe)] -> Label -> Recipe
+getRecipe lrs l = snd $ head lrs'
+    where lrs' = filter (\x -> fst x == l) lrs
+
+recipeToTree :: (Recipe -> a) -> Recipe -> Tree a
+recipeToTree f r = Node (f r) cs'
+    where
+        cs = childRecipes r
+        cs' = map (recipeToTree f) cs
+
+labelRecipe :: Recipe -> Tree Label
+labelRecipe r = recipeToTree (getLabel table) r
+    where table = createTable r
 
 -------------------------------------
 -- RECIPE SEMANTICS
@@ -180,13 +171,42 @@ assignStation env r = listToMaybe
 -- UTILITY FUNCTIONS
 -------------------------------------
 
+-- Depth First
+mapRecipe :: Monoid a => (Recipe -> a) -> Recipe -> a
+mapRecipe f r = f r `mappend` (foldMap (mapRecipe f) cs)
+    where cs = childRecipes r
+
+childRecipes :: Recipe -> [Recipe]
+childRecipes r = case r of
+    Ingredient s     -> []
+    HeatAt _ r'      -> [r']
+    Wait _ r'        -> [r']
+    Combine r1 r2    -> [r1,r2]
+    Conditional _ r' -> [r']
+    Transaction r'   -> [r']
+    Measure _ r'     -> [r']
+
+parts :: Recipe -> [Recipe]
+parts r = mapRecipe (: []) r
+
+rmdups :: Eq a => [a] -> [a]
+rmdups xs = rmdups' xs []
+    where
+        rmdups' [] ys = ys
+        rmdups' (x:xs) ys = if x `elem` ys
+            then rmdups' xs ys
+            else rmdups' xs (ys ++ [x])
+
+ppList :: Show a => [a] -> IO ()
+ppList [] = return ()
+ppList (x:xs) = print x
+    >> putStrLn ""
+    >> ppList xs
+
 -- Create a list of ingredients used in a recipe
 -- Doesn't yet show quantities
 getIngredients :: Recipe -> [String]
-getIngredients (Ingredient s)    = [s]
-getIngredients (HeatAt _ r)      = getIngredients r
-getIngredients (Combine r1 r2)   = getIngredients r1 ++ getIngredients r2
-getIngredients (Wait _ r)        = getIngredients r
-getIngredients (Conditional _ r) = getIngredients r
-getIngredients (Transaction r)   = getIngredients r
-getIngredients (Measure _ r)     = getIngredients r
+getIngredients = mapRecipe f
+    where
+        f (Ingredient s) = [s]
+        f _ = []
