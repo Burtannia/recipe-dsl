@@ -13,14 +13,24 @@ For time keeping it is probably best to have a global clock so that timings for 
 station can still be compared.
 
 - Merge topological sorting with new station/action system
-- Ways to chop etc.
 - Different ways to combine
-- Transformations e.g. whisk egg or blend fruit
+- Transformations e.g. whisk egg or blend fruit, ways to chop etc.
 - Grouping during scheduling e.g. two seperate parts of the recipe use a slice of toast
 then we can group that to cook 2 slices of toast at once (potentially).
-- Expandability, new combinators (already possible), new measurements / transformations.
-- Give things a nicer name e.g. special heatTo combinator instead of: conditional CondTemp
-- Tools for performing actions e.g. spoon / measuring jug / knife
+- Expandability, new combinators (already possible), new measurements, tidy up code.
+- There is a lstlisting preset on the literate haskell page
+
+-----------------------
+Scheduling:
+
+Linear Programming
+
+-----------------------
+
+-----------------------
+QuickSpec:
+
+-----------------------
 
 -----------------------
 Temporary / Removeable Recipes e.g. Bay Leaf

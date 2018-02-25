@@ -165,10 +165,6 @@ assignStation env r = listToMaybe
                                 let ma = (stConstrF st) r,
                                 isJust ma]
 
--- 1) determine entry point for a recipe
--- 2) assign stations for recipe
--- 3) determine if transfer node needed
-
 -------------------------------------
 -- UTILITY FUNCTIONS
 -------------------------------------

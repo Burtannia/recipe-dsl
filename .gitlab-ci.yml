@@ -3,7 +3,11 @@ image: haskell:8.2.1
 build:
   stage: build
   script:
+    - sudo apt-get install libglpk-dev
     - cabal update
       && cabal install mtl-2.2.1
       && cabal install pretty-tree
+      && cabal install quickcheck-2.9.2
+      && cabal install quickspec
+      && cabal install glpk-hs
       && ghc -O2 Recipe.Demo
