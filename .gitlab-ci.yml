@@ -4,7 +4,9 @@ build:
   stage: build
   script:
     - apt-get update
+    - Y
     - apt-get install libglpk-dev
+    - Y
     - cabal update
       && cabal install mtl-2.2.1
       && cabal install pretty-tree
