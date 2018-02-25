@@ -3,7 +3,7 @@ image: haskell:8.2.1
 build:
   stage: build
   script:
-    - sudo apt-get install libglpk-dev
+    - apt-get install libglpk-dev
     - cabal update
       && cabal install mtl-2.2.1
       && cabal install pretty-tree
