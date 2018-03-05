@@ -35,16 +35,15 @@ heatAt = HeatAt
 (><) = Combine
 
 wait :: Time -> Recipe -> Recipe
-wait t (Wait t' r) = wait (t + t') r
+--wait t (Wait t' r) = wait (t + t') r
 wait t r = Wait t r
 
 conditional :: Condition -> Recipe -> Recipe
 conditional = Conditional
 
 transaction :: Recipe -> Recipe
-transaction r@(Ingredient _) = r
-transaction r@(Transaction _) = r
-transaction r = Transaction r
+--transaction r@(Transaction _) = r
+transaction = Transaction
 
 measure :: Measurement -> Recipe -> Recipe
 measure = Measure
@@ -81,6 +80,36 @@ recipeToTree f r = Node (f r) cs'
 labelRecipe :: Recipe -> Tree Label
 labelRecipe r = recipeToTree (getLabel table) r
     where table = createTable r
+
+topologicals :: Eq a => Tree a -> [[a]]
+topologicals (Node a [])  = [[a]]
+topologicals t = concat
+    [map (a:) (topologicals' l) | l@(Node a _) <- ls]
+    where
+        topologicals' l = topologicals $ removeFrom t l
+        ls = leaves t
+
+isLeaf :: Tree a -> Bool
+isLeaf (Node _ []) = True
+isLeaf _ = False
+
+leaves :: Tree a -> [Tree a]
+leaves (Node a []) = [Node a []]
+leaves (Node a ts) = concatMap leaves ts
+
+-- Removes all occurences of a sub tree from the given tree.
+-- Removing a tree from itself does nothing.
+removeFrom :: Eq a => Tree a -> Tree a -> Tree a
+removeFrom t@(Node a ts) toRem = Node a ts''
+    where
+        ts'  = deleteAll toRem ts
+        ts'' = map (\t -> removeFrom t toRem) ts'
+
+deleteAll :: Eq a => a -> [a] -> [a]
+deleteAll _ [] = []
+deleteAll x (y:ys)
+    | x == y = deleteAll x ys
+    | otherwise = y : deleteAll x ys
 
 -------------------------------------
 -- RECIPE SEMANTICS
@@ -202,7 +231,7 @@ ppList (x:xs) = print x
 
 -- Create a list of ingredients used in a recipe
 -- Doesn't yet show quantities
-getIngredients :: Recipe -> [String]
-getIngredients (Ingredient s) = [s]
-getIngredients r =
-    concatMap getIngredients (childRecipes r)
+ingredients :: Recipe -> [String]
+ingredients (Ingredient s) = [s]
+ingredients r =
+    concatMap ingredients (childRecipes r)

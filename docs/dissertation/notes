@@ -33,6 +33,28 @@ QuickSpec:
 -----------------------
 
 -----------------------
+Deriving Equality:
+
+Multiple representations, can hash recipes to a value.
+Can look at topological sorts.
+At some point we need to specify which combinators
+are commutative. Combine a b == Combine b a
+really depends on how you combine. Mix is
+commutative whereas spread isn't.
+
+Start off with everything being equal
+or nothing being equal.
+
+Better to have a stricter equality than a
+weaker one.
+
+Constraints:
+- Ingredients must match.
+- Condense chained waits etc.
+
+-----------------------
+
+-----------------------
 Temporary / Removeable Recipes e.g. Bay Leaf
 
 Mark recipe as removeable.

@@ -33,7 +33,7 @@ printRecipe = putStrLn . drawVerticalTree . stringTree
 
 -- Print the list of ingredients in a recipe
 printIngredients :: Recipe -> IO ()
-printIngredients r = mapM_ putStrLn (getIngredients r)
+printIngredients r = mapM_ putStrLn (ingredients r)
 
 -------------------------------------
 -- PRICE ... this probably should be somewhere else
