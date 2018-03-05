@@ -41,19 +41,17 @@ genMeasure = elements [100,200..1000]
 genRecipe :: IO Recipe
 genRecipe = generate arbitrary
 
-sig =
-    signature 
-    { maxTermSize = Just 7
-    , constants =
-        [ constant "Ingredient" (Ingredient :: String -> Recipe)
-        , constant "HeatAt" (HeatAt :: Temperature -> Recipe -> Recipe)
-        , constant "Wait" (Wait :: Time -> Recipe -> Recipe)
-        , constant "Combine" (Combine :: Recipe -> Recipe -> Recipe)
-        , constant "Conditional" (Conditional :: Condition -> Recipe -> Recipe)
-        , constant "Transaction" (Transaction :: Recipe -> Recipe)
-        , constant "Measure" (Measure :: Measurement -> Recipe -> Recipe)
-        ]
-    }
+{-
+sig = 
+	[ withMaxTermSize 7
+	, con "Ingredient" (Ingredient :: String -> Recipe)
+	, con "HeatAt" (HeatAt :: Temperature -> Recipe -> Recipe)
+	, con "Wait" (Wait :: Time -> Recipe -> Recipe)
+	, con "Combine" (Combine :: Recipe -> Recipe -> Recipe)
+	, con "Conditional" (Conditional :: Condition -> Recipe -> Recipe)
+	, con "Transaction" (Transaction :: Recipe -> Recipe)
+	, con "Measure" (Measure :: Measurement -> Recipe -> Recipe)
+	]
 
 qsRecipe :: IO Signature
-qsRecipe = quickSpec sig
+qsRecipe = quickSpec sig -}

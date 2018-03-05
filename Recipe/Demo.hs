@@ -140,7 +140,7 @@ ovenTemp = return $ ObsTemp $ Deg 180
 ovenConstr :: ConstraintF
 ovenConstr (Ingredient _)    = Just []
 ovenConstr (HeatAt (Deg t) _)
-    | t > 120 && t < 120     = Just [Preheat (Deg t), Input, Output]
+    | t > 120 && t < 240     = Just [Preheat (Deg t), Input, Output]
     | otherwise              = Nothing
 ovenConstr (Conditional c r) = ovenConstr r >>= addEvalCond c
 ovenConstr _                 = Nothing

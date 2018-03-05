@@ -12,7 +12,9 @@ logic).
 For time keeping it is probably best to have a global clock so that timings for each
 station can still be compared.
 
-
+- remove time from wait, just use CondTime
+- add CondStation
+- unwrap Wait 3 -> DoNothing, DoNothing, DoNothing
 - Merge topological sorting with new station/action system
 - Have considered uses for production of food, what about development of food (mapping properties etc.)
 - What effect to ingredients have on a recipe, seasoning, flavour profile, thickening etc.
