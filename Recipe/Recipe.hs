@@ -81,6 +81,9 @@ labelRecipe :: Recipe -> Tree Label
 labelRecipe r = recipeToTree (getLabel table) r
     where table = createTable r
 
+-- should process recipe e.g. apply transactions
+-- etc. before top sorting
+
 topologicals :: Eq a => Tree a -> [[a]]
 topologicals (Node a [])  = [[a]]
 topologicals t = concat
