@@ -1,7 +1,7 @@
 module Recipe.Recipe where
 
 import Data.List
-import Data.Maybe (listToMaybe, fromJust, isJust)
+import Data.Maybe (listToMaybe, fromJust, isJust, catMaybes)
 import Data.Tree
 import Control.Applicative
 import Control.Monad.State
@@ -23,6 +23,7 @@ type Measurement = Int
 type Time = Int
 
 data Condition = CondTime Time | CondTemp Temperature | CondOpt
+    | Condition `AND` Condition | Condition `OR` Condition
     deriving (Show, Eq)
 
 data Temperature = Deg Int | Low | Medium | High
@@ -204,6 +205,9 @@ assignStation env r = listToMaybe
 mapRecipe :: (Recipe -> a) -> Recipe -> [a]
 mapRecipe f r = f r : concatMap (mapRecipe f) cs
     where cs = childRecipes r
+
+mapRecipe' :: (Recipe -> Maybe a) -> Recipe -> [a]
+mapRecipe' f r = catMaybes $ mapRecipe f r
 
 childRecipes :: Recipe -> [Recipe]
 childRecipes r = case r of

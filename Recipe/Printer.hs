@@ -27,6 +27,8 @@ toString r = case r of
 printRecipe :: Recipe -> IO ()
 printRecipe = putStrLn . drawVerticalTree . stringTree
 
+
+
 -------------------------------------
 -- PRINTING INGREDIENTS
 -------------------------------------
