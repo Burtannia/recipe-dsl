@@ -27,6 +27,8 @@ cupOfTea :: Recipe
 cupOfTea = optional $ milkTea >< sugar
     where milkTea = optional $ blackTea >< milk
 
+
+
 -- Buttered Toast
 
 bread, butter :: Recipe

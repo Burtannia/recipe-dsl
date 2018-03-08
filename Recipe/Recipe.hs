@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Recipe.Recipe where
 
 import Data.List
@@ -17,7 +19,12 @@ data Recipe = Ingredient String
             | Conditional Condition Recipe
             | Transaction Recipe
             | Measure Measurement Recipe
-            deriving (Show, Eq)
+            deriving Show
+
+instance Eq Recipe where
+    (==) r1 r2 = f r1 == f r2
+        where
+            f = (sort . topologicals . labelRecipe)
 
 type Measurement = Int
 type Time = Int
@@ -50,12 +57,112 @@ measure :: Measurement -> Recipe -> Recipe
 measure = Measure
 
 -------------------------------------
+-- UTILITY FUNCTIONS
+-------------------------------------
+
+data Evals a = Evals
+    { eIng  :: String -> a
+    , eHeat :: Temperature -> a -> a
+    , eWait :: Time -> a -> a
+    , eComb :: a -> a -> a
+    , eCond :: Condition -> a -> a
+    , eTran :: a -> a
+    , eMeas :: Measurement -> a -> a
+    }
+
+fold :: Recipe -> (Evals a -> a)
+fold r = \e@Evals{..} -> case r of
+    Ingredient s     -> eIng s
+    HeatAt t r'      -> eHeat t (fold r' e)
+    Wait t r'        -> eWait t (fold r' e)
+    Combine r1 r2    -> eComb (fold r1 e) (fold r2 e)
+    Conditional c r' -> eCond c (fold r' e)
+    Transaction r'   -> eTran (fold r' e)
+    Measure m r'     -> eMeas m (fold r' e)
+
+-- evalIngs :: Evals [String]
+-- evalIngs = Evals { eIng  = (:[])
+--                  , eHeat = lFalse
+--                  , eWait = lFalse
+--                  , eComb = (++)
+--                  , eCond = lFalse
+--                  , eTran = id
+--                  , eMeas = lFalse
+--                  } where lFalse _ y = y
+
+evalNumSteps :: Evals Int
+evalNumSteps = Evals
+    { eIng  = \_ -> 0
+    , eHeat = \_ i -> i + 1
+    , eWait = \_ i -> i + 1
+    , eComb = \i1 i2 -> 1 + i1 + i2
+    , eCond = \c i -> i
+    , eTran = id
+    , eMeas = \_ i -> i + 1
+    }
+
+evalTime :: Evals Time
+evalTime = Evals { eIng  = \_ -> 0
+                 , eHeat = \temp time -> time --problem
+                 , eWait = (+)
+                 , eComb = (+)
+                 , eCond = \c time -> case c of
+                                        CondTime t -> t + time
+                                        _ -> time
+                 , eTran = id
+                 , eMeas = \_ t -> t + 1
+                 }
+
+mapRecipe :: (Recipe -> a) -> Recipe -> [a]
+mapRecipe f r = f r : concatMap (mapRecipe f) cs
+    where cs = childRecipes r
+
+mapRecipe' :: (Recipe -> Maybe a) -> Recipe -> [a]
+mapRecipe' f r = catMaybes $ mapRecipe f r
+
+childRecipes :: Recipe -> [Recipe]
+childRecipes r = case r of
+    Ingredient s     -> []
+    HeatAt _ r'      -> [r']
+    Wait _ r'        -> [r']
+    Combine r1 r2    -> [r1,r2]
+    Conditional _ r' -> [r']
+    Transaction r'   -> [r']
+    Measure _ r'     -> [r']
+
+parts :: Recipe -> [Recipe]
+parts = mapRecipe id
+
+rmdups :: Eq a => [a] -> [a]
+rmdups xs = rmdups' xs []
+    where
+        rmdups' [] ys = ys
+        rmdups' (x:xs) ys = if x `elem` ys
+            then rmdups' xs ys
+            else rmdups' xs (ys ++ [x])
+
+ppList :: Show a => [a] -> IO ()
+ppList [] = return ()
+ppList (x:xs) = print x
+    >> putStrLn ""
+    >> ppList xs
+
+-- Create a list of ingredients used in a recipe
+-- Doesn't yet show quantities
+ingredients :: Recipe -> [String]
+ingredients (Ingredient s) = [s]
+ingredients r =
+    concatMap ingredients (childRecipes r)
+
+-------------------------------------
 -- RECIPE LABELLING
 -------------------------------------
 
 -- abstract this into mapping of Recipes to Properties
 
 type Label = Int
+
+-- Need to map labels to recipes and not vice versa
 
 createTable :: Recipe -> [(Label, Recipe)]
 createTable r = zip [1..length ps] ps
@@ -197,48 +304,3 @@ assignStation env r = listToMaybe
     [(stName st, fromJust ma) | st <- eStations env,
                                 let ma = (stConstrF st) r,
                                 isJust ma]
-
--------------------------------------
--- UTILITY FUNCTIONS
--------------------------------------
-
-mapRecipe :: (Recipe -> a) -> Recipe -> [a]
-mapRecipe f r = f r : concatMap (mapRecipe f) cs
-    where cs = childRecipes r
-
-mapRecipe' :: (Recipe -> Maybe a) -> Recipe -> [a]
-mapRecipe' f r = catMaybes $ mapRecipe f r
-
-childRecipes :: Recipe -> [Recipe]
-childRecipes r = case r of
-    Ingredient s     -> []
-    HeatAt _ r'      -> [r']
-    Wait _ r'        -> [r']
-    Combine r1 r2    -> [r1,r2]
-    Conditional _ r' -> [r']
-    Transaction r'   -> [r']
-    Measure _ r'     -> [r']
-
-parts :: Recipe -> [Recipe]
-parts = mapRecipe id
-
-rmdups :: Eq a => [a] -> [a]
-rmdups xs = rmdups' xs []
-    where
-        rmdups' [] ys = ys
-        rmdups' (x:xs) ys = if x `elem` ys
-            then rmdups' xs ys
-            else rmdups' xs (ys ++ [x])
-
-ppList :: Show a => [a] -> IO ()
-ppList [] = return ()
-ppList (x:xs) = print x
-    >> putStrLn ""
-    >> ppList xs
-
--- Create a list of ingredients used in a recipe
--- Doesn't yet show quantities
-ingredients :: Recipe -> [String]
-ingredients (Ingredient s) = [s]
-ingredients r =
-    concatMap ingredients (childRecipes r)

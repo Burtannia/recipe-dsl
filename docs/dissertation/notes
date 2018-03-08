@@ -9,23 +9,12 @@ Conditionals allow us to mix until "mixed". The concrete implementation can then
 to link this to a signal from a camera in the case of a robot (or some other decision
 logic).
 
-For time keeping it is probably best to have a global clock so that timings for each
-station can still be compared.
-
 - Flavour profiling
-- Flavour profiling
-- remove time from wait, just use CondTime
-- add CondStation
 - unwrap Wait 3 -> DoNothing, DoNothing, DoNothing
-- Merge topological sorting with new station/action system
 - Have considered uses for production of food, what about development of food (mapping properties etc.)
 - What effect to ingredients have on a recipe, seasoning, flavour profile, thickening etc.
-- Different ways to combine
-- Way to specify certain station
 - Transformations e.g. whisk egg or blend fruit, ways to chop etc.
-- Grouping during scheduling e.g. two seperate parts of the recipe use a slice of toast
-then we can group that to cook 2 slices of toast at once (potentially).
-- Expandability, new combinators (already possible), new measurements, tidy up code.
+- Extra conditions (CondStation, extract wait and measure as Conds)
 - There is a lstlisting preset on the literate haskell page
 
 -----------------------
