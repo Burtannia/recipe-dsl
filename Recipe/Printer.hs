@@ -1,62 +1,43 @@
 module Recipe.Printer where
 
-import           Recipe.Recipe
-import Data.Char
-import Data.List
+import Recipe.Recipe
 import Data.Tree
 import Data.Tree.Pretty
 import Control.Monad.State
 
--------------------------------------
--- PRINTING RECIPES
--------------------------------------
+type Step = (Label, String)
 
-stringTree :: Recipe -> Tree String
-stringTree = recipeToTree toString
+steps :: Recipe -> Tree Step
+steps = steps' . labelRecipe
+    where
+        steps' (Node (l,a) ts) = Node (l,s) ts'
+            where
+                ts' = map steps' ts
+                s = toString a
+                toString (GetIngredient s) = "Get " ++ s
+                toString (HeatAt t) = "Heat (" ++ show l' ++ ") at " ++ show t
+                    where l' = head $ map extractLabel ts
+                toString Wait = "Wait"
+                toString (Combine s) = s ++ " (" ++ show l' ++ ") and ("
+                    ++ show l'' ++ ")"
+                    where
+                        l' = (map extractLabel ts) !! 0
+                        l'' = (map extractLabel ts) !! 1
+                toString (Conditional a c) = toString a ++ condToString c
+                    where
+                        condToString (CondOpt) = " (optional)"
+                        condToString (CondTemp t) = " until temperature " ++ show t
+                        condToString (CondTime t) = " for " ++ show t ++ " minutes"
+                toString (Transaction a) = "Immediately " ++ toString a
+                extractLabel (Node (l,_) _) = l
 
-toString :: Recipe -> String
-toString r = case r of
-    Ingredient s    -> s
-    HeatAt t r      -> "heat at " ++ show t
-    Wait t r        -> "wait for " ++ show t
-    Combine r1 r2   -> "combine"
-    Conditional c r -> "condition " ++ show c
-    Transaction r   -> "transaction"
-    Measure m r     -> "measure : " ++ show m
+ppSteps :: Recipe -> IO ()
+ppSteps = ppSteps' . steps
+    where
+        ppSteps' (Node (l,s) ts) =
+            mapM_ ppSteps' ts
+            >> putStrLn (show l ++ ") " ++ s)
 
-printRecipe :: Recipe -> IO ()
-printRecipe = putStrLn . drawVerticalTree . stringTree
 
--------------------------------------
--- PRINTING INGREDIENTS
--------------------------------------
-
--- Print the list of ingredients in a recipe
-printIngredients :: Recipe -> IO ()
-printIngredients r = mapM_ putStrLn (ingredients r)
-
--------------------------------------
--- PRICE ... this probably should be somewhere else
--------------------------------------
-
-type Price = Float
-type PricedItem = (String, Price)
-type PriceList = [PricedItem]
-
-findCost :: Recipe -> PriceList -> Price
-findCost (Ingredient s) ps =
-    case prices of
-        [] -> 0
-        _  -> head prices
-    where prices = [p | (x, p) <- ps, x == s]
-findCost (HeatAt _ r) ps      = findCost r ps
-findCost (Combine r1 r2) ps   = findCost r1 ps + findCost r2 ps
-findCost (Wait _ r) ps        = findCost r ps
-findCost (Conditional _ r) ps = findCost r ps
-findCost (Transaction r) ps   = findCost r ps
-findCost (Measure _ r) ps     = findCost r ps
-
-testList :: PriceList
-testList = [ ("milk", 1.00)
-           , ("teabag", 6.70)
-           ]
+ppTree :: Show a => Tree a -> IO ()
+ppTree = putStrLn . drawVerticalTree . fmap show

@@ -1,306 +1,149 @@
-{-# LANGUAGE RecordWildCards #-}
-
 module Recipe.Recipe where
 
-import Data.List
-import Data.Maybe (listToMaybe, fromJust, isJust, catMaybes)
 import Data.Tree
-import Control.Applicative
 import Control.Monad.State
 
 -------------------------------------
 -- RECIPE DEFINITION
 -------------------------------------
 
-data Recipe = Ingredient String
-            | HeatAt Temperature Recipe
-            | Wait Time Recipe
-            | Combine Recipe Recipe
-            | Conditional Condition Recipe
-            | Transaction Recipe
-            | Measure Measurement Recipe
+type Recipe = Tree Action
+
+data Action = GetIngredient String
+            | HeatAt Int
+            | Wait
+            | Combine String
+            | Conditional Action Condition
+            | Transaction Action
+            -- | Measure Measurement Recipe
             deriving Show
 
-instance Eq Recipe where
-    (==) r1 r2 = f r1 == f r2
-        where
-            f = (sort . topologicals . labelRecipe)
+data Condition = CondTemp Int | CondTime Int | CondOpt
+    deriving Show
 
-type Measurement = Int
-type Time = Int
+ingredient :: String -> Recipe
+ingredient s = Node (GetIngredient s) []
 
-data Condition = CondTime Time | CondTemp Temperature | CondOpt
-    | Condition `AND` Condition | Condition `OR` Condition
-    deriving (Show, Eq)
+heatAt :: Int -> Recipe -> Recipe
+heatAt temp r = Node (HeatAt temp) [r]
 
-data Temperature = Deg Int | Low | Medium | High
-    deriving (Show, Eq)
+wait :: Recipe -> Recipe
+wait r = Node Wait [r]
 
-heatAt :: Temperature -> Recipe -> Recipe
-heatAt = HeatAt
+combine :: String -> Recipe -> Recipe -> Recipe
+combine s r1 r2 = Node (Combine s) [r1, r2]
 
-(><) :: Recipe -> Recipe -> Recipe
-(><) = Combine
-
-wait :: Time -> Recipe -> Recipe
---wait t (Wait t' r) = wait (t + t') r
-wait t r = Wait t r
-
-conditional :: Condition -> Recipe -> Recipe
-conditional = Conditional
+addCondition :: Condition -> Recipe -> Recipe
+addCondition cond (Node a ts) = Node (Conditional a cond) ts
 
 transaction :: Recipe -> Recipe
---transaction r@(Transaction _) = r
-transaction = Transaction
+transaction (Node a ts) = Node (Transaction a) ts
 
-measure :: Measurement -> Recipe -> Recipe
-measure = Measure
+-- Nicer Conditions
+
+optional :: Recipe -> Recipe
+optional = addCondition CondOpt
+
+toTemp :: Int -> Recipe -> Recipe
+toTemp t = addCondition (CondTemp t)
+
+forTime :: Int -> Recipe -> Recipe
+forTime t = addCondition (CondTime t)
 
 -------------------------------------
 -- UTILITY FUNCTIONS
 -------------------------------------
 
-data Evals a = Evals
-    { eIng  :: String -> a
-    , eHeat :: Temperature -> a -> a
-    , eWait :: Time -> a -> a
-    , eComb :: a -> a -> a
-    , eCond :: Condition -> a -> a
-    , eTran :: a -> a
-    , eMeas :: Measurement -> a -> a
-    }
-
-fold :: Recipe -> (Evals a -> a)
-fold r = \e@Evals{..} -> case r of
-    Ingredient s     -> eIng s
-    HeatAt t r'      -> eHeat t (fold r' e)
-    Wait t r'        -> eWait t (fold r' e)
-    Combine r1 r2    -> eComb (fold r1 e) (fold r2 e)
-    Conditional c r' -> eCond c (fold r' e)
-    Transaction r'   -> eTran (fold r' e)
-    Measure m r'     -> eMeas m (fold r' e)
-
--- evalIngs :: Evals [String]
--- evalIngs = Evals { eIng  = (:[])
---                  , eHeat = lFalse
---                  , eWait = lFalse
---                  , eComb = (++)
---                  , eCond = lFalse
---                  , eTran = id
---                  , eMeas = lFalse
---                  } where lFalse _ y = y
-
-evalNumSteps :: Evals Int
-evalNumSteps = Evals
-    { eIng  = \_ -> 0
-    , eHeat = \_ i -> i + 1
-    , eWait = \_ i -> i + 1
-    , eComb = \i1 i2 -> 1 + i1 + i2
-    , eCond = \c i -> i
-    , eTran = id
-    , eMeas = \_ i -> i + 1
-    }
-
-evalTime :: Evals Time
-evalTime = Evals { eIng  = \_ -> 0
-                 , eHeat = \temp time -> time --problem
-                 , eWait = (+)
-                 , eComb = (+)
-                 , eCond = \c time -> case c of
-                                        CondTime t -> t + time
-                                        _ -> time
-                 , eTran = id
-                 , eMeas = \_ t -> t + 1
-                 }
-
-mapRecipe :: (Recipe -> a) -> Recipe -> [a]
-mapRecipe f r = f r : concatMap (mapRecipe f) cs
-    where cs = childRecipes r
-
-mapRecipe' :: (Recipe -> Maybe a) -> Recipe -> [a]
-mapRecipe' f r = catMaybes $ mapRecipe f r
-
-childRecipes :: Recipe -> [Recipe]
-childRecipes r = case r of
-    Ingredient s     -> []
-    HeatAt _ r'      -> [r']
-    Wait _ r'        -> [r']
-    Combine r1 r2    -> [r1,r2]
-    Conditional _ r' -> [r']
-    Transaction r'   -> [r']
-    Measure _ r'     -> [r']
-
-parts :: Recipe -> [Recipe]
-parts = mapRecipe id
-
-rmdups :: Eq a => [a] -> [a]
-rmdups xs = rmdups' xs []
-    where
-        rmdups' [] ys = ys
-        rmdups' (x:xs) ys = if x `elem` ys
-            then rmdups' xs ys
-            else rmdups' xs (ys ++ [x])
-
-ppList :: Show a => [a] -> IO ()
-ppList [] = return ()
-ppList (x:xs) = print x
-    >> putStrLn ""
-    >> ppList xs
-
--- Create a list of ingredients used in a recipe
--- Doesn't yet show quantities
-ingredients :: Recipe -> [String]
-ingredients (Ingredient s) = [s]
-ingredients r =
-    concatMap ingredients (childRecipes r)
-
--------------------------------------
--- RECIPE LABELLING
--------------------------------------
-
--- abstract this into mapping of Recipes to Properties
-
 type Label = Int
 
--- Need to map labels to recipes and not vice versa
-
-createTable :: Recipe -> [(Label, Recipe)]
-createTable r = zip [1..length ps] ps
+labelRecipe :: Recipe -> Tree (Label, Action)
+labelRecipe r = evalState (labelRecipe' r) 1
     where
-        ps = rmdups $ parts r
+        labelRecipe' (Node a ts) = do
+            ts' <- mapM labelRecipe' ts
+            l <- get
+            put (l + 1)
+            return $ Node (l,a) ts'
 
--- Unsafe
-getLabel :: [(Label, Recipe)] -> Recipe -> Label
-getLabel lrs r = fst $ head lrs'
-    where lrs' = filter (\x -> snd x == r) lrs
+-- -------------------------------------
+-- -- RECIPE SEMANTICS
+-- -------------------------------------
 
--- Unsafe
-getRecipe :: [(Label, Recipe)] -> Label -> Recipe
-getRecipe lrs l = snd $ head lrs'
-    where lrs' = filter (\x -> fst x == l) lrs
+-- data Action =
+--     Input -- input and output take Recipe?
+--     | Output
+--     | Preheat Temperature
+--     | DoNothing Time
+--     | Mix Recipe Recipe
+--     | EvalCond Condition
+--     | MeasureOut Measurement Recipe
+--     | Hold Recipe -- tap "Holds" water
+--     deriving Show
 
-recipeToTree :: (Recipe -> a) -> Recipe -> Tree a
-recipeToTree f r = Node (f r) cs'
-    where
-        cs = childRecipes r
-        cs' = map (recipeToTree f) cs
+-- -------------------------------------
+-- -- CONCRETE IMPLEMENTATION
+-- -------------------------------------
 
-labelRecipe :: Recipe -> Tree Label
-labelRecipe r = recipeToTree (getLabel table) r
-    where table = createTable r
+-- data Env = Env
+--     { eStations :: [Station]
+--     , eEntries  :: [(Recipe, StName)] -- where things start
+--     }
 
--- should process recipe e.g. apply transactions
--- etc. before top sorting
+-- type StName = String
 
-topologicals :: Eq a => Tree a -> [[a]]
-topologicals (Node a [])  = [[a]]
-topologicals t = concat
-    [map (a:) (topologicals' l) | l@(Node a _) <- ls]
-    where
-        topologicals' l = topologicals $ removeFrom t l
-        ls = leaves t
+-- data Obs = ObsTemp Temperature
 
-isLeaf :: Tree a -> Bool
-isLeaf (Node _ []) = True
-isLeaf _ = False
+-- -- Currently assumed that all stations are
+-- -- accessible in some way by a transfer node e.g. human
+-- data Station = Station
+--     { stName     :: String
+--     , stInputs   :: [StName] -- List of names of stations
+--     , stOutputs  :: [StName] -- Better to name Connections String In|Out ?
+--     , stConstrF  :: ConstraintF
+--     , stTransfer :: Bool -- Is transfer node? could end up being Maybe f where f is how to transfer
+--     , stObs      :: [IO Obs]
+--     }
 
-leaves :: Tree a -> [Tree a]
-leaves (Node a []) = [Node a []]
-leaves (Node a ts) = concatMap leaves ts
+-- -- match a recipe against constraint function
+-- -- returns a list of actions for the recipe if possible
+-- type ConstraintF = Recipe -> Maybe [Action]
 
--- Removes all occurences of a sub tree from the given tree.
--- Removing a tree from itself does nothing.
-removeFrom :: Eq a => Tree a -> Tree a -> Tree a
-removeFrom t@(Node a ts) toRem = Node a ts''
-    where
-        ts'  = deleteAll toRem ts
-        ts'' = map (\t -> removeFrom t toRem) ts'
+-- -- bit of an issue with CondOpt as needs to be added
+-- -- before action i.e. after Input
+-- addEvalCond :: Condition -> [Action] -> Maybe [Action]
+-- addEvalCond c as = return $ init as ++ [EvalCond c, Output]
 
-deleteAll :: Eq a => a -> [a] -> [a]
-deleteAll _ [] = []
-deleteAll x (y:ys)
-    | x == y = deleteAll x ys
-    | otherwise = y : deleteAll x ys
+-- type Schedule = [(StName, [Action])]
 
--------------------------------------
--- RECIPE SEMANTICS
--------------------------------------
+-- entryPoint :: Env -> Recipe -> Maybe StName
+-- entryPoint env r = listToMaybe $ findRecipe env r
 
-data Action =
-    Input -- input and output take Recipe?
-    | Output
-    | Preheat Temperature
-    | DoNothing Time
-    | Mix Recipe Recipe
-    | EvalCond Condition
-    | MeasureOut Measurement Recipe
-    | Hold Recipe -- tap "Holds" water
-    deriving Show
+-- -- Check if the recipe is stored somewhere
+-- -- in the environment already
+-- findRecipe :: Env -> Recipe -> [StName]
+-- findRecipe env r = [snd x | x <- eEntries env,
+--                             fst x == r]
 
--------------------------------------
--- CONCRETE IMPLEMENTATION
--------------------------------------
+-- makeSchedule :: Env -> Recipe -> Maybe Schedule
+-- makeSchedule env r = case r of
+--     (Ingredient _)     -> makeSchedule' (const Nothing)
+--     (HeatAt _ r')      -> makeSchedule' (singleChild r')
+--     (Combine r1 r2)    -> makeSchedule' (doubleChild r1 r2)
+--     (Wait _ r')        -> makeSchedule' (singleChild r')
+--     (Conditional _ r') -> makeSchedule' (singleChild r')
+--     (Transaction r')   -> makeSchedule' (singleChild r') -- does this matter atm as we are doing things in order anyway?
+--     (Measure _ r')     -> makeSchedule' (singleChild r')
+--     where
+--         makeSchedule' scheduleCons = case entryPoint env r of
+--             Nothing -> assignStation env r >>= scheduleCons
+--             Just s  -> Just [(s, [Hold r])]
+--         singleChild r' sa = (++) <$> makeSchedule env r' <*> Just [sa]
+--         doubleChild r1 r2 sa = (++) <$> ((++)
+--             <$> makeSchedule env r1 <*>
+--             makeSchedule env r2) <*> Just [sa]
 
-data Env = Env
-    { eStations :: [Station]
-    , eEntries  :: [(Recipe, StName)] -- where things start
-    }
-
-type StName = String
-
-data Obs = ObsTemp Temperature
-
--- Currently assumed that all stations are
--- accessible in some way by a transfer node e.g. human
-data Station = Station
-    { stName     :: String
-    , stInputs   :: [StName] -- List of names of stations
-    , stOutputs  :: [StName] -- Better to name Connections String In|Out ?
-    , stConstrF  :: ConstraintF
-    , stTransfer :: Bool -- Is transfer node? could end up being Maybe f where f is how to transfer
-    , stObs      :: [IO Obs]
-    }
-
--- match a recipe against constraint function
--- returns a list of actions for the recipe if possible
-type ConstraintF = Recipe -> Maybe [Action]
-
--- bit of an issue with CondOpt as needs to be added
--- before action i.e. after Input
-addEvalCond :: Condition -> [Action] -> Maybe [Action]
-addEvalCond c as = return $ init as ++ [EvalCond c, Output]
-
-type Schedule = [(StName, [Action])]
-
-entryPoint :: Env -> Recipe -> Maybe StName
-entryPoint env r = listToMaybe $ findRecipe env r
-
--- Check if the recipe is stored somewhere
--- in the environment already
-findRecipe :: Env -> Recipe -> [StName]
-findRecipe env r = [snd x | x <- eEntries env,
-                            fst x == r]
-
-makeSchedule :: Env -> Recipe -> Maybe Schedule
-makeSchedule env r = case r of
-    (Ingredient _)     -> makeSchedule' (const Nothing)
-    (HeatAt _ r')      -> makeSchedule' (singleChild r')
-    (Combine r1 r2)    -> makeSchedule' (doubleChild r1 r2)
-    (Wait _ r')        -> makeSchedule' (singleChild r')
-    (Conditional _ r') -> makeSchedule' (singleChild r')
-    (Transaction r')   -> makeSchedule' (singleChild r') -- does this matter atm as we are doing things in order anyway?
-    (Measure _ r')     -> makeSchedule' (singleChild r')
-    where
-        makeSchedule' scheduleCons = case entryPoint env r of
-            Nothing -> assignStation env r >>= scheduleCons
-            Just s  -> Just [(s, [Hold r])]
-        singleChild r' sa = (++) <$> makeSchedule env r' <*> Just [sa]
-        doubleChild r1 r2 sa = (++) <$> ((++)
-            <$> makeSchedule env r1 <*>
-            makeSchedule env r2) <*> Just [sa]
-
-assignStation :: Env -> Recipe -> Maybe (StName, [Action])
-assignStation env r = listToMaybe
-    [(stName st, fromJust ma) | st <- eStations env,
-                                let ma = (stConstrF st) r,
-                                isJust ma]
+-- assignStation :: Env -> Recipe -> Maybe (StName, [Action])
+-- assignStation env r = listToMaybe
+--     [(stName st, fromJust ma) | st <- eStations env,
+--                                 let ma = (stConstrF st) r,
+--                                 isJust ma]
