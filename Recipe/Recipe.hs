@@ -20,7 +20,7 @@ data Action = GetIngredient String
             | Conditional Action Condition
             | Transaction Action
             -- | Measure Measurement Recipe
-            deriving Show
+            deriving (Show, Eq)
 
 -- Stored as seconds
 newtype Time = Time Int
@@ -140,48 +140,6 @@ foldTree f (Node a ts) = f a (map (foldTree f) ts)
 -- heat t of heat t' of r results in r being t
 -- regardless of what t' was
 
--- -------------------------------------
--- -- RECIPE SEMANTICS
--- -------------------------------------
-
--- data Action =
---     Input -- input and output take Recipe?
---     | Output
---     | Preheat Temperature
---     | DoNothing Time
---     | Mix Recipe Recipe
---     | EvalCond Condition
---     | MeasureOut Measurement Recipe
---     | Hold Recipe -- tap "Holds" water
---     deriving Show
-
--- -------------------------------------
--- -- CONCRETE IMPLEMENTATION
--- -------------------------------------
-
--- data Env = Env
---     { eStations :: [Station]
---     , eEntries  :: [(Recipe, StName)] -- where things start
---     }
-
--- type StName = String
-
--- data Obs = ObsTemp Temperature
-
--- -- Currently assumed that all stations are
--- -- accessible in some way by a transfer node e.g. human
--- data Station = Station
---     { stName     :: String
---     , stInputs   :: [StName] -- List of names of stations
---     , stOutputs  :: [StName] -- Better to name Connections String In|Out ?
---     , stConstrF  :: ConstraintF
---     , stTransfer :: Bool -- Is transfer node? could end up being Maybe f where f is how to transfer
---     , stObs      :: [IO Obs]
---     }
-
--- -- match a recipe against constraint function
--- -- returns a list of actions for the recipe if possible
--- type ConstraintF = Recipe -> Maybe [Action]
 
 -- -- bit of an issue with CondOpt as needs to be added
 -- -- before action i.e. after Input

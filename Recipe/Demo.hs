@@ -2,6 +2,8 @@ module Recipe.Demo where
 
 import Recipe.Recipe
 import Recipe.Printer
+import Recipe.Kitchen
+import Data.Tree
 --import Recipe.QS
 
 -------------------------------------
@@ -78,82 +80,32 @@ preheatOil = \atTmp toTmp ->
 -- TEST STATIONS
 -------------------------------------
 
--- env :: Env
--- env = Env { eStations = [kettle, workSurface, fridge, chef]
---           , eEntries  = [ (Ingredient "water", "tap")
---                         , (Ingredient "milk", "fridge")
---                         , (Ingredient "teabag", "work surface")
---                         ]
---           }
+env :: Env
+env = Env { eStations = [kettle]
+          , eObs = []
+          }
 
--- tap :: Station
--- tap = Station {stName = "tap", stInputs = [], stOutputs = [],
---     stConstrF = tapConstr, stTransfer = False, stObs = []}
+kettle :: Station
+kettle = let kettleConstr r 
+                | r == heatTo 100 (ingredient "water") = Just [Input, Output]
+                | otherwise = Nothing
+             kettleTemp = return $ ObsTemp 100 in
+         Station "kettle" [] [] kettleConstr [kettleTemp]
 
--- tapConstr :: ConstraintF
--- tapConstr (Ingredient "water") = Just []
--- tapConstr _                    = Nothing
+chef :: Station
+chef = let chefConstr r@(Node a ts) = case a of
+                GetIngredient _ -> Just [Input]
+                Combine s -> Just [Input, PCombine s, Output]
+                Wait -> Just [Input, DoNothing, Output]
+                Conditional a c -> (chefConstr $ popCond r)
+                    >>= return . addEvalCond c
+                _ -> Nothing in
+       Station "chef" [] [] chefConstr []
 
--- kettle :: Station
--- kettle = Station {stName = "kettle", stInputs = [], stOutputs = [],
---     stConstrF = kettleConstr, stTransfer = False, stObs = [kettleTemp]}
+popCond :: Recipe -> Recipe
+popCond (Node (Conditional a c) ts) = Node a ts
+popCond r = r
 
--- kettleTemp :: IO Obs
--- kettleTemp = return $ ObsTemp $ Deg 100
-
--- kettleConstr :: ConstraintF
--- kettleConstr (Ingredient _)       = Just []
--- kettleConstr (HeatAt (Deg t) (Ingredient s))
---     | t == 100 && s == "water"    = Just [Input, Output] -- is turning the kettle on part of input?
---     | otherwise                   = Nothing              -- and turning off part of output?
--- kettleConstr (Conditional c r)    = kettleConstr r >>= addEvalCond c
--- kettleConstr _                    = Nothing
-
--- fridge :: Station
--- fridge = Station {stName = "fridge", stInputs = [], stOutputs = [],
---     stConstrF = fridgeConstr, stTransfer = False, stObs = [fridgeTemp]}
-
--- fridgeTemp :: IO Obs
--- fridgeTemp = return $ ObsTemp $ Deg 4
-
--- fridgeConstr :: ConstraintF
--- fridgeConstr (Ingredient _)     = Just []
--- fridgeConstr (HeatAt (Deg 4) _) = Just [Input, Output]
--- fridgeConstr (Conditional c r)  = fridgeConstr r >>= addEvalCond c
--- fridgeConstr _                  = Nothing
-
--- workSurface :: Station
--- workSurface = Station {stName = "work surface", stInputs = [], stOutputs = [],
---     stConstrF = workConstr, stTransfer = False, stObs = []}
-
--- workConstr :: ConstraintF
--- workConstr (Ingredient _)    = Just []
--- workConstr (Wait t _)        = Just [Input, DoNothing t, Output]
--- workConstr (Conditional c r) = workConstr r >>= addEvalCond c
--- workConstr _                 = Nothing
-
--- chef :: Station
--- chef = Station {stName = "chef", stInputs = [], stOutputs = [],
---     stConstrF = chefConstr, stTransfer = True, stObs = []}
-
--- chefConstr :: ConstraintF
--- chefConstr (Ingredient _)    = Just []
--- chefConstr (Combine r1 r2)   = Just [Input, Mix r1 r2, Output]
--- chefConstr (Wait t _)        = Just [Input, DoNothing t, Output]
--- chefConstr (Conditional c r) = chefConstr r >>= addEvalCond c
--- chefConstr _                 = Nothing
-
--- oven :: Station
--- oven = Station {stName = "oven", stInputs = [], stOutputs = [],
---     stConstrF = ovenConstr, stTransfer = False, stObs = [ovenTemp]}
-
--- ovenTemp :: IO Obs
--- ovenTemp = return $ ObsTemp $ Deg 180
-
--- ovenConstr :: ConstraintF
--- ovenConstr (Ingredient _)    = Just []
--- ovenConstr (HeatAt (Deg t) _)
---     | t > 120 && t < 240     = Just [Preheat (Deg t), Input, Output]
---     | otherwise              = Nothing
--- ovenConstr (Conditional c r) = ovenConstr r >>= addEvalCond c
--- ovenConstr _                 = Nothing
+addEvalCond :: Condition -> [Process] -> [Process]
+addEvalCond c (Input:ps) = Input : EvalCond c : ps
+addEvalCond c ps = EvalCond c : ps
