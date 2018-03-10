@@ -16,10 +16,17 @@ teabag = ingredient "teabag"
 milk = ingredient "milk"
 
 cupOfTea :: Recipe
-cupOfTea = wait5 $ combine "pour" boilingWater teabag
+cupOfTea = optional $ combine "mix" milk blackTea
     where
-        boilingWater = addCondition (CondTemp 100) (heatAt 100 water)
-        wait5 = \r -> addCondition (CondTime 5) (wait r)
+        boilingWater = addCondition (CondTemp 100) (heat water)
+        wait5 = \r -> addCondition (CondTime 300) (wait r)
+        blackTea = wait5 $ combine "pour" boilingWater teabag
+
+cupOfTea' :: Recipe
+cupOfTea' = optional
+    $ combine "mix" milk
+    $ waitFor (minutes 5)
+    $ combine "pour" (heatTo 100 water) teabag
 
 -- Buttered Toast
 
@@ -35,21 +42,27 @@ butteredToast = transaction $ combine "spread" butter toast
 -- CUSTOM COMBINATORS
 -------------------------------------
 
-waitFor :: Int -> Recipe -> Recipe
+waitFor :: Time -> Recipe -> Recipe
 waitFor t r = forTime t (wait r)
 
 multiCombine :: String -> Recipe -> [Recipe] -> Recipe
 multiCombine s r [] = r
 multiCombine s r rs = foldr (combine s) r rs
 
-marinate :: Recipe -> [Recipe] -> Int -> Recipe
+marinate :: Recipe -> [Recipe] -> Time -> Recipe
 marinate r [] t     = waitFor t r
 marinate r [i] t    = waitFor t (combine "place in" r i)
 marinate r (i:is) t = waitFor t (combine "place in" r r')
     where r' = multiCombine "mix" i is
 
-heatFor :: Int -> Int-> Recipe -> Recipe
-heatFor temp time = forTime time . heatAt temp
+heatFor :: Time -> Recipe -> Recipe
+heatFor t = forTime t . heat
+
+heatTo :: Int -> Recipe -> Recipe
+heatTo t = toTemp t . heat
+
+heatAtFor :: Int -> Time -> Recipe -> Recipe
+heatAtFor temp time = forTime time . heatAt temp
 
 heatAtTo :: Int -> Int -> Recipe -> Recipe
 heatAtTo atTmp toTmp = toTemp toTmp . heatAt atTmp

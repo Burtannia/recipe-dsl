@@ -3,7 +3,7 @@ module Recipe.Printer where
 import Recipe.Recipe
 import Data.Tree
 import Data.Tree.Pretty
-import Control.Monad.State
+import Control.Monad.Trans.State
 
 type Step = (Label, String)
 
@@ -15,6 +15,8 @@ steps = steps' . labelRecipe
                 ts' = map steps' ts
                 s = toString a
                 toString (GetIngredient s) = "Get " ++ s
+                toString (Heat) = "Heat (" ++ show l' ++ ")"
+                    where l' = head $ map extractLabel ts
                 toString (HeatAt t) = "Heat (" ++ show l' ++ ") at " ++ show t
                     where l' = head $ map extractLabel ts
                 toString Wait = "Wait"
@@ -27,7 +29,7 @@ steps = steps' . labelRecipe
                     where
                         condToString (CondOpt) = " (optional)"
                         condToString (CondTemp t) = " until temperature " ++ show t
-                        condToString (CondTime t) = " for " ++ show t ++ " minutes"
+                        condToString (CondTime t) = " for " ++ show t
                 toString (Transaction a) = "Immediately " ++ toString a
                 extractLabel (Node (l,_) _) = l
 
@@ -41,3 +43,6 @@ ppSteps = ppSteps' . steps
 
 ppTree :: Show a => Tree a -> IO ()
 ppTree = putStrLn . drawVerticalTree . fmap show
+
+ppIngredients :: Recipe -> IO ()
+ppIngredients = mapM_ putStrLn . ingredients

@@ -1,7 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Recipe.Recipe where
 
 import Data.Tree
-import Control.Monad.State
+import Control.Monad.Trans.State
+import Data.Monoid
 
 -------------------------------------
 -- RECIPE DEFINITION
@@ -10,6 +13,7 @@ import Control.Monad.State
 type Recipe = Tree Action
 
 data Action = GetIngredient String
+            | Heat
             | HeatAt Int
             | Wait
             | Combine String
@@ -18,11 +22,37 @@ data Action = GetIngredient String
             -- | Measure Measurement Recipe
             deriving Show
 
-data Condition = CondTemp Int | CondTime Int | CondOpt
-    deriving Show
+-- Stored as seconds
+newtype Time = Time Int
+    deriving (Eq, Ord, Num, Real, Enum, Integral)
+
+instance Show Time where
+    show (Time i) = let h = i `div` 3600
+                        m = (i `mod` 3600) `div` 60
+                        s = (i `mod` 3600) `mod` 60 in
+                    show h ++ "h "
+                    ++ show m ++ "m "
+                    ++ show s ++ "s"
+
+instance Monoid Time where
+    mempty = Time 0
+    mappend = (+)
+
+data Condition = CondTime Time | CondTemp Int | CondOpt
+    | Condition `AND` Condition | Condition `OR` Condition
+    deriving (Show, Eq)
+
+foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
+foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
+foldCond f (c `OR` c') = max (foldCond f c) (foldCond f c')
+foldCond f CondOpt = mempty
+foldCond f c = f c
 
 ingredient :: String -> Recipe
 ingredient s = Node (GetIngredient s) []
+
+heat :: Recipe -> Recipe
+heat r = Node Heat [r]
 
 heatAt :: Int -> Recipe -> Recipe
 heatAt temp r = Node (HeatAt temp) [r]
@@ -34,12 +64,21 @@ combine :: String -> Recipe -> Recipe -> Recipe
 combine s r1 r2 = Node (Combine s) [r1, r2]
 
 addCondition :: Condition -> Recipe -> Recipe
-addCondition cond (Node a ts) = Node (Conditional a cond) ts
+addCondition c (Node a ts) = case a of
+    Conditional a' c' -> Node a'' ts
+        where a'' = Conditional a' (c .&& c')
+    _ -> Node (Conditional a c) ts
+
+(.&&) :: Condition -> Condition -> Condition
+(.&&) = AND
+
+(.||) :: Condition -> Condition -> Condition
+(.||) = OR
 
 transaction :: Recipe -> Recipe
 transaction (Node a ts) = Node (Transaction a) ts
 
--- Nicer Conditions
+-- Nicer Conditions and Time
 
 optional :: Recipe -> Recipe
 optional = addCondition CondOpt
@@ -47,12 +86,23 @@ optional = addCondition CondOpt
 toTemp :: Int -> Recipe -> Recipe
 toTemp t = addCondition (CondTemp t)
 
-forTime :: Int -> Recipe -> Recipe
+forTime :: Time -> Recipe -> Recipe
 forTime t = addCondition (CondTime t)
+
+hours :: Int -> Time
+hours = Time . (*) 3600
+
+minutes :: Int -> Time
+minutes = Time . (*) 60
 
 -------------------------------------
 -- UTILITY FUNCTIONS
 -------------------------------------
+
+ingredients :: Recipe -> [String]
+ingredients (Node a ts) = case a of
+    GetIngredient s -> s : concatMap ingredients ts
+    _ -> concatMap ingredients ts
 
 type Label = Int
 
@@ -64,6 +114,31 @@ labelRecipe r = evalState (labelRecipe' r) 1
             l <- get
             put (l + 1)
             return $ Node (l,a) ts'
+
+time :: Recipe -> Time
+time = foldTree (\a ts -> time' a + mconcat ts)
+    where
+        time' :: Action -> Time
+        time' (GetIngredient _) = 10
+        time' Heat = mempty
+        time' (HeatAt t) = Time t' + 600
+            where t' = 60 * (t `div` 20)
+        time' Wait = mempty
+        time' (Combine _) = 10
+        time' (Conditional a c) = t' + foldCond f c
+            where
+                t' = time' a
+                f (CondTime t) = t
+                f (CondTemp t) = Time t * 4
+        time' (Transaction a) = time' a
+    
+-- newer versions of Data.Tree implement this
+foldTree :: (a -> [b] -> b) -> Tree a -> b
+foldTree f (Node a ts) = f a (map (foldTree f) ts)
+
+-- need way to evaluate chain of actions to a result
+-- heat t of heat t' of r results in r being t
+-- regardless of what t' was
 
 -- -------------------------------------
 -- -- RECIPE SEMANTICS
