@@ -115,21 +115,30 @@ labelRecipe r = evalState (labelRecipe' r) 1
             put (l + 1)
             return $ Node (l,a) ts'
 
+-- Time to reach temp (use with CondTemp)
+tempToTime :: Int -> Time
+tempToTime i = Time i * 4
+
+-- Preheat time (use with HeatAt)
+-- 10m + 1m per 20 degrees
+preheatTime :: Int -> Time
+preheatTime i = Time t + 600
+    where t = 60 * (i `div` 20)
+
 time :: Recipe -> Time
 time = foldTree (\a ts -> time' a + mconcat ts)
     where
         time' :: Action -> Time
         time' (GetIngredient _) = 10
         time' Heat = mempty
-        time' (HeatAt t) = Time t' + 600
-            where t' = 60 * (t `div` 20)
+        time' (HeatAt t) = preheatTime t
         time' Wait = mempty
         time' (Combine _) = 10
         time' (Conditional a c) = t' + foldCond f c
             where
                 t' = time' a
                 f (CondTime t) = t
-                f (CondTemp t) = Time t * 4
+                f (CondTemp t) = heatToTime t
         time' (Transaction a) = time' a
     
 -- newer versions of Data.Tree implement this
@@ -139,44 +148,3 @@ foldTree f (Node a ts) = f a (map (foldTree f) ts)
 -- need way to evaluate chain of actions to a result
 -- heat t of heat t' of r results in r being t
 -- regardless of what t' was
-
-
--- -- bit of an issue with CondOpt as needs to be added
--- -- before action i.e. after Input
--- addEvalCond :: Condition -> [Action] -> Maybe [Action]
--- addEvalCond c as = return $ init as ++ [EvalCond c, Output]
-
--- type Schedule = [(StName, [Action])]
-
--- entryPoint :: Env -> Recipe -> Maybe StName
--- entryPoint env r = listToMaybe $ findRecipe env r
-
--- -- Check if the recipe is stored somewhere
--- -- in the environment already
--- findRecipe :: Env -> Recipe -> [StName]
--- findRecipe env r = [snd x | x <- eEntries env,
---                             fst x == r]
-
--- makeSchedule :: Env -> Recipe -> Maybe Schedule
--- makeSchedule env r = case r of
---     (Ingredient _)     -> makeSchedule' (const Nothing)
---     (HeatAt _ r')      -> makeSchedule' (singleChild r')
---     (Combine r1 r2)    -> makeSchedule' (doubleChild r1 r2)
---     (Wait _ r')        -> makeSchedule' (singleChild r')
---     (Conditional _ r') -> makeSchedule' (singleChild r')
---     (Transaction r')   -> makeSchedule' (singleChild r') -- does this matter atm as we are doing things in order anyway?
---     (Measure _ r')     -> makeSchedule' (singleChild r')
---     where
---         makeSchedule' scheduleCons = case entryPoint env r of
---             Nothing -> assignStation env r >>= scheduleCons
---             Just s  -> Just [(s, [Hold r])]
---         singleChild r' sa = (++) <$> makeSchedule env r' <*> Just [sa]
---         doubleChild r1 r2 sa = (++) <$> ((++)
---             <$> makeSchedule env r1 <*>
---             makeSchedule env r2) <*> Just [sa]
-
--- assignStation :: Env -> Recipe -> Maybe (StName, [Action])
--- assignStation env r = listToMaybe
---     [(stName st, fromJust ma) | st <- eStations env,
---                                 let ma = (stConstrF st) r,
---                                 isJust ma]

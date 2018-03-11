@@ -95,11 +95,11 @@ kettle = let kettleConstr r
 chef :: Station
 chef = let chefConstr r@(Node a ts) = case a of
                 GetIngredient _ -> Just [Input]
-                Combine s -> Just [Input, PCombine s, Output]
-                Wait -> Just [Input, DoNothing, Output]
+                Combine s       -> Just [Input, PCombine s, Output]
+                Wait            -> Just [Input, DoNothing, Output]
                 Conditional a c -> (chefConstr $ popCond r)
-                    >>= return . addEvalCond c
-                _ -> Nothing in
+                                    >>= return . addEvalCond c
+                _               -> Nothing in
        Station "chef" [] [] chefConstr []
 
 popCond :: Recipe -> Recipe
