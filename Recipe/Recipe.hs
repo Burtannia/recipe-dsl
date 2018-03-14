@@ -115,6 +115,15 @@ labelRecipe r = evalState (labelRecipe' r) 1
             put (l + 1)
             return $ Node (l,a) ts'
 
+labelRecipeR :: Recipe -> Tree (Label, Recipe)
+labelRecipeR r = evalState (labelRecipeR' r) 1
+    where
+        labelRecipeR' r@(Node a ts) = do
+            ts' <- mapM labelRecipeR' ts
+            l <- get
+            put (l + 1)
+            return $ Node (l,r) ts'
+
 -- Time to reach temp (use with CondTemp)
 tempToTime :: Int -> Time
 tempToTime i = Time i * 4
@@ -126,20 +135,20 @@ preheatTime i = Time t + 600
     where t = 60 * (i `div` 20)
 
 time :: Recipe -> Time
-time = foldTree (\a ts -> time' a + mconcat ts)
+time = foldTree (\a ts -> timeAction a + mconcat ts)
+
+timeAction :: Action -> Time
+timeAction (GetIngredient _) = 10
+timeAction Heat = mempty
+timeAction (HeatAt t) = preheatTime t
+timeAction Wait = mempty
+timeAction (Combine _) = 10
+timeAction (Conditional a c) = t' + foldCond f c
     where
-        time' :: Action -> Time
-        time' (GetIngredient _) = 10
-        time' Heat = mempty
-        time' (HeatAt t) = preheatTime t
-        time' Wait = mempty
-        time' (Combine _) = 10
-        time' (Conditional a c) = t' + foldCond f c
-            where
-                t' = time' a
-                f (CondTime t) = t
-                f (CondTemp t) = heatToTime t
-        time' (Transaction a) = time' a
+        t' = timeAction a
+        f (CondTime t) = t
+        f (CondTemp t) = tempToTime t
+timeAction (Transaction a) = timeAction a
     
 -- newer versions of Data.Tree implement this
 foldTree :: (a -> [b] -> b) -> Tree a -> b

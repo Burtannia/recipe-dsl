@@ -3,6 +3,7 @@ module Recipe.Demo where
 import Recipe.Recipe
 import Recipe.Printer
 import Recipe.Kitchen
+import Recipe.Scheduler
 import Data.Tree
 --import Recipe.QS
 
@@ -81,7 +82,7 @@ preheatOil = \atTmp toTmp ->
 -------------------------------------
 
 env :: Env
-env = Env { eStations = [kettle]
+env = Env { eStations = [kettle, chef]
           , eObs = []
           }
 
@@ -89,8 +90,8 @@ kettle :: Station
 kettle = let kettleConstr r 
                 | r == heatTo 100 (ingredient "water") = Just [Input, Output]
                 | otherwise = Nothing
-             kettleTemp = return $ ObsTemp 100 in
-         Station "kettle" [] [] kettleConstr [kettleTemp]
+             kettleTemp = return $ ObsTemp 100
+          in Station "kettle" [] [] kettleConstr [kettleTemp]
 
 chef :: Station
 chef = let chefConstr r@(Node a ts) = case a of
@@ -99,8 +100,8 @@ chef = let chefConstr r@(Node a ts) = case a of
                 Wait            -> Just [Input, DoNothing, Output]
                 Conditional a c -> (chefConstr $ popCond r)
                                     >>= return . addEvalCond c
-                _               -> Nothing in
-       Station "chef" [] [] chefConstr []
+                _               -> Nothing
+        in Station "chef" [] [] chefConstr []
 
 popCond :: Recipe -> Recipe
 popCond (Node (Conditional a c) ts) = Node a ts
