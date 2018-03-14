@@ -106,3 +106,6 @@ stationConstr env r =
 
 -- or :: [(String, Int)] -> State Int [(LinFunc String Int, Int)]
 -- or xs = 
+
+-- need to make sure children of transaction end at same time
+-- then transaction is started at that time
