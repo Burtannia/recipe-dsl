@@ -2,9 +2,8 @@
 
 module Recipe.Recipe where
 
-import Data.Tree
-import Control.Monad.Trans.State
-import Data.Monoid
+import           Control.Monad.Trans.State
+import           Data.Tree
 
 -------------------------------------
 -- RECIPE DEFINITION
@@ -44,9 +43,9 @@ data Condition = CondTime Time | CondTemp Int | CondOpt
 
 foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
 foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
-foldCond f (c `OR` c') = max (foldCond f c) (foldCond f c')
-foldCond f CondOpt = mempty
-foldCond f c = f c
+foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
+foldCond f CondOpt      = mempty
+foldCond f c            = f c
 
 ingredient :: String -> Recipe
 ingredient s = Node (GetIngredient s) []
@@ -102,7 +101,7 @@ minutes = Time . (*) 60
 ingredients :: Recipe -> [String]
 ingredients (Node a ts) = case a of
     GetIngredient s -> s : concatMap ingredients ts
-    _ -> concatMap ingredients ts
+    _               -> concatMap ingredients ts
 
 type Label = Int
 
@@ -138,9 +137,9 @@ time = foldTree (\a ts -> time' a + mconcat ts)
             where
                 t' = time' a
                 f (CondTime t) = t
-                f (CondTemp t) = heatToTime t
+                f (CondTemp t) = tempToTime t
         time' (Transaction a) = time' a
-    
+
 -- newer versions of Data.Tree implement this
 foldTree :: (a -> [b] -> b) -> Tree a -> b
 foldTree f (Node a ts) = f a (map (foldTree f) ts)
