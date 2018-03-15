@@ -21,6 +21,12 @@ data Action = GetIngredient String
             -- | Measure Measurement Recipe
             deriving (Show, Eq)
 
+-- instance Eq Recipe where
+--     (==) r1 r2 = let xs = topologicals r1
+--                      ys = topologicals r2
+--                      elems = [x `elem` ys | x <- xs]
+--                   in all (True ==) elems
+
 -- Stored as seconds
 newtype Time = Time Int
     deriving (Eq, Ord, Num, Real, Enum, Integral)
@@ -114,6 +120,15 @@ labelRecipe r = evalState (labelRecipe' r) 1
             put (l + 1)
             return $ Node (l,a) ts'
 
+labelRecipeR :: Recipe -> Tree (Label, Recipe)
+labelRecipeR r = evalState (labelRecipeR' r) 1
+    where
+        labelRecipeR' r@(Node a ts) = do
+            ts' <- mapM labelRecipeR' ts
+            l <- get
+            put (l + 1)
+            return $ Node (l,r) ts'
+
 -- Time to reach temp (use with CondTemp)
 tempToTime :: Int -> Time
 tempToTime i = Time i * 4
@@ -125,20 +140,20 @@ preheatTime i = Time t + 600
     where t = 60 * (i `div` 20)
 
 time :: Recipe -> Time
-time = foldTree (\a ts -> time' a + mconcat ts)
+time = foldTree (\a ts -> timeAction a + mconcat ts)
+
+timeAction :: Action -> Time
+timeAction (GetIngredient _) = 10
+timeAction Heat = mempty
+timeAction (HeatAt t) = preheatTime t
+timeAction Wait = mempty
+timeAction (Combine _) = 10
+timeAction (Conditional a c) = t' + foldCond f c
     where
-        time' :: Action -> Time
-        time' (GetIngredient _) = 10
-        time' Heat = mempty
-        time' (HeatAt t) = preheatTime t
-        time' Wait = mempty
-        time' (Combine _) = 10
-        time' (Conditional a c) = t' + foldCond f c
-            where
-                t' = time' a
-                f (CondTime t) = t
-                f (CondTemp t) = tempToTime t
-        time' (Transaction a) = time' a
+        t' = timeAction a
+        f (CondTime t) = t
+        f (CondTemp t) = tempToTime t
+timeAction (Transaction a) = timeAction a
 
 -- newer versions of Data.Tree implement this
 foldTree :: (a -> [b] -> b) -> Tree a -> b
@@ -147,3 +162,33 @@ foldTree f (Node a ts) = f a (map (foldTree f) ts)
 -- need way to evaluate chain of actions to a result
 -- heat t of heat t' of r results in r being t
 -- regardless of what t' was
+
+topologicals :: Eq a => Tree a -> [[a]]
+topologicals (Node a [])  = [[a]]
+topologicals t = concat
+    [map (a:) (topologicals' l) | l@(Node a _) <- ls]
+    where
+        topologicals' l = topologicals $ removeFrom t l
+        ls = leaves t
+
+isLeaf :: Tree a -> Bool
+isLeaf (Node _ []) = True
+isLeaf _           = False
+
+leaves :: Tree a -> [Tree a]
+leaves (Node a []) = [Node a []]
+leaves (Node a ts) = concatMap leaves ts
+
+-- Removes all occurences of a sub tree from the given tree.
+-- Removing a tree from itself does nothing.
+removeFrom :: Eq a => Tree a -> Tree a -> Tree a
+removeFrom t@(Node a ts) toRem = Node a ts''
+    where
+        ts'  = deleteAll toRem ts
+        ts'' = map (\t -> removeFrom t toRem) ts'
+
+deleteAll :: Eq a => a -> [a] -> [a]
+deleteAll _ [] = []
+deleteAll x (y:ys)
+    | x == y = deleteAll x ys
+    | otherwise = y : deleteAll x ys
