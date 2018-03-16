@@ -31,6 +31,12 @@ cupOfTea' = optional
     $ waitFor (minutes 5)
     $ combine "pour" (heatTo 100 water) teabag
 
+cupOfTea'' :: Recipe
+cupOfTea'' = optional
+    $ combine "mix" (waitFor (minutes 5)
+                        $ combine "pour"
+                            (heatTo 100 water) teabag) milk
+
 -- Buttered Toast
 
 butter, bread :: Recipe
