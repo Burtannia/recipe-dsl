@@ -2,16 +2,16 @@
 
 module Recipe.Scheduler where
 
-import Recipe.Recipe
-import Recipe.Kitchen
-import Data.LinearProgram
-import Control.Monad.LPMonad
-import Data.LinearProgram.GLPK
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Tree
-import Control.Monad.Trans.State
-import Data.Maybe (isJust)
+import           Control.Monad.LPMonad
+import           Control.Monad.Trans.State
+import           Data.LinearProgram
+import           Data.LinearProgram.GLPK
+import           Data.Map.Strict           (Map)
+import qualified Data.Map.Strict           as Map
+import           Data.Maybe                (isJust)
+import           Data.Tree
+import           Recipe.Kitchen
+import           Recipe.Recipe
 
 -------------------------
 -- Gen Labels
@@ -59,10 +59,10 @@ durations :: Map String Action -> [(LinFunc String Int, Time)]
 durations labelSet = [(mkLF $ l ++ "_duration", dur)
                         | (l,a) <- Map.toList labelSet
                         , let dur = timeAction a]
-                                                     
+
 -- end = start + duration
 durConstraints :: Map String Action -> [(LinFunc String Int, LinFunc String Int)]
-durConstraints labelSet = [(lhs, rhs) 
+durConstraints labelSet = [(lhs, rhs)
     | l <- Map.keys labelSet
     , let lhs = mkLF2 (l ++ "_start") (l ++ "_duration")
     , let rhs = mkLF $ l ++ "_end"]
@@ -105,20 +105,26 @@ stationConstr env r =
                            , st <- sts]
 
 -- or :: [(Int, String)] -> [(Int, String)] -> State Int [(LinFunc String Int, LinFunc String Int)]
--- or xs ys = 
+-- or xs ys =
 
 -- need to make sure children of transaction end at same time
 -- then transaction is started at that time
 
-lp :: LP String Int
-lp = runVSupply $ execLPT lp'
-    where
-        lp' :: LPT String Int VSupply ()
-        lp' = do
-            Var {..} <- supplyNew
-            let var = "y" ++ show varId
-            setDirection Min
-            setObjective (linCombination [(10,var)])
-            varGeq var 7
+lp :: Recipe -> LP String Int
+lp r = execLPM $ do
+    let labelSet = mkLabelSet r
+    setDirection Min
+    setObjective (totalTime labelSet)
+    -- constraints etc.
 
-test = glpSolveVars mipDefaults lp
+-- stMkLF :: State Int (LinFunc String Int)
+-- stMkLF = mkLF <$> fresh
+
+-- fresh :: Monad m => StateT Int m String
+-- fresh = do
+--     n <- get
+--     put (n+1)
+--     return $ "y_" ++ show n
+
+-- StateT s m a
+-- runStateT :: s -> m (a,s)
