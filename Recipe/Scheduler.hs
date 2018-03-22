@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Recipe.Scheduler where
 
 import Recipe.Recipe
@@ -102,10 +104,21 @@ stationConstr env r =
      in [(mkLF l, mkLF st) | (l, sts) <- flatten tree
                            , st <- sts]
 
--- var i = s ++ show i -- y1, y2 etc.
-
--- or :: [(String, Int)] -> State Int [(LinFunc String Int, Int)]
--- or xs = 
+-- or :: [(Int, String)] -> [(Int, String)] -> State Int [(LinFunc String Int, LinFunc String Int)]
+-- or xs ys = 
 
 -- need to make sure children of transaction end at same time
 -- then transaction is started at that time
+
+lp :: LP String Int
+lp = runVSupply $ execLPT lp'
+    where
+        lp' :: LPT String Int VSupply ()
+        lp' = do
+            Var {..} <- supplyNew
+            let var = "y" ++ show varId
+            setDirection Min
+            setObjective (linCombination [(10,var)])
+            varGeq var 7
+
+test = glpSolveVars mipDefaults lp
