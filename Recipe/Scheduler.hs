@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-
 module Recipe.Scheduler where
 
 import           Control.Monad.LPMonad
@@ -8,123 +6,148 @@ import           Data.LinearProgram
 import           Data.LinearProgram.GLPK
 import           Data.Map.Strict           (Map)
 import qualified Data.Map.Strict           as Map
-import           Data.Maybe                (isJust)
+import           Data.Maybe                (isJust, fromJust)
 import           Data.Tree
 import           Recipe.Kitchen
-import           Recipe.Recipe
+import           Recipe.Recipe hiding (Label)
 
--------------------------
--- Gen Labels
--------------------------
+-----------------------------
+-- Label Recipe
+-----------------------------
 
--- action1, action2...
-mkLabelTree :: Recipe -> Tree (String, Action)
-mkLabelTree r = fmap (\(i,a) -> ("action" ++ show i, a)) lr
-    where lr = labelRecipe r
+type Label = String
 
--- variation of mkLabelTree which keeps the entire recipe
--- alongside the labelled action
-mkLabelTreeR :: Recipe -> Tree (String, Recipe)
-mkLabelTreeR r = fmap (\(i,r) -> ("action" ++ show i, r)) lr
+-- labels recipe tree with action1, action2...
+mkLabelTree :: Recipe -> Tree (Label, Recipe)
+mkLabelTree r = fmap (\(i,r) -> ("action" ++ show i, r)) lr
     where lr = labelRecipeR r
 
-mkLabelSet :: Recipe -> Map String Action
-mkLabelSet r = let lr = mkLabelTree r
-                in Map.fromList (flatten lr)
+-- map of labels to their recipe
+mkLabelMap :: Tree (Label, Recipe) -> Map Label Recipe
+mkLabelMap = Map.fromList . flatten
 
-childLabels :: String -> Tree String -> [String]
-childLabels s (Node a ts)
-    | a == s    = map rootLabel ts
-    | otherwise = concatMap (childLabels s) ts
+-----------------------------
+-- Label Helper Functions
+-----------------------------
 
--------------------------
--- Set Constraints
--------------------------
+-- Label -> Recipe
+lookupR :: Label -> Map Label Recipe -> Recipe
+lookupR l rMap = fromJust $ Map.lookup l rMap
 
-maxInt = maxBound :: Int
+-- Label -> [ChildLabels]
+childLabels :: Label -> Tree Label -> [Label]
+childLabels l (Node l' ts)
+    | l == l'   = map rootLabel ts
+    | otherwise = concatMap (childLabels l) ts
 
-mkLF :: String -> LinFunc String Int
+-- Env -> Label -> [Valid Stations]
+lookupValSts :: Env -> Label -> Map Label Recipe -> [StName]
+lookupValSts env l rMap = let r = lookupR l rMap
+                           in validStations env r
+
+-- Env -> Recipe -> [Valid Stations]
+validStations :: Env -> Recipe -> [StName]
+validStations env r = let xs = map (applyConstrF r) (eStations env)
+                          applyConstrF r st = (stName st, (stConstrF st) r)
+                          ys = filter (isJust . snd) xs
+                       in map fst ys
+
+-----------------------------
+-- LF Helper Functions
+-----------------------------
+
+mkLF :: String -> LinFunc Label Int
 mkLF s = linCombination [(1,s)]
 
+-- s1 + s2
 mkLF2 :: String -> String -> LinFunc String Int
 mkLF2 s1 s2 = linCombination [(1,s1), (1,s2)]
 
--- minimise total time
-totalTime :: Map String Action -> LinFunc String Int
-totalTime labelSet = let l = maximum $ Map.keys labelSet
-                      in mkLF $ l ++ "_end"
+-- x + x1 + x2 ...
+mkLFN :: String -> [String] -> LinFunc String Int
+mkLFN x xs = let ones = replicate (length xs) 1
+                 ys   = (1,x) : zip ones xs
+              in linCombination ys
 
--- calculate durations
-durations :: Map String Action -> [(LinFunc String Int, Time)]
-durations labelSet = [(mkLF $ l ++ "_duration", dur)
-                        | (l,a) <- Map.toList labelSet
-                        , let dur = timeAction a]
+type Prefix = String
 
--- end = start + duration
-durConstraints :: Map String Action -> [(LinFunc String Int, LinFunc String Int)]
-durConstraints labelSet = [(lhs, rhs)
-    | l <- Map.keys labelSet
-    , let lhs = mkLF2 (l ++ "_start") (l ++ "_duration")
-    , let rhs = mkLF $ l ++ "_end"]
+mkVar :: Prefix -> Label -> String
+mkVar p l = p ++ "_" ++ l
 
--- end and start must be >= 0
-allGeq :: Map String Action -> [(LinFunc String Int, Int)]
-allGeq labelSet = let starts = f "_start"
-                      ends   = f "_end"
-                      f s    = [(mkLF $ l ++ s, 0) | l <- Map.keys labelSet]
-                   in starts ++ ends
+mkVars :: Prefix -> [Label] -> [String]
+mkVars p = map (mkVar p)
 
--- duration will always be positive, therefore
--- durConstraints and allGeq ensure end >= start
+mkVar2 :: Prefix -> (Label, [StName]) -> [String]
+mkVar2 p (l, sts) = [p ++ "_" ++ l ++ "_" ++ st | st <- sts]
 
--- action can't start until child actions have ended
-seqConstraints :: Recipe -> [(LinFunc String Int, LinFunc String Int)]
-seqConstraints r = let labelSet  = mkLabelSet r
-                       labelTree = fmap fst (mkLabelTree r)
-                    in [(mkLF $ l ++ "_start", mkLF $ c ++ "_end")
-                        | l <- Map.keys labelSet
-                        , c <- childLabels l labelTree]
+mkVars2 :: Prefix -> [(Label, [StName])] -> [String]
+mkVars2 p = concatMap (mkVar2 p)
 
-setStationNumbers :: Env -> [(LinFunc String Int, Int)]
-setStationNumbers env = let names = map stName (eStations env)
-                            xs = zip names [1..length names]
-                         in map (\(s,i) -> (mkLF s, i)) xs
+-----------------------------
+-- Constraints
+-----------------------------
 
-compatStations :: Env -> Recipe -> [StName]
-compatStations env r = let xs = map (applyConstrF r) (eStations env)
-                           applyConstrF r st = (stName st, (stConstrF st) r)
-                           ys = filter (isJust . snd) xs
-                        in map fst ys
+maxInt = maxBound :: Int
 
--- Need to map OR
-stationConstr :: Env -> Recipe -> [(LinFunc String Int, LinFunc String Int)]
-stationConstr env r =
-    let tree = fmap (\(l,r) ->
-            (l, compatStations env r)) (mkLabelTreeR r)
-     in [(mkLF l, mkLF st) | (l, sts) <- flatten tree
-                           , st <- sts]
+-- objective function = total time
+totalTime :: Env -> Map Label Recipe -> LinFunc String Int
+totalTime env rMap = let l = maximum $ Map.keys rMap
+                         r = lookupR l rMap
+                         sts = validStations env r
+                         (v:vs) = mkVar2 "end" (l,sts)
+                      in mkLFN v vs
 
--- or :: [(Int, String)] -> [(Int, String)] -> State Int [(LinFunc String Int, LinFunc String Int)]
--- or xs ys =
+mkRecSts :: Prefix -> Env -> (Label, Recipe) -> [LinFunc String Int]
+mkRecSts p env (l,r) = let sts  = validStations env r
+                           vars = mkVar2 p (l,sts)
+                        in map mkLF vars
 
--- need to make sure children of transaction end at same time
--- then transaction is started at that time
+startRecSts :: Env -> Map Label Recipe -> [LinFunc String Int]
+startRecSts env rMap = concatMap (startRecSts' env) (Map.toList rMap)
 
-lp :: Recipe -> LP String Int
-lp r = execLPM $ do
-    let labelSet = mkLabelSet r
+startRecSts' :: Env -> (Label, Recipe) -> [LinFunc String Int]
+startRecSts' = mkRecSts "start"
+
+endRecSts' :: Env -> (Label, Recipe) -> [LinFunc String Int]
+endRecSts' = mkRecSts "end"
+
+dependencies :: Env -> Tree Label -> Map Label Recipe -> [(LinFunc String Int, LinFunc String Int)]
+dependencies env lTree rMap = let f = \(l,r) -> (startRecSts' env (l,r), childLabels l lTree)
+                                  xs = map f (Map.toList rMap) -- ([LF], [Label])
+                                  g = \(starts,cs) -> [(start, e) | start <- starts
+                                                                  , c <- cs
+                                                                  , let es = endRecSts' env (c, lookupR c rMap)
+                                                                  , e <- es] -- [(LF,LF)] 
+                               in concatMap g xs
+-----------------------------
+-- Running GLPK
+-----------------------------
+
+lp :: Recipe -> Env -> LP String Int
+lp r env = execLPM $ do
+    let lrTree = mkLabelTree r
+    let lTree = fmap fst lrTree
+    let rMap = mkLabelMap lrTree
+    
     setDirection Min
-    setObjective (totalTime labelSet)
-    -- constraints etc.
+    setObjective (totalTime env rMap)
 
--- stMkLF :: State Int (LinFunc String Int)
--- stMkLF = mkLF <$> fresh
+    -- forall valid stations and recipes start_recipe_station >= 0
+    mapM (\f -> f `geqTo` 0) (startRecSts env rMap)
 
--- fresh :: Monad m => StateT Int m String
--- fresh = do
---     n <- get
---     put (n+1)
---     return $ "y_" ++ show n
+    -- recipe cannot start before children finish
+    -- forall r, forall st, start >= forall cs, forall st, end
+    mapM (\(x,y) -> x `geq` y) (dependencies env lTree rMap)
 
--- StateT s m a
--- runStateT :: s -> m (a,s)
+    -- end = bin * (start + duration)
+
+-- lp :: LP String Int
+-- lp = execLPM $ do
+--     setDirection Min
+--     setObjective (linCombination [(10,"x1")])--(totalTime labelSet)
+--     -- constraints etc.
+--     leqTo (linCombination [(10,"x1")]) 300
+--     varGeq "x1" 10
+--     setVarKind "b1" BinVar
+
+-- test = print =<< glpSolveVars mipDefaults lp
