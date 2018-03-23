@@ -6,10 +6,10 @@ import           Data.LinearProgram
 import           Data.LinearProgram.GLPK
 import           Data.Map.Strict           (Map)
 import qualified Data.Map.Strict           as Map
-import           Data.Maybe                (isJust, fromJust)
+import           Data.Maybe                (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
-import           Recipe.Recipe hiding (Label)
+import           Recipe.Recipe             hiding (Label)
 
 -----------------------------
 -- Label Recipe
@@ -117,8 +117,9 @@ dependencies env lTree rMap = let f = \(l,r) -> (startRecSts' env (l,r), childLa
                                   g = \(starts,cs) -> [(start, e) | start <- starts
                                                                   , c <- cs
                                                                   , let es = endRecSts' env (c, lookupR c rMap)
-                                                                  , e <- es] -- [(LF,LF)] 
+                                                                  , e <- es] -- [(LF,LF)]
                                in concatMap g xs
+
 -----------------------------
 -- Running GLPK
 -----------------------------
@@ -128,7 +129,7 @@ lp r env = execLPM $ do
     let lrTree = mkLabelTree r
     let lTree = fmap fst lrTree
     let rMap = mkLabelMap lrTree
-    
+
     setDirection Min
     setObjective (totalTime env rMap)
 
@@ -139,7 +140,16 @@ lp r env = execLPM $ do
     -- forall r, forall st, start >= forall cs, forall st, end
     mapM (\(x,y) -> x `geq` y) (dependencies env lTree rMap)
 
-    -- end = bin * (start + duration)
+
+    -- end = start + duration
+    -- start = bin_rec_st * start_rec_st
+    -- if recipe is transaction, start_rec_st = end of children
+
+
+    -- end_rec_st = bin_rec_st * (start_rec_st + dur_rec)
+
+    -- bin_rec_st1 + bin_rec_st2 + ... = 1
+
 
 -- lp :: LP String Int
 -- lp = execLPM $ do
