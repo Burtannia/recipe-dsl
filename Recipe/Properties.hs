@@ -5,7 +5,9 @@ import qualified Data.Map.Strict as Map
 import           Data.Tree
 import           Recipe.Recipe
 
--- Monoid m => Map k m
-
-lookupProperties :: Monoid m => Map Label m -> Tree Label -> m
-lookupProperties pMap lTree = undefined
+lookupProperties :: Monoid m => Map Action m -> Recipe -> m
+lookupProperties pMap (Node a ts) =
+    let val = case Map.lookup a pMap of
+                Just v -> v
+                Nothing -> mempty
+     in foldr (mappend . lookupProperties pMap) val ts

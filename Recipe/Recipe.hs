@@ -4,7 +4,7 @@
 module Recipe.Recipe where
 
 import           Control.Monad.Trans.State
-import           Data.Tree
+import           Data.Tree hiding (foldTree)
 
 -------------------------------------
 -- RECIPE DEFINITION
@@ -20,7 +20,7 @@ data Action = GetIngredient String
             | Conditional Action Condition
             | Transaction Action
             -- | Measure Measurement Recipe
-            deriving (Show, Eq)
+            deriving (Show, Eq, Ord)
 
 instance {-# OVERLAPPING #-} Eq Recipe where
     (==) r1 r2 = let xs = topologicals r1
@@ -46,7 +46,7 @@ instance Monoid Time where
 
 data Condition = CondTime Time | CondTemp Int | CondOpt
     | Condition `AND` Condition | Condition `OR` Condition
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
 foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
