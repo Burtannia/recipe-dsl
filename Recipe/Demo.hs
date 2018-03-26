@@ -30,9 +30,11 @@ cupOfTea = optional $ combine "mix" milk blackTea
 
 cupOfTea' :: Recipe
 cupOfTea' = optional
-    $ combine "mix" milk
-    $ waitFor (minutes 5)
-    $ combine "pour" (heatTo 100 water) teabag
+    $ combine "mix" (measure (Milliletres 10) milk)
+        $ waitFor (minutes 5)
+        $ combine "pour" (heatTo 100
+            $ measure (Milliletres 300) water)
+        $ measure (Number 1) teabag
 
 cupOfTea'' :: Recipe
 cupOfTea'' = optional

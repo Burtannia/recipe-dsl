@@ -19,7 +19,7 @@ data Action = GetIngredient String
             | Combine String
             | Conditional Action Condition
             | Transaction Action
-            -- | Measure Measurement Recipe
+            | Measure Measurement Action
             deriving (Show, Eq, Ord)
 
 instance {-# OVERLAPPING #-} Eq Recipe where
@@ -54,6 +54,22 @@ foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
 foldCond f CondOpt      = mempty
 foldCond f c            = f c
 
+data Measurement = Number Int | Grams Int | Milliletres Int
+    deriving (Eq)
+
+getMeasure :: Measurement -> Int
+getMeasure (Number i) = i
+getMeasure (Grams i) = i
+getMeasure (Milliletres i) = i
+
+instance Ord Measurement where
+    compare a b = compare (getMeasure a) (getMeasure b)
+
+instance Show Measurement where
+    show (Number i) = show i
+    show (Grams i) = show i ++ "g"
+    show (Milliletres i) = show i ++ "ml"
+
 ingredient :: String -> Recipe
 ingredient s = Node (GetIngredient s) []
 
@@ -84,6 +100,9 @@ addCondition c (Node a ts) = case a of
 transaction :: Recipe -> Recipe
 transaction (Node a ts) = Node (Transaction a) ts
 
+measure :: Measurement -> Recipe -> Recipe
+measure m (Node a ts) = Node (Measure m a) ts
+
 -- Nicer Conditions and Time
 
 optional :: Recipe -> Recipe
@@ -109,6 +128,11 @@ ingredients :: Recipe -> [String]
 ingredients (Node a ts) = case a of
     GetIngredient s -> s : concatMap ingredients ts
     _               -> concatMap ingredients ts
+
+ingredientsQ :: Recipe -> [(String, Measurement)]
+ingredientsQ (Node a ts) = case a of
+    Measure m (GetIngredient s) -> (s,m) : concatMap ingredientsQ ts
+    _                           -> concatMap ingredientsQ ts
 
 type Label = Int
 
@@ -155,6 +179,7 @@ timeAction (Conditional a c) = t' + foldCond f c
         f (CondTime t) = t
         f (CondTemp t) = tempToTime t
 timeAction (Transaction a) = timeAction a
+timeAction (Measure m a) = 20 + timeAction a
 
 -- newer versions of Data.Tree implement this
 foldTree :: (a -> [b] -> b) -> Tree a -> b

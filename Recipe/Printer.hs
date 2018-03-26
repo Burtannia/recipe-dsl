@@ -31,6 +31,10 @@ steps = steps' . labelRecipe
                         condToString (CondTemp t) = " until temperature " ++ show t
                         condToString (CondTime t) = " for " ++ show t
                 toString (Transaction a) = "Immediately " ++ toString a
+                toString (Measure m a) = "Measure " ++ show m ++ case m of
+                    Number _ -> show l
+                    _        -> " of " ++ show l
+                    where l' = head $ map extractLabel ts
                 extractLabel (Node (l,_) _) = l
 
 ppSteps :: Recipe -> IO ()
@@ -46,3 +50,9 @@ ppTree = putStrLn . drawVerticalTree . fmap show
 
 ppIngredients :: Recipe -> IO ()
 ppIngredients = mapM_ putStrLn . ingredients
+
+ppIngredientsQ :: Recipe -> IO ()
+ppIngredientsQ = mapM_ ppQuantIng . ingredientsQ
+    where
+        ppQuantIng (s,m) = putStrLn $
+            s ++ ": " ++ show m
