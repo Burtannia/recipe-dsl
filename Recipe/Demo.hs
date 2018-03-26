@@ -1,6 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Recipe.Demo where
 
 import Recipe.Recipe
@@ -10,10 +7,8 @@ import Recipe.Scheduler
 import Data.Tree
 import Recipe.Properties
 --import Recipe.QS
-import Data.Monoid (Sum, getSum)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Text.Printf
 
 -------------------------------------
 -- TEST RECIPES
@@ -129,20 +124,8 @@ addEvalCond c ps = EvalCond c : ps
 -- TEST PROPERTIES
 -------------------------------------
 
-newtype Price = Price { pence :: Int }
-    deriving (Eq, Ord, Num, Real, Enum, Integral)
-
-ppPrice :: Price -> IO ()
-ppPrice Price{..} =
-    let pndsPence = (fromIntegral pence) / 100
-     in printf "%s%.2f\n" "£" (pndsPence :: Float)
-
-instance Monoid Price where
-    mempty = Price 0
-    mappend = (+)
-
-costList :: Map Action Price
-costList = Map.fromList $
+priceList :: Map Action Price
+priceList = Map.fromList $
     map (\(s,i) -> (GetIngredient s, i))
     [ ("teabag", 2)
     , ("milk", 1)
@@ -150,5 +133,5 @@ costList = Map.fromList $
     , ("water", 0)
     ]
 
-costOfTea :: Price
-costOfTea = lookupProperties costList cupOfTea
+priceOfTea :: Price
+priceOfTea = lookupProperties priceList cupOfTea
