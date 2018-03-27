@@ -10,11 +10,11 @@ import           Recipe.Recipe
 import Text.Printf
 
 lookupProperties :: Monoid m => Map Action m -> Recipe -> m
-lookupProperties pMap (Node a ts) =
-    let val = case Map.lookup a pMap of
-                Just v -> v
-                Nothing -> mempty
-     in foldr (mappend . lookupProperties pMap) val ts
+lookupProperties pMap =
+    let valOf = \a -> case Map.lookup a pMap of
+                        Just v -> v
+                        Nothing -> mempty
+     in foldr (\a m -> valOf a `mappend` m) mempty
 
 -------------------------------------
 -- PRICE
@@ -31,7 +31,3 @@ ppPrice Price{..} =
 instance Monoid Price where
     mempty = Price 0
     mappend = (+)
-
--------------------------------------
--- TEST RECIPES
--------------------------------------

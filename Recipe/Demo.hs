@@ -34,7 +34,7 @@ cupOfTea' = optional
         $ waitFor (minutes 5)
         $ combine "pour" (heatTo 100
             $ measure (Milliletres 300) water)
-        $ measure (Number 1) teabag
+            $ measure (Number 1) teabag
 
 cupOfTea'' :: Recipe
 cupOfTea'' = optional
@@ -111,16 +111,9 @@ chef = let chefConstr r@(Node a ts) = case a of
                 Wait            -> Just [Input, DoNothing, Output]
                 Conditional a c -> (chefConstr $ popCond r)
                                     >>= return . addEvalCond c
+                Measure m       -> Just [Input, MeasureOut m, Output]
                 _               -> Nothing
         in Station "chef" [] [] chefConstr []
-
-popCond :: Recipe -> Recipe
-popCond (Node (Conditional a c) ts) = Node a ts
-popCond r = r
-
-addEvalCond :: Condition -> [Process] -> [Process]
-addEvalCond c (Input:ps) = Input : EvalCond c : ps
-addEvalCond c ps = EvalCond c : ps
 
 -------------------------------------
 -- TEST PROPERTIES

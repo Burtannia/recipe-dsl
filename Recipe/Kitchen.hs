@@ -3,6 +3,7 @@
 module Recipe.Kitchen where
 
 import Recipe.Recipe
+import Data.Tree
 
 data Station = Station
     { stName     :: String
@@ -23,9 +24,14 @@ data Obs = ObsTemp Int
 
 type ConstraintF = Recipe -> Maybe [Process]
 
--- might want to consider an intermmediate translation
--- like assembler, to handle Heat you do these things
--- then each station has its way of handling those things
+popCond :: Recipe -> Recipe
+popCond (Node (Conditional a c) ts) = Node a ts
+popCond r = r
+
+addEvalCond :: Condition -> [Process] -> [Process]
+addEvalCond c (Input:ps) = Input : EvalCond c : ps
+addEvalCond c ps = EvalCond c : ps
+
 data Process =
     Input
     | Output
@@ -33,7 +39,7 @@ data Process =
     | DoNothing
     | PCombine String
     | EvalCond Condition
-    -- | MeasureOut Measurement Recipe
+    | MeasureOut Measurement
     deriving Show
 
 data Env = Env

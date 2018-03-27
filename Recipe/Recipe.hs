@@ -19,7 +19,7 @@ data Action = GetIngredient String
             | Combine String
             | Conditional Action Condition
             | Transaction Action
-            | Measure Measurement Action
+            | Measure Measurement
             deriving (Show, Eq, Ord)
 
 instance {-# OVERLAPPING #-} Eq Recipe where
@@ -101,7 +101,7 @@ transaction :: Recipe -> Recipe
 transaction (Node a ts) = Node (Transaction a) ts
 
 measure :: Measurement -> Recipe -> Recipe
-measure m (Node a ts) = Node (Measure m a) ts
+measure m r = Node (Measure m) [r]
 
 -- Nicer Conditions and Time
 
@@ -130,9 +130,10 @@ ingredients (Node a ts) = case a of
     _               -> concatMap ingredients ts
 
 ingredientsQ :: Recipe -> [(String, Measurement)]
-ingredientsQ (Node a ts) = case a of
-    Measure m (GetIngredient s) -> (s,m) : concatMap ingredientsQ ts
-    _                           -> concatMap ingredientsQ ts
+ingredientsQ (Node (Measure m) ts) = case ts of
+    [Node (GetIngredient s) _] -> [(s,m)]
+    _                          -> concatMap ingredientsQ ts
+ingredientsQ (Node _ ts) = concatMap ingredientsQ ts
 
 type Label = Int
 
@@ -165,7 +166,7 @@ preheatTime i = Time t + 600
     where t = 60 * (i `div` 20)
 
 time :: Recipe -> Time
-time = foldTree (\a ts -> timeAction a + mconcat ts)
+time = foldr (\a t -> t + timeAction a) 0 --foldTree (\a ts -> timeAction a + mconcat ts)
 
 timeAction :: Action -> Time
 timeAction (GetIngredient _) = 10
@@ -179,11 +180,7 @@ timeAction (Conditional a c) = t' + foldCond f c
         f (CondTime t) = t
         f (CondTemp t) = tempToTime t
 timeAction (Transaction a) = timeAction a
-timeAction (Measure m a) = 20 + timeAction a
-
--- newer versions of Data.Tree implement this
-foldTree :: (a -> [b] -> b) -> Tree a -> b
-foldTree f (Node a ts) = f a (map (foldTree f) ts)
+timeAction (Measure m) = 20
 
 -- need way to evaluate chain of actions to a result
 -- heat t of heat t' of r results in r being t
