@@ -4,54 +4,66 @@ import Recipe.Recipe
 import QuickSpec
 import Test.QuickCheck
 import Control.Monad (liftM, liftM2)
+import Data.Tree
 
-instance Arbitrary Recipe where
-    arbitrary = sized $ \n ->
-        let bin = resize (n `div` 2) arbitrary
-            un = resize (n-1) arbitrary in
-        oneof $
-            genIng :
-            [liftM2 HeatAt genTemp un | n > 0] ++
-            [liftM2 Wait genTime un | n > 0] ++
-            [liftM2 Combine bin bin | n > 0] ++
-            [liftM2 Conditional genCond un | n > 0] ++
-            [liftM Transaction un | n > 0] ++
-            [liftM2 Measure genMeasure un | n > 0]
+-------------------------------------
+-- Arbitrary Instances
+-------------------------------------
 
-genIng :: Gen Recipe
-genIng = fmap (Ingredient . show) ((choose (1, 100)) :: Gen Int)
+instance Arbitrary Action where
+    arbitrary = oneof
+        [ genIng
+        , return Heat
+        , liftM HeatAt genTemp
+        , return Wait
+        , liftM Combine genMethod
+        , liftM2 Conditional arbitrary arbitrary
+        , liftM Transaction arbitrary
+        , liftM Measure arbitrary
+        ]
 
-genTemp :: Gen Temperature
-genTemp = oneof $ 
-    [ fmap Deg (choose (100, 240))
-    , elements [Low, Medium, High] ]
+genIng :: Gen Action
+genIng = liftM (GetIngredient . show) ((choose (1, 100)) :: Gen Int)
+
+genTemp :: Gen Int
+genTemp = choose (100, 240)
+
+genMethod :: Gen String
+genMethod = elements
+    [ "mix"
+    , "spread"
+    , "wrap" ]
+
+instance Arbitrary Condition where
+    arbitrary = oneof
+        [ singleCond
+        , liftM2 AND singleCond singleCond
+        , liftM2 OR singleCond singleCond ]
+        
+singleCond :: Gen Condition
+singleCond = oneof
+    [ return CondOpt
+    , liftM CondTime genTime
+    , liftM CondTemp genTemp ]
 
 genTime :: Gen Time
-genTime = choose (1, 600)
+genTime = liftM Time (choose (1, 600))
 
-genCond :: Gen Condition
-genCond = oneof 
-    [ return CondOpt
-    , fmap CondTime genTime
-    , fmap CondTemp genTemp ]
+instance Arbitrary Measurement where
+    arbitrary = oneof
+        [ liftM Number (elements [1..10])
+        , liftM Grams (elements [10,20..1000])
+        , liftM Milliletres (elements [10,20..1000]) ]
 
-genMeasure :: Gen Measurement
-genMeasure = elements [100,200..1000]
+genRecipe :: Gen Recipe
+genRecipe = sized $ \n ->
+    let bin = resize (n `div` 2) (vectorOf 2 arbitrary)
+        un  = resize (n-1) (vectorOf 1 arbitrary) in
+    oneof $
+        [ liftM2 Node arbitrary (return [])
+        , liftM2 Node arbitrary un
+        , liftM2 Node arbitrary bin ]
 
-genRecipe :: IO Recipe
-genRecipe = generate arbitrary
-
-{-
-sig = 
-	[ withMaxTermSize 7
-	, con "Ingredient" (Ingredient :: String -> Recipe)
-	, con "HeatAt" (HeatAt :: Temperature -> Recipe -> Recipe)
-	, con "Wait" (Wait :: Time -> Recipe -> Recipe)
-	, con "Combine" (Combine :: Recipe -> Recipe -> Recipe)
-	, con "Conditional" (Conditional :: Condition -> Recipe -> Recipe)
-	, con "Transaction" (Transaction :: Recipe -> Recipe)
-	, con "Measure" (Measure :: Measurement -> Recipe -> Recipe)
-	]
-
-qsRecipe :: IO Signature
-qsRecipe = quickSpec sig -}
+-------------------------------------
+-- QuickSpec Stuff
+-------------------------------------

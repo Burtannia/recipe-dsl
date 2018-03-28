@@ -1,0 +1,37 @@
+\select@language {english}
+\contentsline {section}{\numberline {1}Abstract and Acknowledgements}{4}{section.1}
+\contentsline {section}{\numberline {2}Introduction and Motivation}{6}{section.2}
+\contentsline {subsection}{\numberline {2.1}Overview}{6}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Cooking with Computers}{6}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}DSLs and Haskell}{6}{subsection.2.3}
+\contentsline {section}{\numberline {3}Development Process}{6}{section.3}
+\contentsline {subsection}{\numberline {3.1}Project Management}{6}{subsection.3.1}
+\contentsline {section}{\numberline {4}Combinators}{6}{section.4}
+\contentsline {subsection}{\numberline {4.1}Initial Definitions}{6}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Sequencing Problem}{6}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}Conditionals}{6}{subsection.4.3}
+\contentsline {subsection}{\numberline {4.4}Transactions}{6}{subsection.4.4}
+\contentsline {subsection}{\numberline {4.5}Moving to a Tree of Actions}{6}{subsection.4.5}
+\contentsline {subsection}{\numberline {4.6}Final Definitions}{6}{subsection.4.6}
+\contentsline {subsection}{\numberline {4.7}Custom Combinators}{6}{subsection.4.7}
+\contentsline {section}{\numberline {5}Deriving Equality}{6}{section.5}
+\contentsline {subsection}{\numberline {5.1}Topological Sorting}{6}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}Quickspec}{6}{subsection.5.2}
+\contentsline {section}{\numberline {6}Modelling a Kitchen}{6}{section.6}
+\contentsline {subsection}{\numberline {6.1}Stations}{6}{subsection.6.1}
+\contentsline {subsection}{\numberline {6.2}Scheduling}{6}{subsection.6.2}
+\contentsline {subsubsection}{\numberline {6.2.1}Linear Programming}{6}{subsubsection.6.2.1}
+\contentsline {subsubsection}{\numberline {6.2.2}Implementing Scheduler}{6}{subsubsection.6.2.2}
+\contentsline {section}{\numberline {7}Recipe Properties}{6}{section.7}
+\contentsline {subsection}{\numberline {7.1}Folding Over Recipes}{6}{subsection.7.1}
+\contentsline {subsection}{\numberline {7.2}Time and Cost}{6}{subsection.7.2}
+\contentsline {subsection}{\numberline {7.3}Flavours}{6}{subsection.7.3}
+\contentsline {subsection}{\numberline {7.4}Generating New Recipes}{6}{subsection.7.4}
+\contentsline {section}{\numberline {8}Evaluation and Testing}{6}{section.8}
+\contentsline {subsection}{\numberline {8.1}Test Recipes}{6}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}QuickCheck}{6}{subsection.8.2}
+\contentsline {section}{\numberline {9}Summary and Reflections}{6}{section.9}
+\contentsline {subsection}{\numberline {9.1}Project Management}{6}{subsection.9.1}
+\contentsline {subsection}{\numberline {9.2}Contributions}{6}{subsection.9.2}
+\contentsline {subsection}{\numberline {9.3}Reflections}{6}{subsection.9.3}
+\contentsline {section}{\numberline {10}Related Work}{6}{section.10}

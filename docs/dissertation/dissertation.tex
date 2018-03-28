@@ -1,0 +1,149 @@
+\documentclass[11pt]{article}
+
+\usepackage[hyphens]{url}
+
+\usepackage{hyperref}
+\hypersetup
+{
+    breaklinks = true,
+    allcolors = black,
+    linktoc = all
+}
+
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\usepackage{graphicx}
+
+\usepackage{multicol}
+\setlength{\columnseprule}{0.4pt}
+
+\usepackage{listings}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{James Burton}
+\lhead{ID: 4251529}
+\fancyfoot[C]{\thepage}
+
+\usepackage{titling}
+\title
+{ 
+    \vspace{10em}
+    G53IDS - Final Report \\
+    \hfill \break
+    \large Embedded Domain Specific Language for \\
+    Describing Recipes in Haskell
+}
+
+\setlength{\droptitle}{-10em}
+
+\author{James Burton - 4251529 - psyjb6}
+
+\begin{document}
+    \maketitle
+    \newpage
+
+    \tableofcontents
+    \newpage
+
+    \section{Abstract and Acknowledgements}
+    \newpage
+
+    \section{Introduction and Motivation}
+    \subsection{Overview}
+    \subsection{Cooking with Computers}
+    \subsection{DSLs and Haskell}
+
+    \section{Development Process}
+    \subsection{Project Management}
+    
+    \section{Combinators}
+        \subsection{Initial Definitions}
+        \subsection{Sequencing Problem}
+        \subsection{Conditionals}
+        \subsection{Transactions}
+        \subsection{Moving to a Tree of Actions}
+        \subsection{Final Definitions}
+        \subsection{Custom Combinators}
+
+    \section{Deriving Equality}
+        \subsection{Topological Sorting}
+        \subsection{Quickspec}
+    
+    \section{Modelling a Kitchen}
+        \subsection{Stations}
+        \subsection{Scheduling}
+            \subsubsection{Linear Programming}
+            \subsubsection{Implementing Scheduler}
+        
+    \section{Recipe Properties}
+        \subsection{Folding Over Recipes}
+        \subsection{Time and Cost}
+        \subsection{Flavours}
+        \subsection{Generating New Recipes}
+
+    \section{Evaluation and Testing}
+        \subsection{Test Recipes}
+        \subsection{QuickCheck}
+
+    \section{Summary and Reflections}
+        \subsection{Project Management}
+        \subsection{Contributions}
+        \subsection{Reflections}
+
+    \section{Related Work}
+
+    \newpage
+
+    \begin{thebibliography}{8}
+
+        \bibitem{robot}
+        The Guardian. 2015. \textit{Future of food: how we cook}.
+        \url{https://www.theguardian.com/technology/2015/sep/13/future-of-food-how-we-cook}
+
+        \bibitem{hudak}
+        Paul Hudak. Domain Specific Languages. Department of Computer
+        Science, Yale University, December 15, 1997.
+
+        \bibitem{snoyman}
+        Michael Snoynman. O'Reilly Webcast: Designing Domain Specific
+        Languages with Haskell. January 4, 2013.
+        \url{https://www.youtube.com/watch?v=8k_SU1t50M8}
+
+        \bibitem{contracts}
+        Simon Peyton Jones, Microsoft Research, Cambridge.
+        Jean-Marc Eber, LexiFi Technologies, Paris. Julian Seward,
+        University of Glasgow. Composing contracts: an adventure in
+        financial engineering. August 17, 2000.
+
+        \bibitem{pretty}
+        John Hughes. The Design of a Pretty-printing Library.
+        Chalmers Teniska Hogskola, Goteborg, Sweden. 1995.
+
+        \bibitem{contracts-pp}
+        Simon Peyton Jones, Microsoft Research, Cambridge.
+        Jean-Marc Eber, LexiFi Technologies, Paris. Julian Seward,
+        University of Glasgow. Composing contracts: an adventure in
+        financial engineering (PowerPoint Slides). August 17, 2000.
+        \url{https://www.microsoft.com/en-us/research/publication/composing-contracts-an-adventure-in-financial-engineering/}
+
+        \bibitem{core}
+        Simon Peyton Jones. Into the Core - Squeezing Haskell into
+        Nine Constructors. September 14, 2016.
+        \url{https://www.youtube.com/watch?v=uR_VzYxvbxg}
+
+        \bibitem{hutton-fold}
+        Graham Hutton. Fold and Unfold for Program Semantics. Department of
+        Computer Science, University of Nottingham. September 1998.
+
+    \end{thebibliography}   
+
+    \newpage
+
+    \appendix
+
+\end{document}
