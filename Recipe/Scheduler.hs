@@ -6,7 +6,7 @@ import qualified Data.Map.Strict           as Map
 import           Data.Maybe                (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
-import           Recipe.Recipe             hiding (Label, removeFrom, deleteAll)
+import           Recipe.Recipe             hiding (Label, removeFrom, deleteAll, leaves)
 import Data.List (groupBy)
 
 -----------------------------
@@ -63,13 +63,13 @@ data Task = Active Label | Idle Time
 
 type Stack = [Task]
 
-data Schedule = Map StName Stack
+type Schedule = Map StName Stack
 
 -- heuristic 1 (least demand):
 
 duration :: Label -> Map Label Recipe -> Time
 duration l rMap = case Map.lookup l rMap of
-    Nothing -> Time 0
+    Nothing -> error "Recipe not found"
     Just (Node a ts) -> timeAction a
 
 removeFrom :: Tree Label -> Tree Label -> Tree Label
@@ -152,5 +152,45 @@ isTransaction l rMap = case Map.lookup l rMap of
 chooseStack :: [Stack] -> Stack
 chooseStack = undefined
 
-scheduleRecipe :: Recipe -> Env -> Schedule
-scheduleRecipe r env = undefined
+-- scheduleRecipe :: Recipe -> Env -> Schedule
+-- scheduleRecipe r env = 
+--     let lTree = mkLabelTree r
+--         rMap = mkLabelMap $ mkLabelTreeR r
+--      in scheduleRecipe' lTree rMap (initSchedule env)
+--      where
+--         scheduleReciple' lTree rMap sch =
+--             let ls = leaves lrTree
+--                 shortL = shortest ls
+--              in if isTransaction shortL
+--                     then
+--                     else
+
+-- if transaction (need to check if node above leaf is a transaction):
+-- get list of valid stations / stacks for each part of transaction
+-- aim to schedule children to finish at same time
+-- schedule parent
+-- remember when calculating "unscheduleds" to pass parent so entire transaction is removed
+
+-- else:
+-- get list of valid stations / stacks
+-- choose stack using heuristics
+-- push onto stack
+
+initSchedule :: Env -> Schedule
+initSchedule env = Map.fromList
+    [(st,[]) | st <- map stName (eStations env)]
+
+shortest :: [Label] -> Map Label Recipe -> Label
+shortest [] _ = error "No leaves"
+shortest [l] _ = l
+shortest (l:x:ls) rMap
+    | duration l rMap > duration x rMap = shortest (x:ls) rMap
+    | otherwise = shortest (l:ls) rMap
+
+leaves :: Tree (Label, Recipe) -> [Label]
+leaves (Node (l,_) []) = [l]
+leaves (Node (l, Node (Transaction a) rs) ts) =
+    if map subForest rs == []
+        then [l]
+        else concatMap leaves ts
+leaves (Node _ ts) = concatMap leaves ts
