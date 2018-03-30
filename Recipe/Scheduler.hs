@@ -22,7 +22,7 @@ mkLabelTreeR r = fmap (\(i,r) -> ("action" ++ show i, r)) lr
 
 -- mkLabelTreeR without keeping the recipe
 mkLabelTree :: Recipe -> Tree Label
-mkLabelTree r = fmap (\(l,_) -> l) (mkLabelTreeR r)
+mkLabelTree r = fmap fst (mkLabelTreeR r)
 
 -- map of labels to their recipe
 mkLabelMap :: Tree (Label, Recipe) -> Map Label Recipe
@@ -91,12 +91,18 @@ demands tree leaf env rMap =
         expectedDurs = \l -> [(v, Time $ dur `div` length vs) | let vs = lookupValSts env l rMap
                                                               , v <- vs
                                                               , let (Time dur) = duration l rMap]
-        groupedDurations = groupBy (\x y -> fst x == fst y) durations
+        sortedDurs = sortBy (\x y -> compare (fst x) (fst y)) durations
+        groupedDurations = groupBy (\x y -> fst x == fst y) sortedDurs
         foldF = \(st,t) (_,t') -> (st, t + t')
-     in map (\ds -> foldr1 foldF ds) groupedDurations
+        inDemands = map (\ds -> foldr1 foldF ds) groupedDurations
+        inDemNames = map fst inDemands
+        allSts = map stName (eStations env)
+        unuseds = filter (\st -> st `notElem` inDemNames) allSts
+     in inDemands ++ map (\st -> (st, Time 0)) unuseds
     -- remove leaf from recipe
     -- iterate over tree constructing [(StName, Duration `div` num valid stations)]
     -- group by stname and collapse into 1 tuple for each stname
+    -- need to add in (name,0) for stations that didn't appear
 
 -- heauristic 2 (least idle required):
 
@@ -147,7 +153,6 @@ isTransaction l rMap = case Map.lookup l rMap of
     Just (Node (Transaction _) _) -> True
     _ -> False
 
-
 -- need to move this over to all Maps not []
 -- heuristic 1 - heuristic 2
 -- tie breaker = heuristic 3
@@ -158,7 +163,8 @@ chooseStack lTree l env rMap sch =
         is = idleTime l (Map.toList sch) lTree rMap -- :: [(StName, Time)]
         dMinusIs = map (\(st,dur) ->
             (st, dur - (fromJust $ lookup st is))) ds'
-        sts@((st,min):_) = sortBy (\(_,t) (_,t') -> compare t t') dMinusIs
+        sts = sortBy (\(_,t) (_,t') -> compare t t') dMinusIs
+        (st,min) = head sts
         mins = filter (\(st,t) -> t == min) sts
         minNames = map fst mins
         (bestName, bestStack) = if length mins == 1
@@ -167,26 +173,56 @@ chooseStack lTree l env rMap sch =
             else mostSpace (Map.toList $
                 Map.filterWithKey (\k v -> k `elem` minNames) sch) rMap
         iTime = fromJust $ lookup bestName is
-     in Map.insert bestName (Active l : Idle iTime : bestStack) sch
+        newStack = case iTime of
+            Time 0 -> Active l : bestStack
+            _ -> Active l : Idle iTime : bestStack
+     in Map.insert bestName newStack sch
 
 
--- scheduleRecipe :: Recipe -> Env -> Schedule
--- scheduleRecipe r env = 
---     let lTree = mkLabelTree r
---         rMap = mkLabelMap $ mkLabelTreeR r
---      in scheduleRecipe' lTree rMap (initSchedule env)
---     where
---         scheduleReciple' lTree rMap sch =
---             let ls = leaves lrTree
---                 shortL = shortest ls
---              in if isTransaction shortL
---                     then
---                     else
---                         let vs = validStations env shortL
---                             validSch = Map.filterWithKey (\st -> st `elem` vs) sch
---                             schWithLeaf = chooseStack lTree leaf env rMap validSch shortL
-                            -- choose stack takes value and adds to chosen stack returning updated schedule
-                            -- merge that updated schedule into original
+scheduleRecipe :: Recipe -> Env -> Schedule
+scheduleRecipe r env = 
+    let lTree = mkLabelTree r
+        rMap = mkLabelMap $ mkLabelTreeR r
+     in scheduleRecipe' lTree rMap (initSchedule env)
+    where
+        scheduleRecipe' :: Tree Label -> Map Label Recipe -> Schedule -> Schedule
+        scheduleRecipe' lTree rMap sch =
+            let ls = leaves lTree rMap
+                shortL = shortest ls rMap
+             in if isTransaction shortL rMap
+                    then initSchedule env
+                    else
+                        let vs = lookupValSts env shortL rMap
+                            validSchs = Map.filterWithKey (\st _ -> st `elem` vs) sch
+                            schWithLeaf = chooseStack lTree shortL env rMap validSchs
+                            newSch = mergeInto schWithLeaf sch
+                         in if shortL == rootLabel lTree
+                                then newSch
+                                else scheduleRecipe' (removeFrom lTree shortL) rMap newSch
+
+printSchedule :: Schedule -> Map Label Recipe -> IO ()
+printSchedule sch = printSchedule' (Map.toList sch)
+    where
+        printSchedule' [] _ = return ()
+        printSchedule' ((name, stack) : xs) rMap = do
+            putStrLn $ name ++ ":"
+            printStack stack rMap
+            printSchedule' xs rMap
+
+printStack :: Stack -> Map Label Recipe -> IO ()
+printStack [] _ = return ()
+printStack (Active l : xs) rMap =
+    let (Node a _) = fromJust $ Map.lookup l rMap
+     in print a >> printStack xs rMap
+printStack (Idle t : xs) rMap =
+    (putStrLn $ "Idle: " ++ show t)
+    >> printStack xs rMap
+
+scheduleAndPrint :: Recipe -> Env -> IO ()
+scheduleAndPrint r env =
+    let sch = scheduleRecipe r env
+        rMap = mkLabelMap $ mkLabelTreeR r
+     in printSchedule sch rMap
 
 -- sch1 values kept on collision as per Map.insert
 mergeInto :: Schedule -> Schedule -> Schedule
@@ -219,10 +255,11 @@ shortest (l:x:ls) rMap
     | duration l rMap > duration x rMap = shortest (x:ls) rMap
     | otherwise = shortest (l:ls) rMap
 
-leaves :: Tree (Label, Recipe) -> [Label]
-leaves (Node (l,_) []) = [l]
-leaves (Node (l, Node (Transaction a) rs) ts) =
-    if map subForest rs == []
-        then [l]
-        else concatMap leaves ts
-leaves (Node _ ts) = concatMap leaves ts
+leaves :: Tree Label -> Map Label Recipe -> [Label]
+leaves (Node l []) _ = [l]
+leaves (Node l ts) rMap = case Map.lookup l rMap of
+    Just (Node (Transaction _) rs) ->
+        if map subForest rs == []
+            then [l]
+            else concatMap (\t -> leaves t rMap) ts
+    _ -> concatMap (\t -> leaves t rMap) ts
