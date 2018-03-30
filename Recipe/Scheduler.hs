@@ -66,8 +66,6 @@ type Stack = [Task]
 data Schedule = Map StName Stack
 
 -- heuristic 1 (least demand):
--- given a tree, we select a leaf
--- remaining "unscheduled" actions are that tree - the leaf
 
 duration :: Label -> Map Label Recipe -> Time
 duration l rMap = case Map.lookup l rMap of
@@ -102,6 +100,21 @@ demands tree leaf env rMap =
 
 -- heauristic 2 (least idle required):
 
+-- |Given a label and a list of valid stations with their stacks, returns
+-- a list of those stations with the required idle time to schedule that label.
+idleTime :: Label -> [(StName, Stack)] -> Tree Label -> Map Label Recipe -> [(StName, Time)]
+idleTime l ss lTree rMap =
+    let deps = childLabels l lTree
+        stacks = map snd ss
+        ends = map (\d -> endOfLabel d stacks rMap) deps -- :: [Time]
+        minStart = maximum ends
+        idles = map (\(n,s) -> (n, minStart - stackHeight s rMap)) ss
+     in if length deps == 0
+            then map (\(s,_) -> (s, Time 0)) ss
+            else map (\(n,t) -> if t < Time 0
+                                    then (n, Time 0)
+                                    else (n,t)) idles
+
 -- get end of time label in stacks
 endOfLabel :: Label -> [Stack] -> Map Label Recipe -> Time
 endOfLabel _ [] _ = Time 0
@@ -117,26 +130,27 @@ sumDurations [] _ = Time 0
 sumDurations (Active l : ts) rMap = duration l rMap + sumDurations ts rMap
 sumDurations (Idle t : ts) rMap = t + sumDurations ts rMap
 
-
---idleTime :: Label -> [Stack] -> [(StName, Int)]
--- get dependencies
--- get endOfLabel dependencies
--- take highest
--- for each stack get the highest dep - height of stack
--- that is the req idle time (0 if negative)
-
 -- heuristic 3 (most space):
-mostSpace :: [Stack] -> Stack
-mostSpace [] = error "no stacks"
-mostSpace [x] = x
-mostSpace (x:y:xs)
-    | stackHeight x > stackHeight y = mostSpace (y:xs)
-    | otherwise = mostSpace (x:xs)
 
-stackHeight :: Stack -> Int
-stackHeight s = 0
+mostSpace :: [Stack] -> Map Label Recipe -> Stack
+mostSpace [] _ = error "no stacks"
+mostSpace [x] _ = x
+mostSpace (x:y:xs) rMap
+    | stackHeight x rMap > stackHeight y rMap = mostSpace (y:xs) rMap
+    | otherwise = mostSpace (x:xs) rMap
+
+stackHeight :: Stack -> Map Label Recipe -> Time
+stackHeight = sumDurations
+
+isTransaction :: Label -> Map Label Recipe -> Bool
+isTransaction l rMap = case Map.lookup l rMap of
+    Just (Node (Transaction _) _) -> True
+    _ -> False
 
 -- heuristic 1 - heuristic 2
 -- tie breaker = heuristic 3
 chooseStack :: [Stack] -> Stack
 chooseStack = undefined
+
+scheduleRecipe :: Recipe -> Env -> Schedule
+scheduleRecipe r env = undefined
