@@ -67,3 +67,20 @@ genRecipe = sized $ \n ->
 -------------------------------------
 -- QuickSpec Stuff
 -------------------------------------
+
+qsRecipe = quickSpec
+    [ con "ingredient" (ingredient :: String -> Recipe)
+    , con "heat" (heat :: Recipe -> Recipe)
+    , con "heatAt" (heatAt :: Int -> Recipe -> Recipe)
+    , con "wait" (wait :: Recipe -> Recipe)
+    , con "combine" (combine :: String -> Recipe -> Recipe -> Recipe)
+    , con "addCondition" (addCondition :: Condition -> Recipe -> Recipe)
+    , con ".&&" ((.&&) :: Condition -> Condition -> Condition)
+    , con ".||" ((.||) :: Condition -> Condition -> Condition)
+    , con "transaction" (transaction :: Recipe -> Recipe)
+    , con "measure" (measure :: Measurement -> Recipe -> Recipe)
+
+    , monoType (Proxy :: Proxy Recipe)
+    , monoType (Proxy :: Proxy Measurement)
+    , monoType (Proxy :: Proxy Condition)
+    ]

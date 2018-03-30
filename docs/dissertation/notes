@@ -9,38 +9,7 @@ Conditionals allow us to mix until "mixed". The concrete implementation can then
 to link this to a signal from a camera in the case of a robot (or some other decision
 logic).
 
-- Station System
-- Scheduling
-- Derive Equality (topological sorting)
-- Readd Mesaure
-- Cost of recipe
-- Until "Done" condition which evaluates to external source 
-- Have considered uses for production of food, what about development of food (mapping properties etc.)
-- What effect to ingredients have on a recipe, seasoning, flavour profile, thickening etc.
-- Transformations e.g. whisk egg or blend fruit, ways to chop etc.
 - There is a lstlisting preset on the literate haskell page
-
-- once we have the "meal components" / balance system
-- provide list of ingredients with cost
-    - what they add to a meal
-    - how much you need
-    - what you do with them e.g. heatAt x
-- along with all the components needed in a meal
-- then create meals minimising the cost using LP
-- presume portions fit nicely into amount we can buy
-- can also choose a cuisine and pick ingredients from that cuisine to improve dish
-
------------------------
-Scheduling:
-
-Linear Programming
-
------------------------
-
------------------------
-QuickSpec:
-
------------------------
 
 -----------------------
 Deriving Equality:
@@ -51,16 +20,6 @@ At some point we need to specify which combinators
 are commutative. Combine a b == Combine b a
 really depends on how you combine. Mix is
 commutative whereas spread isn't.
-
-Start off with everything being equal
-or nothing being equal.
-
-Better to have a stricter equality than a
-weaker one.
-
-Constraints:
-- Ingredients must match.
-- Condense chained waits etc.
 
 -----------------------
 

@@ -1,15 +1,13 @@
 module Recipe.Scheduler where
 
-import           Control.Monad.LPMonad
 import           Control.Monad.Trans.State
-import           Data.LinearProgram
-import           Data.LinearProgram.GLPK
 import           Data.Map.Strict           (Map)
 import qualified Data.Map.Strict           as Map
 import           Data.Maybe                (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
-import           Recipe.Recipe             hiding (Label)
+import           Recipe.Recipe             hiding (Label, removeFrom, deleteAll)
+import Data.List (groupBy)
 
 -----------------------------
 -- Label Recipe
@@ -18,9 +16,13 @@ import           Recipe.Recipe             hiding (Label)
 type Label = String
 
 -- labels recipe tree with action1, action2...
-mkLabelTree :: Recipe -> Tree (Label, Recipe)
-mkLabelTree r = fmap (\(i,r) -> ("action" ++ show i, r)) lr
+mkLabelTreeR :: Recipe -> Tree (Label, Recipe)
+mkLabelTreeR r = fmap (\(i,r) -> ("action" ++ show i, r)) lr
     where lr = labelRecipeR r
+
+-- mkLabelTreeR without keeping the recipe
+mkLabelTree :: Recipe -> Tree Label
+mkLabelTree r = fmap (\(l,_) -> l) (mkLabelTreeR r)
 
 -- map of labels to their recipe
 mkLabelMap :: Tree (Label, Recipe) -> Map Label Recipe
@@ -53,111 +55,88 @@ validStations env r = let xs = map (applyConstrF r) (eStations env)
                        in map fst ys
 
 -----------------------------
--- LF Helper Functions
+-- Scheduler
 -----------------------------
 
-mkLF :: String -> LinFunc Label Int
-mkLF s = linCombination [(1,s)]
+data Task = Active Label | Idle Time
+    deriving (Eq, Show)
 
--- s1 + s2
-mkLF2 :: String -> String -> LinFunc String Int
-mkLF2 s1 s2 = linCombination [(1,s1), (1,s2)]
+type Stack = [Task]
 
--- x + x1 + x2 ...
-mkLFN :: String -> [String] -> LinFunc String Int
-mkLFN x xs = let ones = replicate (length xs) 1
-                 ys   = (1,x) : zip ones xs
-              in linCombination ys
+data Schedule = Map StName Stack
 
-type Prefix = String
+-- heuristic 1 (least demand):
+-- given a tree, we select a leaf
+-- remaining "unscheduled" actions are that tree - the leaf
 
-mkVar :: Prefix -> Label -> String
-mkVar p l = p ++ "_" ++ l
+duration :: Label -> Map Label Recipe -> Time
+duration l rMap = case Map.lookup l rMap of
+    Nothing -> Time 0
+    Just (Node a ts) -> timeAction a
 
-mkVars :: Prefix -> [Label] -> [String]
-mkVars p = map (mkVar p)
+removeFrom :: Tree Label -> Tree Label -> Tree Label
+removeFrom t@(Node a ts) toRem = Node a ts''
+    where
+        ts'  = deleteAll toRem ts
+        ts'' = map (\t -> removeFrom t toRem) ts'
 
-mkVar2 :: Prefix -> (Label, [StName]) -> [String]
-mkVar2 p (l, sts) = [p ++ "_" ++ l ++ "_" ++ st | st <- sts]
+deleteAll :: Tree Label -> [Tree Label] -> [Tree Label]
+deleteAll _ [] = []
+deleteAll x (y:ys)
+    | x == y = deleteAll x ys
+    | otherwise = y : deleteAll x ys
 
-mkVars2 :: Prefix -> [(Label, [StName])] -> [String]
-mkVars2 p = concatMap (mkVar2 p)
+demands :: Tree Label -> Tree Label -> Env -> Map Label Recipe -> [(StName, Time)]
+demands tree leaf env rMap =
+    let unscheduleds = removeFrom tree leaf
+        durations = concat . flatten $ fmap expectedDurs unscheduleds
+        expectedDurs = \l -> [(v, Time $ dur `div` length vs) | let vs = lookupValSts env l rMap
+                                                              , v <- vs
+                                                              , let (Time dur) = duration l rMap]
+        groupedDurations = groupBy (\x y -> fst x == fst y) durations
+        foldF = \(st,t) (_,t') -> (st, t + t')
+     in map (\ds -> foldr1 foldF ds) groupedDurations
+    -- remove leaf from recipe
+    -- iterate over tree constructing [(StName, Duration `div` num valid stations)]
+    -- group by stname and collapse into 1 tuple for each stname
 
------------------------------
--- Constraints
------------------------------
+-- heauristic 2 (least idle required):
 
-maxInt = maxBound :: Int
+-- get end of time label in stacks
+endOfLabel :: Label -> [Stack] -> Map Label Recipe -> Time
+endOfLabel _ [] _ = Time 0
+endOfLabel l ss rMap = maximum $ map endOfLabel' ss
+    where
+        endOfLabel' [] = Time 0
+        endOfLabel' (t:ts)
+            | t == Active l = sumDurations (t:ts) rMap
+            | otherwise = endOfLabel' ts
 
--- objective function = total time
-totalTime :: Env -> Map Label Recipe -> LinFunc String Int
-totalTime env rMap = let l = maximum $ Map.keys rMap
-                         r = lookupR l rMap
-                         sts = validStations env r
-                         (v:vs) = mkVar2 "end" (l,sts)
-                      in mkLFN v vs
-
-mkRecSts :: Prefix -> Env -> (Label, Recipe) -> [LinFunc String Int]
-mkRecSts p env (l,r) = let sts  = validStations env r
-                           vars = mkVar2 p (l,sts)
-                        in map mkLF vars
-
-startRecSts :: Env -> Map Label Recipe -> [LinFunc String Int]
-startRecSts env rMap = concatMap (startRecSts' env) (Map.toList rMap)
-
-startRecSts' :: Env -> (Label, Recipe) -> [LinFunc String Int]
-startRecSts' = mkRecSts "start"
-
-endRecSts' :: Env -> (Label, Recipe) -> [LinFunc String Int]
-endRecSts' = mkRecSts "end"
-
-dependencies :: Env -> Tree Label -> Map Label Recipe -> [(LinFunc String Int, LinFunc String Int)]
-dependencies env lTree rMap = let f = \(l,r) -> (startRecSts' env (l,r), childLabels l lTree)
-                                  xs = map f (Map.toList rMap) -- ([LF], [Label])
-                                  g = \(starts,cs) -> [(start, e) | start <- starts
-                                                                  , c <- cs
-                                                                  , let es = endRecSts' env (c, lookupR c rMap)
-                                                                  , e <- es] -- [(LF,LF)]
-                               in concatMap g xs
-
------------------------------
--- Running GLPK
------------------------------
-
-lp :: Recipe -> Env -> LP String Int
-lp r env = execLPM $ do
-    let lrTree = mkLabelTree r
-    let lTree = fmap fst lrTree
-    let rMap = mkLabelMap lrTree
-
-    setDirection Min
-    setObjective (totalTime env rMap)
-
-    -- forall valid stations and recipes start_recipe_station >= 0
-    mapM (\f -> f `geqTo` 0) (startRecSts env rMap)
-
-    -- recipe cannot start before children finish
-    -- forall r, forall st, start >= forall cs, forall st, end
-    mapM (\(x,y) -> x `geq` y) (dependencies env lTree rMap)
+sumDurations :: [Task] -> Map Label Recipe -> Time
+sumDurations [] _ = Time 0
+sumDurations (Active l : ts) rMap = duration l rMap + sumDurations ts rMap
+sumDurations (Idle t : ts) rMap = t + sumDurations ts rMap
 
 
-    -- end = start + duration
-    -- start = bin_rec_st * start_rec_st
-    -- if recipe is transaction, start_rec_st = end of children
+--idleTime :: Label -> [Stack] -> [(StName, Int)]
+-- get dependencies
+-- get endOfLabel dependencies
+-- take highest
+-- for each stack get the highest dep - height of stack
+-- that is the req idle time (0 if negative)
 
+-- heuristic 3 (most space):
+mostSpace :: [Stack] -> Stack
+mostSpace [] = error "no stacks"
+mostSpace [x] = x
+mostSpace (x:y:xs)
+    | stackHeight x > stackHeight y = mostSpace (y:xs)
+    | otherwise = mostSpace (x:xs)
 
-    -- end_rec_st = bin_rec_st * (start_rec_st + dur_rec)
+stackHeight :: Stack -> Int
+stackHeight s = 0
 
-    -- bin_rec_st1 + bin_rec_st2 + ... = 1
-
-
--- lp :: LP String Int
--- lp = execLPM $ do
---     setDirection Min
---     setObjective (linCombination [(10,"x1")])--(totalTime labelSet)
---     -- constraints etc.
---     leqTo (linCombination [(10,"x1")]) 300
---     varGeq "x1" 10
---     setVarKind "b1" BinVar
-
--- test = print =<< glpSolveVars mipDefaults lp
+-- heuristic 1 - heuristic 2
+-- tie breaker = heuristic 3
+chooseStack :: [Stack] -> Stack
+chooseStack = undefined

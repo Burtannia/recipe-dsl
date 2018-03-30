@@ -24,16 +24,23 @@ data Action = GetIngredient String
             | Measure Measurement
             deriving (Show, Eq, Ord)
 
+instance Eq a => Ord (Tree a) where
+    compare t1 t2 = compare (length t1) (length t2)
+
+-- |Two Recipes are equal if the set of topological sorts
+-- of recipe 1 is a subset of the topological sorts
+-- of recipe 2 or vice versa.
 instance {-# OVERLAPPING #-} Eq Recipe where
     (==) r1 r2 = let xs = topologicals r1
                      ys = topologicals r2
                      elems = [x `elem` ys | x <- xs]
                   in all (True ==) elems
 
--- Stored as seconds
+-- |Time is a wrapper around an Int representing seconds.
 newtype Time = Time Int
     deriving (Eq, Ord, Num, Real, Enum, Integral)
 
+-- |Time is printed in hms format.
 instance Show Time where
     show (Time i) = let h = i `div` 3600
                         m = (i `mod` 3600) `div` 60
@@ -184,11 +191,6 @@ timeAction (Conditional a c) = t' + foldCond f c
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 20
 
--- need way to evaluate chain of actions to a result
--- heat t of heat t' of r results in r being t
--- regardless of what t' was
-
---topologicals :: Tree a -> [[a]]
 topologicals :: Recipe -> [[Action]]
 topologicals (Node a [])  = [[a]]
 topologicals t = concat
@@ -197,26 +199,22 @@ topologicals t = concat
         topologicals' l = topologicals $ removeFrom t l
         ls = leaves t
 
---isLeaf :: Tree a -> Bool
 isLeaf :: Recipe -> Bool
 isLeaf (Node _ []) = True
 isLeaf _           = False
 
---leaves :: Tree a -> [Tree a]
 leaves :: Recipe -> [Recipe]
 leaves (Node a []) = [Node a []]
 leaves (Node a ts) = concatMap leaves ts
 
 -- Removes all occurences of a sub tree from the given tree.
 -- Removing a tree from itself does nothing.
---removeFrom :: Tree a -> Tree a -> Tree a
 removeFrom :: Recipe -> Recipe -> Recipe
 removeFrom t@(Node a ts) toRem = Node a ts''
     where
         ts'  = deleteAll toRem ts
         ts'' = map (\t -> removeFrom t toRem) ts'
 
---deleteAll :: Eq a => a -> [a] -> [a]
 deleteAll :: Recipe -> [Recipe] -> [Recipe]
 deleteAll _ [] = []
 deleteAll x (y:ys)

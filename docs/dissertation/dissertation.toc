@@ -4,6 +4,7 @@
 \contentsline {subsection}{\numberline {2.1}Overview}{6}{subsection.2.1}
 \contentsline {subsection}{\numberline {2.2}Cooking with Computers}{6}{subsection.2.2}
 \contentsline {subsection}{\numberline {2.3}DSLs and Haskell}{6}{subsection.2.3}
+\contentsline {subsection}{\numberline {2.4}Deep and Shallow Embedding}{6}{subsection.2.4}
 \contentsline {section}{\numberline {3}Development Process}{6}{section.3}
 \contentsline {subsection}{\numberline {3.1}Project Management}{6}{subsection.3.1}
 \contentsline {section}{\numberline {4}Combinators}{6}{section.4}
@@ -35,3 +36,6 @@
 \contentsline {subsection}{\numberline {9.2}Contributions}{6}{subsection.9.2}
 \contentsline {subsection}{\numberline {9.3}Reflections}{6}{subsection.9.3}
 \contentsline {section}{\numberline {10}Related Work}{6}{section.10}
+\contentsline {subsection}{\numberline {10.1}Pretty Printing}{6}{subsection.10.1}
+\contentsline {subsection}{\numberline {10.2}Financial Contracts}{6}{subsection.10.2}
+\contentsline {subsection}{\numberline {10.3}Ivory and Ion}{6}{subsection.10.3}
