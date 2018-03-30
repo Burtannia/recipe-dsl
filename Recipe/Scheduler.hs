@@ -7,7 +7,7 @@ import           Data.Maybe                (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
 import           Recipe.Recipe             hiding (Label, removeFrom, deleteAll, leaves)
-import Data.List (groupBy)
+import Data.List (groupBy, sortBy)
 
 -----------------------------
 -- Label Recipe
@@ -72,19 +72,19 @@ duration l rMap = case Map.lookup l rMap of
     Nothing -> error "Recipe not found"
     Just (Node a ts) -> timeAction a
 
-removeFrom :: Tree Label -> Tree Label -> Tree Label
+removeFrom :: Tree Label -> Label -> Tree Label
 removeFrom t@(Node a ts) toRem = Node a ts''
     where
         ts'  = deleteAll toRem ts
         ts'' = map (\t -> removeFrom t toRem) ts'
 
-deleteAll :: Tree Label -> [Tree Label] -> [Tree Label]
+deleteAll :: Label -> [Tree Label] -> [Tree Label]
 deleteAll _ [] = []
-deleteAll x (y:ys)
-    | x == y = deleteAll x ys
-    | otherwise = y : deleteAll x ys
+deleteAll l (y@(Node l' _):ys)
+    | l == l' = deleteAll l ys
+    | otherwise = y : deleteAll l ys
 
-demands :: Tree Label -> Tree Label -> Env -> Map Label Recipe -> [(StName, Time)]
+demands :: Tree Label -> Label -> Env -> Map Label Recipe -> [(StName, Time)]
 demands tree leaf env rMap =
     let unscheduleds = removeFrom tree leaf
         durations = concat . flatten $ fmap expectedDurs unscheduleds
@@ -132,11 +132,11 @@ sumDurations (Idle t : ts) rMap = t + sumDurations ts rMap
 
 -- heuristic 3 (most space):
 
-mostSpace :: [Stack] -> Map Label Recipe -> Stack
+mostSpace :: [(StName, Stack)] -> Map Label Recipe -> (StName, Stack)
 mostSpace [] _ = error "no stacks"
 mostSpace [x] _ = x
-mostSpace (x:y:xs) rMap
-    | stackHeight x rMap > stackHeight y rMap = mostSpace (y:xs) rMap
+mostSpace (x@(stName, stack) : y@(stName', stack') : xs) rMap
+    | stackHeight stack rMap > stackHeight stack' rMap = mostSpace (y:xs) rMap
     | otherwise = mostSpace (x:xs) rMap
 
 stackHeight :: Stack -> Map Label Recipe -> Time
@@ -147,23 +147,55 @@ isTransaction l rMap = case Map.lookup l rMap of
     Just (Node (Transaction _) _) -> True
     _ -> False
 
+
+-- need to move this over to all Maps not []
 -- heuristic 1 - heuristic 2
 -- tie breaker = heuristic 3
-chooseStack :: [Stack] -> Stack
-chooseStack = undefined
+chooseStack :: Tree Label -> Label -> Env -> Map Label Recipe -> Schedule -> Schedule
+chooseStack lTree l env rMap sch =
+    let ds = demands lTree l env rMap -- :: [(StName, Time)]
+        ds' = filter (\(st,_) -> st `elem` Map.keys sch) ds
+        is = idleTime l (Map.toList sch) lTree rMap -- :: [(StName, Time)]
+        dMinusIs = map (\(st,dur) ->
+            (st, dur - (fromJust $ lookup st is))) ds'
+        sts@((st,min):_) = sortBy (\(_,t) (_,t') -> compare t t') dMinusIs
+        mins = filter (\(st,t) -> t == min) sts
+        minNames = map fst mins
+        (bestName, bestStack) = if length mins == 1
+            then let bestName = head minNames
+                  in (bestName, fromJust $ Map.lookup bestName sch)
+            else mostSpace (Map.toList $
+                Map.filterWithKey (\k v -> k `elem` minNames) sch) rMap
+        iTime = fromJust $ lookup bestName is
+     in Map.insert bestName (Active l : Idle iTime : bestStack) sch
+
 
 -- scheduleRecipe :: Recipe -> Env -> Schedule
 -- scheduleRecipe r env = 
 --     let lTree = mkLabelTree r
 --         rMap = mkLabelMap $ mkLabelTreeR r
 --      in scheduleRecipe' lTree rMap (initSchedule env)
---      where
+--     where
 --         scheduleReciple' lTree rMap sch =
 --             let ls = leaves lrTree
 --                 shortL = shortest ls
 --              in if isTransaction shortL
 --                     then
 --                     else
+--                         let vs = validStations env shortL
+--                             validSch = Map.filterWithKey (\st -> st `elem` vs) sch
+--                             schWithLeaf = chooseStack lTree leaf env rMap validSch shortL
+                            -- choose stack takes value and adds to chosen stack returning updated schedule
+                            -- merge that updated schedule into original
+
+-- sch1 values kept on collision as per Map.insert
+mergeInto :: Schedule -> Schedule -> Schedule
+mergeInto sch1 sch2 = recInsert (Map.toList sch1) sch2
+    where
+        recInsert [] sch = sch
+        recInsert ((k,v):xs) sch =
+            let sch' = Map.insert k v sch
+             in recInsert xs sch'
 
 -- if transaction (need to check if node above leaf is a transaction):
 -- get list of valid stations / stacks for each part of transaction
