@@ -9,6 +9,7 @@ import Recipe.Kitchen
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
+import Control.Monad.IO.Class (liftIO)
 
 -------------------------------------
 -- Steps
@@ -77,27 +78,41 @@ ppIngredientsQ = mapM_ ppQuantIng . ingredientsQ
 -- Schedule
 -------------------------------------
 
-printSchedule :: Schedule -> Map Label String -> IO ()
+printSchedule :: Schedule -> Map Label String -> Map Label Recipe -> IO ()
 printSchedule sch = printSchedule' (Map.toList sch)
     where
-        printSchedule' [] _ = return ()
-        printSchedule' ((name, stack) : xs) sMap = do
+        printSchedule' [] _ _ = return ()
+        printSchedule' ((name, stack) : xs) sMap rMap = do
             putStrLn $ name ++ ":"
-            printStack stack sMap
-            printSchedule' xs sMap
+            evalStateT (printStack stack sMap rMap) (Time 0)
+            printSchedule' xs sMap rMap
 
-printStack :: Stack -> Map Label String -> IO ()
-printStack [] _ = return ()
-printStack (Active l : xs) sMap =
+printStack :: Stack -> Map Label String -> Map Label Recipe -> StateT Time IO ()
+printStack [] _ _ = return ()
+printStack (Active l : xs) sMap rMap = do
+    printStack xs sMap rMap
+
     let s = fromJust $ Map.lookup l sMap
-        step = show l ++ ") " ++ s
-     in putStrLn step >> printStack xs sMap
-printStack (Idle t : xs) sMap =
-    (putStrLn $ "Idle: " ++ show t)
-    >> printStack xs sMap
+    startT <- get
+    let step = (show startT) ++ ": " ++ show l ++ ") " ++ s
+    liftIO $ putStrLn step
+
+    let (Node a _) = fromJust $ Map.lookup l rMap
+    put (startT + timeAction a)
+
+printStack (Idle t : xs) sMap rMap = do
+    printStack xs sMap rMap
+
+    let s = "Idle: " ++ show t
+    startT <- get
+    let step = (show startT) ++ ": " ++ s
+    liftIO $ putStrLn step
+
+    put (startT + t)
 
 scheduleAndPrint :: Recipe -> Env -> IO ()
 scheduleAndPrint r env =
     let sch = scheduleRecipe r env
         sMap = (Map.fromList . flatten . steps) r
-     in printSchedule sch sMap
+        rMap = mkLabelMap $ labelRecipeR r
+     in printSchedule sch sMap rMap
