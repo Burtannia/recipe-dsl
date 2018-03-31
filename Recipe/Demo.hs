@@ -48,9 +48,15 @@ butter, bread :: Recipe
 butter = ingredient "butter"
 bread = ingredient "bread"
 
+toastBread :: Recipe
+toastBread = heatAt 600 (ingredient "bread")
+
+toastBreadFor :: Time -> Recipe
+toastBreadFor t = addCondition (CondTime t) toastBread
+
 butteredToast :: Recipe
-butteredToast = transaction $ combine "spread" butter toast
-    where toast = addCondition (CondTime 3) (heatAt 600 bread)
+butteredToast = combine "spread" butter
+    $ toastBreadFor (minutes 3)
 
 -------------------------------------
 -- CUSTOM COMBINATORS
@@ -93,7 +99,7 @@ preheatOil = \atTmp toTmp ->
 -------------------------------------
 
 env :: Env
-env = Env { eStations = [kettle, chef]
+env = Env { eStations = [kettle, chef, toaster]
           , eObs = []
           }
 
@@ -104,12 +110,22 @@ kettle = let kettleConstr r
              kettleTemp = return $ ObsTemp 100
           in Station "kettle" [] [] kettleConstr [kettleTemp]
 
+toaster :: Station
+toaster = let toasterConstr r@(Node a ts)
+                | r == toastBread = Just [Input, Output]
+                | otherwise = case a of
+                    Conditional _ c@(CondTime t) ->
+                        (toasterConstr $ popCond r) >>= return . addEvalCond c
+                    _ -> Nothing
+              toasterTemp = return $ ObsTemp 600
+           in Station "toaster" [] [] toasterConstr [toasterTemp]
+
 chef :: Station
 chef = let chefConstr r@(Node a ts) = case a of
                 GetIngredient _ -> Just [Input]
                 Combine s       -> Just [Input, PCombine s, Output]
                 Wait            -> Just [Input, DoNothing, Output]
-                Conditional a c -> (chefConstr $ popCond r)
+                Conditional _ c -> (chefConstr $ popCond r)
                                     >>= return . addEvalCond c
                 Measure m       -> Just [Input, MeasureOut m, Output]
                 _               -> Nothing

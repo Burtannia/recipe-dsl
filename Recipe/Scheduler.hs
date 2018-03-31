@@ -7,7 +7,7 @@ import           Data.Maybe                (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
 import           Recipe.Recipe             hiding (removeFrom, deleteAll, leaves)
-import Data.List (groupBy, sortBy)
+import Data.List (groupBy, sortBy, maximumBy)
 
 -----------------------------
 -- Label Helper Functions
@@ -69,10 +69,9 @@ deleteAll l (y@(Node l' _):ys)
     | l == l' = deleteAll l ys
     | otherwise = y : deleteAll l ys
 
-demands :: Tree Label -> Label -> Env -> Map Label Recipe -> [(StName, Time)]
-demands tree leaf env rMap =
-    let unscheduleds = removeFrom tree leaf
-        durations = concat . flatten $ fmap expectedDurs unscheduleds
+demands :: Tree Label -> Env -> Map Label Recipe -> [(StName, Time)]
+demands unscheduleds env rMap =
+    let durations = concat . flatten $ fmap expectedDurs unscheduleds
         expectedDurs = \l -> [(v, Time $ dur `div` length vs) | let vs = lookupValSts env l rMap
                                                               , v <- vs
                                                               , let (Time dur) = duration l rMap]
@@ -143,12 +142,13 @@ isTransaction l rMap = case Map.lookup l rMap of
 -- need to move this over to all Maps not []
 -- heuristic 1 - heuristic 2
 -- tie breaker = heuristic 3
+-- passed fullTree and tree with label removed
 chooseStack :: Tree Label -> Tree Label -> Label -> Env -> Map Label Recipe -> Schedule -> Schedule
-chooseStack fullTree lTree l env rMap sch =
+chooseStack fullTree unscheduleds l env rMap sch =
     let vs = lookupValSts env l rMap
         validSch = Map.filterWithKey (\st _ -> st `elem` vs) sch -- schedule containing only stations valid for l
 
-        ds = demands lTree l env rMap -- :: [(StName, Time)]
+        ds = demands unscheduleds env rMap -- :: [(StName, Time)]
         ds' = filter (\(st,_) -> st `elem` Map.keys validSch) ds
         is = idleTime l (Map.toList validSch) (Map.elems sch) fullTree rMap -- :: [(StName, Time)]
         dMinusIs = map (\(st,dur) ->
@@ -171,6 +171,15 @@ chooseStack fullTree lTree l env rMap sch =
             _ -> Active l : Idle iTime : bestStack
      in Map.insert bestName newStack sch
 
+-- |Recursive version of chooseStack to work on a list of labels.
+-- Used to schedule all children of a transaction without other recipes
+-- being scheduled in between.
+chooseStackRec :: Tree Label -> Tree Label -> [Label] -> Env -> Map Label Recipe -> Schedule -> Schedule
+chooseStackRec fullTree lTree' [] env rMap sch = sch
+chooseStackRec fullTree lTree' (l:ls) env rMap sch = 
+    let sch' = chooseStack fullTree lTree' l env rMap sch
+     in chooseStackRec fullTree lTree' ls env rMap sch'
+
 scheduleRecipe :: Recipe -> Env -> Schedule
 scheduleRecipe r env = 
     let lTree = labelRecipe r
@@ -181,13 +190,56 @@ scheduleRecipe r env =
         scheduleRecipe' fullTree lTree rMap sch =
             let ls = leaves lTree rMap
                 shortL = shortest ls rMap
-             in if isTransaction shortL rMap
-                    then initSchedule env
+                lTree' = removeFrom lTree shortL
+                newSch = if isTransaction shortL rMap
+                    then
+                        let deps = childLabels shortL fullTree
+                            sch' = chooseStackRec fullTree lTree' deps env rMap sch -- schedule child recipes of transaction
+                            adjSch = adjustSch sch' deps rMap
+                         in chooseStack fullTree lTree' shortL env rMap adjSch            -- schedule parent of transaction
                     else
-                        let schWithLeaf = chooseStack fullTree lTree shortL env rMap sch
-                         in if shortL == rootLabel lTree
-                                then schWithLeaf
-                                else scheduleRecipe' fullTree (removeFrom lTree shortL) rMap schWithLeaf
+                        chooseStack fullTree lTree' shortL env rMap sch
+             in if shortL == rootLabel fullTree
+                    then newSch
+                    else scheduleRecipe' fullTree lTree' rMap newSch
+
+
+adjustSch :: Schedule -> [Label] -> Map Label Recipe -> Schedule
+adjustSch sch ls rMap =
+    let stacks = Map.elems sch
+        ends = map (\l -> (l, endOfLabel l stacks rMap)) ls
+        (_,latest) = maximumBy (\(_,t) (_,t') -> compare t t') ends
+        notLatests = filter (\(_,t) -> not $ t == latest) ends
+        idleReqs = map (\(l,t) -> (l, latest - t)) notLatests
+     in adjustStacks sch idleReqs
+
+adjustStacks :: Schedule -> [(Label, Time)] -> Schedule
+adjustStacks sch [] = sch
+adjustStacks sch ((l,t):ls) =
+    let filteredSch = Map.filter (\s -> Active l `elem` s) sch
+        (name,stack) = head $ Map.toList filteredSch
+        stack' = addIdleTime l t stack
+        sch' = Map.insert name stack sch
+     in adjustStacks sch' ls
+
+addIdleTime :: Label -> Time -> Stack -> Stack
+addIdleTime l t stack =
+    let (xs,ys) = splitAtEq (Active l) stack
+        ys' = case ys of
+                Active l : Idle t' : zs -> Active l : Idle (t + t') : zs
+                Active l : zs -> Active l : Idle t : zs
+                _ -> ys
+     in xs ++ ys'
+
+splitAtEq :: Eq a => a -> [a] -> ([a],[a])
+splitAtEq a [] = ([],[])
+splitAtEq a ys@(x:xs)
+    | a == x = ([],ys)
+    | otherwise = let (as,bs) = splitAtEq a xs
+                   in (x:as, bs)
+
+-- take latest end time of children
+-- add idle time to bump up other children
 
 -- sch1 values kept on collision as per Map.insert
 mergeInto :: Schedule -> Schedule -> Schedule
@@ -197,17 +249,6 @@ mergeInto sch1 sch2 = recInsert (Map.toList sch1) sch2
         recInsert ((k,v):xs) sch =
             let sch' = Map.insert k v sch
              in recInsert xs sch'
-
--- if transaction (need to check if node above leaf is a transaction):
--- get list of valid stations / stacks for each part of transaction
--- aim to schedule children to finish at same time
--- schedule parent
--- remember when calculating "unscheduleds" to pass parent so entire transaction is removed
-
--- else:
--- get list of valid stations / stacks
--- choose stack using heuristics
--- push onto stack
 
 initSchedule :: Env -> Schedule
 initSchedule env = Map.fromList

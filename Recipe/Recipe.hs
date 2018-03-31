@@ -167,10 +167,9 @@ tempToTime :: Int -> Time
 tempToTime i = Time i * 2
 
 -- Preheat time (use with HeatAt)
--- 10m + 1m per 20 degrees
+-- 10m
 preheatTime :: Int -> Time
-preheatTime i = Time t + 600
-    where t = 60 * (i `div` 20)
+preheatTime _ = Time 600
 
 time :: Recipe -> Time
 time = foldr (\a t -> t + timeAction a) 0 --foldTree (\a ts -> timeAction a + mconcat ts)
@@ -178,7 +177,7 @@ time = foldr (\a t -> t + timeAction a) 0 --foldTree (\a ts -> timeAction a + mc
 timeAction :: Action -> Time
 timeAction (GetIngredient _) = 10
 timeAction Heat = mempty
-timeAction (HeatAt t) = preheatTime t
+timeAction (HeatAt t) = mempty
 timeAction Wait = mempty
 timeAction (Combine _) = 10
 timeAction (Conditional a c) = t' + foldCond f c
