@@ -4,11 +4,20 @@ import Recipe.Recipe
 import Data.Tree
 import Data.Tree.Pretty
 import Control.Monad.Trans.State
+import Recipe.Scheduler
+import Recipe.Kitchen
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import Data.Maybe (fromJust)
+
+-------------------------------------
+-- Steps
+-------------------------------------
 
 type Step = (Label, String)
 
 steps :: Recipe -> Tree Step
-steps = steps' . labelRecipe
+steps = steps' . labelRecipeA
     where
         steps' (Node (l,a) ts) = Node (l,s) ts'
             where
@@ -44,14 +53,51 @@ ppSteps = ppSteps' . steps
             mapM_ ppSteps' ts
             >> putStrLn (show l ++ ") " ++ s)
 
+-------------------------------------
+-- Tree
+-------------------------------------
+
 ppTree :: Show a => Tree a -> IO ()
 ppTree = putStrLn . drawVerticalTree . fmap show
 
 ppIngredients :: Recipe -> IO ()
 ppIngredients = mapM_ putStrLn . ingredients
 
+-------------------------------------
+-- Properties
+-------------------------------------
+
 ppIngredientsQ :: Recipe -> IO ()
 ppIngredientsQ = mapM_ ppQuantIng . ingredientsQ
     where
         ppQuantIng (s,m) = putStrLn $
             s ++ ": " ++ show m
+
+-------------------------------------
+-- Schedule
+-------------------------------------
+
+printSchedule :: Schedule -> Map Label String -> IO ()
+printSchedule sch = printSchedule' (Map.toList sch)
+    where
+        printSchedule' [] _ = return ()
+        printSchedule' ((name, stack) : xs) sMap = do
+            putStrLn $ name ++ ":"
+            printStack stack sMap
+            printSchedule' xs sMap
+
+printStack :: Stack -> Map Label String -> IO ()
+printStack [] _ = return ()
+printStack (Active l : xs) sMap =
+    let s = fromJust $ Map.lookup l sMap
+        step = show l ++ ") " ++ s
+     in putStrLn step >> printStack xs sMap
+printStack (Idle t : xs) sMap =
+    (putStrLn $ "Idle: " ++ show t)
+    >> printStack xs sMap
+
+scheduleAndPrint :: Recipe -> Env -> IO ()
+scheduleAndPrint r env =
+    let sch = scheduleRecipe r env
+        sMap = (Map.fromList . flatten . steps) r
+     in printSchedule sch sMap

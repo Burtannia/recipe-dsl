@@ -146,14 +146,8 @@ ingredientsQ (Node _ ts) = concatMap ingredientsQ ts
 
 type Label = Int
 
-labelRecipe :: Recipe -> Tree (Label, Action)
-labelRecipe r = evalState (labelRecipe' r) 1
-    where
-        labelRecipe' (Node a ts) = do
-            ts' <- mapM labelRecipe' ts
-            l <- get
-            put (l + 1)
-            return $ Node (l,a) ts'
+labelRecipe :: Recipe -> Tree Label
+labelRecipe r = fmap fst (labelRecipeR r)
 
 labelRecipeR :: Recipe -> Tree (Label, Recipe)
 labelRecipeR r = evalState (labelRecipeR' r) 1
@@ -163,6 +157,10 @@ labelRecipeR r = evalState (labelRecipeR' r) 1
             l <- get
             put (l + 1)
             return $ Node (l,r) ts'
+
+labelRecipeA :: Recipe -> Tree (Label, Action)
+labelRecipeA r = fmap (\(l,r) -> (l, rootLabel r))
+    (labelRecipeR r)
 
 -- Time to reach temp (use with CondTemp)
 tempToTime :: Int -> Time

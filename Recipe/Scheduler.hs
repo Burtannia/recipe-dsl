@@ -6,31 +6,16 @@ import qualified Data.Map.Strict           as Map
 import           Data.Maybe                (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
-import           Recipe.Recipe             hiding (Label, removeFrom, deleteAll, leaves)
+import           Recipe.Recipe             hiding (removeFrom, deleteAll, leaves)
 import Data.List (groupBy, sortBy)
-
------------------------------
--- Label Recipe
------------------------------
-
-type Label = String
-
--- labels recipe tree with action1, action2...
-mkLabelTreeR :: Recipe -> Tree (Label, Recipe)
-mkLabelTreeR r = fmap (\(i,r) -> ("action" ++ show i, r)) lr
-    where lr = labelRecipeR r
-
--- mkLabelTreeR without keeping the recipe
-mkLabelTree :: Recipe -> Tree Label
-mkLabelTree r = fmap fst (mkLabelTreeR r)
-
--- map of labels to their recipe
-mkLabelMap :: Tree (Label, Recipe) -> Map Label Recipe
-mkLabelMap = Map.fromList . flatten
 
 -----------------------------
 -- Label Helper Functions
 -----------------------------
+
+-- map of labels to their recipe
+mkLabelMap :: Tree (Label, Recipe) -> Map Label Recipe
+mkLabelMap = Map.fromList . flatten
 
 -- Label -> Recipe
 lookupR :: Label -> Map Label Recipe -> Recipe
@@ -181,8 +166,8 @@ chooseStack lTree l env rMap sch =
 
 scheduleRecipe :: Recipe -> Env -> Schedule
 scheduleRecipe r env = 
-    let lTree = mkLabelTree r
-        rMap = mkLabelMap $ mkLabelTreeR r
+    let lTree = labelRecipe r
+        rMap = mkLabelMap $ labelRecipeR r
      in scheduleRecipe' lTree rMap (initSchedule env)
     where
         scheduleRecipe' :: Tree Label -> Map Label Recipe -> Schedule -> Schedule
@@ -199,30 +184,6 @@ scheduleRecipe r env =
                          in if shortL == rootLabel lTree
                                 then newSch
                                 else scheduleRecipe' (removeFrom lTree shortL) rMap newSch
-
-printSchedule :: Schedule -> Map Label Recipe -> IO ()
-printSchedule sch = printSchedule' (Map.toList sch)
-    where
-        printSchedule' [] _ = return ()
-        printSchedule' ((name, stack) : xs) rMap = do
-            putStrLn $ name ++ ":"
-            printStack stack rMap
-            printSchedule' xs rMap
-
-printStack :: Stack -> Map Label Recipe -> IO ()
-printStack [] _ = return ()
-printStack (Active l : xs) rMap =
-    let (Node a _) = fromJust $ Map.lookup l rMap
-     in print a >> printStack xs rMap
-printStack (Idle t : xs) rMap =
-    (putStrLn $ "Idle: " ++ show t)
-    >> printStack xs rMap
-
-scheduleAndPrint :: Recipe -> Env -> IO ()
-scheduleAndPrint r env =
-    let sch = scheduleRecipe r env
-        rMap = mkLabelMap $ mkLabelTreeR r
-     in printSchedule sch rMap
 
 -- sch1 values kept on collision as per Map.insert
 mergeInto :: Schedule -> Schedule -> Schedule
