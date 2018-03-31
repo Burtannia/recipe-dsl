@@ -93,28 +93,30 @@ demands tree leaf env rMap =
 
 -- |Given a label and a list of valid stations with their stacks, returns
 -- a list of those stations with the required idle time to schedule that label.
-idleTime :: Label -> [(StName, Stack)] -> Tree Label -> Map Label Recipe -> [(StName, Time)]
-idleTime l ss lTree rMap =
-    let deps = childLabels l lTree
-        stacks = map snd ss
-        ends = map (\d -> endOfLabel d stacks rMap) deps -- :: [Time]
+-- Must also be passed a list of all stacks in order to find dependency times.
+-- The tree passed must be the full tree of the labelled recipe without
+-- already scheduled leaves having been removed.
+idleTime :: Label -> [(StName, Stack)] -> [Stack] -> Tree Label -> Map Label Recipe -> [(StName, Time)]
+idleTime l validSts allStacks fullTree rMap =
+    let deps = childLabels l fullTree
+        ends = map (\d -> endOfLabel d allStacks rMap) deps -- :: [Time]
         minStart = maximum ends
-        idles = map (\(n,s) -> (n, minStart - stackHeight s rMap)) ss
+        idles = map (\(n,s) -> (n, minStart - stackHeight s rMap)) validSts
      in if length deps == 0
-            then map (\(s,_) -> (s, Time 0)) ss
+            then map (\(s,_) -> (s, Time 0)) validSts
             else map (\(n,t) -> if t < Time 0
                                     then (n, Time 0)
                                     else (n,t)) idles
 
 -- get end of time label in stacks
 endOfLabel :: Label -> [Stack] -> Map Label Recipe -> Time
-endOfLabel _ [] _ = Time 0
+endOfLabel _ [] _ = error "no stacks"
 endOfLabel l ss rMap = maximum $ map endOfLabel' ss
     where
-        endOfLabel' [] = Time 0
-        endOfLabel' (t:ts)
-            | t == Active l = sumDurations (t:ts) rMap
-            | otherwise = endOfLabel' ts
+        endOfLabel' stack =
+            let stack' = dropWhile (\x -> not $ x == Active l) stack
+             in sumDurations stack' rMap
+
 
 sumDurations :: [Task] -> Map Label Recipe -> Time
 sumDurations [] _ = Time 0
@@ -141,49 +143,51 @@ isTransaction l rMap = case Map.lookup l rMap of
 -- need to move this over to all Maps not []
 -- heuristic 1 - heuristic 2
 -- tie breaker = heuristic 3
-chooseStack :: Tree Label -> Label -> Env -> Map Label Recipe -> Schedule -> Schedule
-chooseStack lTree l env rMap sch =
-    let ds = demands lTree l env rMap -- :: [(StName, Time)]
-        ds' = filter (\(st,_) -> st `elem` Map.keys sch) ds
-        is = idleTime l (Map.toList sch) lTree rMap -- :: [(StName, Time)]
+chooseStack :: Tree Label -> Tree Label -> Label -> Env -> Map Label Recipe -> Schedule -> Schedule
+chooseStack fullTree lTree l env rMap sch =
+    let vs = lookupValSts env l rMap
+        validSch = Map.filterWithKey (\st _ -> st `elem` vs) sch -- schedule containing only stations valid for l
+
+        ds = demands lTree l env rMap -- :: [(StName, Time)]
+        ds' = filter (\(st,_) -> st `elem` Map.keys validSch) ds
+        is = idleTime l (Map.toList validSch) (Map.elems sch) fullTree rMap -- :: [(StName, Time)]
         dMinusIs = map (\(st,dur) ->
-            (st, dur - (fromJust $ lookup st is))) ds'
+            (st, dur - (fromJust $ lookup st is))) ds' -- need to correct negatives to 0
+
         sts = sortBy (\(_,t) (_,t') -> compare t t') dMinusIs
         (st,min) = head sts
         mins = filter (\(st,t) -> t == min) sts
         minNames = map fst mins
+
         (bestName, bestStack) = if length mins == 1
             then let bestName = head minNames
                   in (bestName, fromJust $ Map.lookup bestName sch)
             else mostSpace (Map.toList $
                 Map.filterWithKey (\k v -> k `elem` minNames) sch) rMap
+
         iTime = fromJust $ lookup bestName is
         newStack = case iTime of
             Time 0 -> Active l : bestStack
             _ -> Active l : Idle iTime : bestStack
      in Map.insert bestName newStack sch
 
-
 scheduleRecipe :: Recipe -> Env -> Schedule
 scheduleRecipe r env = 
     let lTree = labelRecipe r
         rMap = mkLabelMap $ labelRecipeR r
-     in scheduleRecipe' lTree rMap (initSchedule env)
+     in scheduleRecipe' lTree lTree rMap (initSchedule env)
     where
-        scheduleRecipe' :: Tree Label -> Map Label Recipe -> Schedule -> Schedule
-        scheduleRecipe' lTree rMap sch =
+        scheduleRecipe' :: Tree Label -> Tree Label -> Map Label Recipe -> Schedule -> Schedule
+        scheduleRecipe' fullTree lTree rMap sch =
             let ls = leaves lTree rMap
                 shortL = shortest ls rMap
              in if isTransaction shortL rMap
                     then initSchedule env
                     else
-                        let vs = lookupValSts env shortL rMap
-                            validSchs = Map.filterWithKey (\st _ -> st `elem` vs) sch
-                            schWithLeaf = chooseStack lTree shortL env rMap validSchs
-                            newSch = mergeInto schWithLeaf sch
+                        let schWithLeaf = chooseStack fullTree lTree shortL env rMap sch
                          in if shortL == rootLabel lTree
-                                then newSch
-                                else scheduleRecipe' (removeFrom lTree shortL) rMap newSch
+                                then schWithLeaf
+                                else scheduleRecipe' fullTree (removeFrom lTree shortL) rMap schWithLeaf
 
 -- sch1 values kept on collision as per Map.insert
 mergeInto :: Schedule -> Schedule -> Schedule

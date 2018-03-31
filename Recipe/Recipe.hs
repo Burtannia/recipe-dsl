@@ -164,7 +164,7 @@ labelRecipeA r = fmap (\(l,r) -> (l, rootLabel r))
 
 -- Time to reach temp (use with CondTemp)
 tempToTime :: Int -> Time
-tempToTime i = Time i * 4
+tempToTime i = Time i * 2
 
 -- Preheat time (use with HeatAt)
 -- 10m + 1m per 20 degrees
