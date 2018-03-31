@@ -55,7 +55,8 @@ toastBreadFor :: Time -> Recipe
 toastBreadFor t = addCondition (CondTime t) toastBread
 
 butteredToast :: Recipe
-butteredToast = combine "spread" butter
+butteredToast = transaction
+    $ combine "spread" butter
     $ toastBreadFor (minutes 3)
 
 -------------------------------------
@@ -104,9 +105,11 @@ env = Env { eStations = [kettle, chef, toaster]
           }
 
 kettle :: Station
-kettle = let kettleConstr r 
+kettle = let kettleConstr r@(Node a ts)
                 | r == heatTo 100 (ingredient "water") = Just [Input, Output]
-                | otherwise = Nothing
+                | otherwise = case a of
+                    Transaction a -> kettleConstr $ popT r
+                    _ -> Nothing
              kettleTemp = return $ ObsTemp 100
           in Station "kettle" [] [] kettleConstr [kettleTemp]
 
@@ -116,6 +119,7 @@ toaster = let toasterConstr r@(Node a ts)
                 | otherwise = case a of
                     Conditional _ c@(CondTime t) ->
                         (toasterConstr $ popCond r) >>= return . addEvalCond c
+                    Transaction a -> toasterConstr $ popT r
                     _ -> Nothing
               toasterTemp = return $ ObsTemp 600
            in Station "toaster" [] [] toasterConstr [toasterTemp]
@@ -128,6 +132,7 @@ chef = let chefConstr r@(Node a ts) = case a of
                 Conditional _ c -> (chefConstr $ popCond r)
                                     >>= return . addEvalCond c
                 Measure m       -> Just [Input, MeasureOut m, Output]
+                Transaction a   -> chefConstr $ popT r
                 _               -> Nothing
         in Station "chef" [] [] chefConstr []
 
@@ -146,3 +151,8 @@ priceList = Map.fromList $
 
 priceOfTea :: Price
 priceOfTea = lookupProperties priceList cupOfTea
+
+test = let rMap = mkLabelMap $ labelRecipeR butteredToast
+           lTree = labelRecipe butteredToast
+           lTree' = Recipe.Scheduler.removeFrom lTree 2
+        in Recipe.Scheduler.leaves lTree' rMap

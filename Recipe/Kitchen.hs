@@ -32,6 +32,10 @@ addEvalCond :: Condition -> [Process] -> [Process]
 addEvalCond c (Input:ps) = Input : EvalCond c : ps
 addEvalCond c ps = EvalCond c : ps
 
+popT :: Recipe -> Recipe
+popT (Node (Transaction a) ts) = Node a ts
+popT r = r
+
 data Process =
     Input
     | Output

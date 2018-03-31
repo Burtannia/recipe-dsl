@@ -196,7 +196,7 @@ scheduleRecipe r env =
                         let deps = childLabels shortL fullTree
                             sch' = chooseStackRec fullTree lTree' deps env rMap sch -- schedule child recipes of transaction
                             adjSch = adjustSch sch' deps rMap
-                         in chooseStack fullTree lTree' shortL env rMap adjSch            -- schedule parent of transaction
+                         in chooseStack fullTree lTree' shortL env rMap adjSch      -- schedule parent of transaction
                     else
                         chooseStack fullTree lTree' shortL env rMap sch
              in if shortL == rootLabel fullTree
@@ -264,8 +264,9 @@ shortest (l:x:ls) rMap
 leaves :: Tree Label -> Map Label Recipe -> [Label]
 leaves (Node l []) _ = [l]
 leaves (Node l ts) rMap = case Map.lookup l rMap of
-    Just (Node (Transaction _) rs) ->
-        if map subForest rs == []
+    Just (Node (Transaction _) _) ->
+        if concatMap subForest ts == []
             then [l]
-            else concatMap (\t -> leaves t rMap) ts
+            else let csOfDeps = concatMap subForest ts
+                  in concatMap (\t -> leaves t rMap) csOfDeps
     _ -> concatMap (\t -> leaves t rMap) ts
