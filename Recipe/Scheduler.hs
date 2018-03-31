@@ -7,7 +7,7 @@ import           Data.Maybe                (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
 import           Recipe.Recipe             hiding (removeFrom, deleteAll, leaves)
-import Data.List (groupBy, sortBy, maximumBy)
+import Data.List (groupBy, sortBy, maximumBy, minimumBy)
 
 -----------------------------
 -- Label Helper Functions
@@ -189,7 +189,7 @@ scheduleRecipe r env =
         scheduleRecipe' :: Tree Label -> Tree Label -> Map Label Recipe -> Schedule -> Schedule
         scheduleRecipe' fullTree lTree rMap sch =
             let ls = leaves lTree rMap
-                shortL = shortest ls rMap
+                shortL = chooseLeaf ls fullTree rMap
                 lTree' = removeFrom lTree shortL
                 newSch = if isTransaction shortL rMap
                     then
@@ -254,12 +254,36 @@ initSchedule :: Env -> Schedule
 initSchedule env = Map.fromList
     [(st,[]) | st <- map stName (eStations env)]
 
-shortest :: [Label] -> Map Label Recipe -> Label
-shortest [] _ = error "No leaves"
-shortest [l] _ = l
-shortest (l:x:ls) rMap
-    | duration l rMap > duration x rMap = shortest (x:ls) rMap
-    | otherwise = shortest (l:ls) rMap
+-- must take full tree
+chooseLeaf :: [Label] -> Tree Label -> Map Label Recipe -> Label
+chooseLeaf [] _ _ = error "No leaves"
+chooseLeaf [l] _ _ = l
+chooseLeaf ls fullTree rMap =
+    let shortest = minimumBy (\l l' ->
+            compare (duration l rMap) (duration l' rMap)) ls
+        shorts = filter (\l -> duration shortest rMap == duration l rMap) ls
+        bs = branches fullTree
+        labelsWithBranch = map (\l -> (l, getBranch bs l)) shorts
+     in if length shorts == 1
+            then head shorts
+            else fst $ maximumBy (\(_,b) (_,b') ->
+                    compare (branchDuration b rMap) (branchDuration b' rMap)) labelsWithBranch
+
+getBranch :: [[Label]] -> Label -> [Label]
+getBranch [] _ = error "branch not found"
+getBranch (b:bs) l
+    | l `elem` b = b
+    | otherwise = getBranch bs l
+
+branchDuration :: [Label] -> Map Label Recipe -> Time
+branchDuration ls rMap = sum $
+    map (\l -> duration l rMap) ls
+
+branches :: Tree Label -> [[Label]]
+branches (Node a []) = [[a]]
+branches (Node a ts) = [a : b | t <- ts
+                              , let bs = branches t
+                              , b <- bs]
 
 leaves :: Tree Label -> Map Label Recipe -> [Label]
 leaves (Node l []) _ = [l]
