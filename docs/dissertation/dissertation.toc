@@ -34,7 +34,8 @@
 \contentsline {section}{\numberline {9}Summary and Reflections}{6}{section.9}
 \contentsline {subsection}{\numberline {9.1}Project Management}{6}{subsection.9.1}
 \contentsline {subsection}{\numberline {9.2}Contributions}{6}{subsection.9.2}
-\contentsline {subsection}{\numberline {9.3}Reflections}{6}{subsection.9.3}
+\contentsline {subsection}{\numberline {9.3}Future Work}{6}{subsection.9.3}
+\contentsline {subsection}{\numberline {9.4}Reflections}{6}{subsection.9.4}
 \contentsline {section}{\numberline {10}Related Work}{6}{section.10}
 \contentsline {subsection}{\numberline {10.1}Pretty Printing}{6}{subsection.10.1}
 \contentsline {subsection}{\numberline {10.2}Financial Contracts}{6}{subsection.10.2}

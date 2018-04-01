@@ -43,15 +43,15 @@ instance Arbitrary Condition where
 singleCond :: Gen Condition
 singleCond = oneof
     [ return CondOpt
-    , liftM CondTime genTime
+    , liftM CondTime arbitrary
     , liftM CondTemp genTemp ]
 
-genTime :: Gen Time
-genTime = liftM Time (choose (1, 600))
+instance Arbitrary Time where
+    arbitrary = liftM Time (choose (1, 600))
 
 instance Arbitrary Measurement where
     arbitrary = oneof
-        [ liftM Number (elements [1..10])
+        [ liftM Count (elements [1..10])
         , liftM Grams (elements [10,20..1000])
         , liftM Milliletres (elements [10,20..1000]) ]
 
@@ -69,7 +69,9 @@ genRecipe = sized $ \n ->
 -------------------------------------
 
 qsRecipe = quickSpec
-    [ con "ingredient" (ingredient :: String -> Recipe)
+    [ withMaxTermSize 5
+    
+    , con "ingredient" (ingredient :: String -> Recipe)
     , con "heat" (heat :: Recipe -> Recipe)
     , con "heatAt" (heatAt :: Int -> Recipe -> Recipe)
     , con "wait" (wait :: Recipe -> Recipe)
@@ -83,4 +85,5 @@ qsRecipe = quickSpec
     , monoType (Proxy :: Proxy Recipe)
     , monoType (Proxy :: Proxy Measurement)
     , monoType (Proxy :: Proxy Condition)
+    , monoType (Proxy :: Proxy Time)
     ]

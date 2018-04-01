@@ -63,11 +63,11 @@ foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
 foldCond f CondOpt      = mempty
 foldCond f c            = f c
 
-data Measurement = Number Int | Grams Int | Milliletres Int
+data Measurement = Count Int | Grams Int | Milliletres Int
     deriving (Eq)
 
 getMeasure :: Measurement -> Int
-getMeasure (Number i) = i
+getMeasure (Count i) = i
 getMeasure (Grams i) = i
 getMeasure (Milliletres i) = i
 
@@ -75,7 +75,7 @@ instance Ord Measurement where
     compare a b = compare (getMeasure a) (getMeasure b)
 
 instance Show Measurement where
-    show (Number i) = show i
+    show (Count i) = show i
     show (Grams i) = show i ++ "g"
     show (Milliletres i) = show i ++ "ml"
 
@@ -141,7 +141,8 @@ ingredients (Node a ts) = case a of
 ingredientsQ :: Recipe -> [(String, Measurement)]
 ingredientsQ (Node (Measure m) ts) = case ts of
     [Node (GetIngredient s) _] -> [(s,m)]
-    _                          -> concatMap ingredientsQ ts
+    _ -> concatMap ingredientsQ ts
+ingredientsQ (Node (GetIngredient s) _) = [(s, Count 0)]
 ingredientsQ (Node _ ts) = concatMap ingredientsQ ts
 
 type Label = Int

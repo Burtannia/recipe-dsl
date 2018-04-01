@@ -238,9 +238,6 @@ splitAtEq a ys@(x:xs)
     | otherwise = let (as,bs) = splitAtEq a xs
                    in (x:as, bs)
 
--- take latest end time of children
--- add idle time to bump up other children
-
 -- sch1 values kept on collision as per Map.insert
 mergeInto :: Schedule -> Schedule -> Schedule
 mergeInto sch1 sch2 = recInsert (Map.toList sch1) sch2

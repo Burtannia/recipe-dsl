@@ -1,3 +1,7 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Recipe.Printer where
 
 import Recipe.Recipe
@@ -5,11 +9,14 @@ import Data.Tree
 import Data.Tree.Pretty
 import Control.Monad.Trans.State
 import Recipe.Scheduler
+import Recipe.Properties
 import Recipe.Kitchen
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Control.Monad.IO.Class (liftIO)
+import Diagrams.Prelude hiding (Time)
+import Diagrams.Backend.SVG.CmdLine
 
 -------------------------------------
 -- Steps
@@ -42,7 +49,7 @@ steps = steps' . labelRecipeA
                         condToString (CondTime t) = " for " ++ show t
                 toString (Transaction a) = "Immediately " ++ toString a
                 toString (Measure m) = "Measure " ++ show m ++ case m of
-                    Number _ -> show l
+                    Count _ -> show l
                     _        -> " of " ++ show l
                     where l' = head $ map extractLabel ts
                 extractLabel (Node (l,_) _) = l
@@ -63,6 +70,34 @@ ppTree = putStrLn . drawVerticalTree . fmap show
 
 ppIngredients :: Recipe -> IO ()
 ppIngredients = mapM_ putStrLn . ingredients
+
+drawDiag :: Recipe -> Diagram B
+drawDiag r =
+    let stepTree = steps r
+        lTree = fmap fst stepTree
+        treeDiag = drawDiag' lTree
+        instructions = concat $ flatten $ fmap (\(l,s) ->
+            show l ++ ") " ++ s ++ "\n") stepTree
+        stepsDiag = text instructions # fontSizeL 0.5
+            <> roundedRect 10 20 0.3 # fc white 
+     in treeDiag ||| stepsDiag
+    where
+        drawDiag' (Node l []) = drawAction l
+        drawDiag' (Node l ts) =
+            let na = drawAction l
+                subTrees = map drawDiag' ts
+                nts = foldr1 (|||) subTrees
+                diag = na === nts # center
+             in connectNodes l ts diag
+
+connectNodes :: Label -> [Tree Label] -> Diagram B -> Diagram B
+connectNodes _ [] d = d
+connectNodes l (Node l' _ : ts) d =
+    connectOutside l l' (connectNodes l ts d)
+
+drawAction :: Label -> Diagram B
+drawAction l = text (show l) # fontSizeL 0.7
+    <> circle 1 # pad 2 # fc white # named l
 
 -------------------------------------
 -- Properties

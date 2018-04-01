@@ -6,7 +6,7 @@ import Recipe.Kitchen
 import Recipe.Scheduler
 import Data.Tree
 import Recipe.Properties
---import Recipe.QS
+import Recipe.QS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
@@ -28,16 +28,16 @@ cupOfTea = optional $ combine "mix" milk blackTea
         wait5 = \r -> addCondition (CondTime 300) (wait r)
         blackTea = wait5 $ combine "pour" boilingWater teabag
 
-cupOfTea' :: Recipe
-cupOfTea' = optional
+cupOfTeaQ :: Recipe
+cupOfTeaQ = optional
     $ combine "mix" (measure (Milliletres 10) milk)
         $ waitFor (minutes 5)
         $ combine "pour" (heatTo 100
             $ measure (Milliletres 300) water)
-            $ measure (Number 1) teabag
+            $ measure (Count 1) teabag
 
-cupOfTea'' :: Recipe
-cupOfTea'' = optional
+cupOfTea' :: Recipe
+cupOfTea' = optional
     $ combine "mix" (waitFor (minutes 5)
                         $ combine "pour"
                             (heatTo 100 water) teabag) milk
@@ -140,19 +140,22 @@ chef = let chefConstr r@(Node a ts) = case a of
 -- TEST PROPERTIES
 -------------------------------------
 
-priceList :: Map Action Price
-priceList = Map.fromList $
-    map (\(s,i) -> (GetIngredient s, i))
-    [ ("teabag", 2)
-    , ("milk", 1)
-    , ("sugar", 5)
-    , ("water", 0)
-    ]
+priceList :: PropertySet String Price
+priceList = [ ("teabag", 2)
+            , ("milk", 1)
+            , ("sugar", 5)
+            , ("water", 0)
+            ]
+
+priceListQ :: PropertySet String (Price, Measurement)
+priceListQ = [ ("teabag", (639, Count 240))
+             , ("milk", (70, Milliletres 1000))
+             , ("sugar", (69, Grams 1000))
+             , ("water", (0, Count 1))
+             ]
 
 priceOfTea :: Price
-priceOfTea = lookupProperties priceList cupOfTea
+priceOfTea = evalProperties priceList (ingredients cupOfTea)
 
-test = let rMap = mkLabelMap $ labelRecipeR butteredToast
-           lTree = labelRecipe butteredToast
-           lTree' = Recipe.Scheduler.removeFrom lTree 2
-        in Recipe.Scheduler.leaves lTree' rMap
+priceOfTeaQ :: Price
+priceOfTeaQ = evalPropertiesQ priceListQ (ingredientsQ cupOfTeaQ)
