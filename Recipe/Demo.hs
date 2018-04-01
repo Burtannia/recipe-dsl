@@ -21,10 +21,12 @@ water = ingredient "water"
 teabag = ingredient "teabag"
 milk = ingredient "milk"
 
+boilingWater :: Recipe
+boilingWater = heatTo 100 water
+
 cupOfTea :: Recipe
 cupOfTea = optional $ combine "mix" milk blackTea
     where
-        boilingWater = addCondition (CondTemp 100) (heat water)
         wait5 = \r -> addCondition (CondTime 300) (wait r)
         blackTea = wait5 $ combine "pour" boilingWater teabag
 
@@ -85,6 +87,9 @@ heatTo t = toTemp t . heat
 heatAtFor :: Int -> Time -> Recipe -> Recipe
 heatAtFor temp time = forTime time . heatAt temp
 
+heatAtForM :: Int -> Time -> Recipe -> Recipe
+heatAtForM temp (Time i) = heatAtFor temp (minutes i)
+
 heatAtTo :: Int -> Int -> Recipe -> Recipe
 heatAtTo atTmp toTmp = toTemp toTmp . heatAt atTmp
 
@@ -94,6 +99,10 @@ oliveOil = ingredient "olive oil"
 preheatOil :: Int -> Int -> Recipe
 preheatOil = \atTmp toTmp ->
     heatAtTo atTmp toTmp oliveOil
+
+boilInWaterForM :: Time -> Recipe -> Recipe
+boilInWaterForM t r = forTime (t * 60) 
+    (combine "place in" r boilingWater)
 
 -------------------------------------
 -- TEST STATIONS
@@ -144,18 +153,40 @@ priceList :: PropertySet String Price
 priceList = [ ("teabag", 2)
             , ("milk", 1)
             , ("sugar", 5)
-            , ("water", 0)
-            ]
+            , ("water", 0) ]
 
 priceListQ :: PropertySet String (Price, Measurement)
 priceListQ = [ ("teabag", (639, Count 240))
              , ("milk", (70, Milliletres 1000))
              , ("sugar", (69, Grams 1000))
-             , ("water", (0, Count 1))
-             ]
+             , ("water", (0, Count 1)) ]
 
 priceOfTea :: Price
 priceOfTea = evalProperties priceList (ingredients cupOfTea)
 
 priceOfTeaQ :: Price
 priceOfTeaQ = evalPropertiesQ priceListQ (ingredientsQ cupOfTeaQ)
+
+ingList :: PropertySet String FoodType
+ingList = [ ("chicken breast", Meat)
+          , ("beef sirloin", Meat)
+          , ("lamb chop", Meat)
+          , ("broccoli", Veg)
+          , ("carrot", Veg)
+          , ("cauliflower", Veg)
+          , ("green beans", Veg)
+          , ("green cabbage", Veg)
+          , ("potato", Veg) ]
+
+recList :: PropertySet String Recipe
+recList = [ ("chicken breast", heatAtForM 200 40 $ ingredient "chicken breast")
+          , ("beef sirloin", heatAtForM 200 20 $ ingredient "beef sirloin")
+          , ("lamb chop", heatAtForM 200 17 $ ingredient "lamb chop")
+          , ("broccoli", boilInWaterForM 5 $ ingredient "broccoli")
+          , ("carrot", boilInWaterForM 5 $ ingredient "carrot")
+          , ("cauliflower", boilInWaterForM 7 $ ingredient "cauliflower")
+          , ("green beans", boilInWaterForM 5 $ ingredient "green beans")
+          , ("green cabbage", boilInWaterForM 5 $ ingredient "green cabbage") ]
+
+testRecipe :: Recipe
+testRecipe = mkRecipe (selectMeatTwoVeg ingList) recList

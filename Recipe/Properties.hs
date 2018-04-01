@@ -61,3 +61,29 @@ instance Show Price where
 instance Monoid Price where
     mempty = Price 0
     mappend = (+)
+
+-------------------------------------
+-- Food Type
+-------------------------------------
+
+data FoodType = Meat | Veg
+    deriving (Show, Eq)
+
+selectMeatTwoVeg :: PropertySet String FoodType -> [String]
+selectMeatTwoVeg is =
+    let ms = filter (\(_,t) -> t == Meat) is
+        vs = filter (\(_,t) -> t == Veg) is
+     in map fst $ head ms : take 2 vs
+        
+mkRecipe :: [String] -> PropertySet String Recipe -> Recipe
+mkRecipe is rs =
+    let parts = map (\s -> case lookup s rs of
+                            Just r -> r
+                            Nothing -> ingredient s) is
+     in foldr1 (combine "next to") parts
+
+-------------------------------------
+-- Seasoning
+-------------------------------------
+
+data Seasoning = Salt | Sugar | Acid
