@@ -47,7 +47,6 @@ steps = steps' . labelRecipeA
                         condToString (CondOpt) = " (optional)"
                         condToString (CondTemp t) = " until temperature " ++ show t
                         condToString (CondTime t) = " for " ++ show t
-                        condToString (RemoveAfter c) = condToString c ++ " then remove"
                 toString (Transaction a) = "Immediately " ++ toString a
                 toString (Measure m) = "Measure " ++ show m ++ case m of
                     Count _ -> show l

@@ -7,6 +7,7 @@ import           Control.Monad.Trans.State
 import           Data.Tree hiding (foldTree)
 import QuickSpec
 import Test.QuickCheck
+import Data.List (sort)
 
 -------------------------------------
 -- RECIPE DEFINITION
@@ -52,7 +53,7 @@ instance Monoid Time where
     mempty = Time 0
     mappend = (+)
 
-data Condition = CondTime Time | CondTemp Int | CondOpt | RemoveAfter Condition
+data Condition = CondTime Time | CondTemp Int | CondOpt
     | Condition `AND` Condition | Condition `OR` Condition
     deriving (Show, Eq, Ord)
 
@@ -60,7 +61,6 @@ foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
 foldCond f (c `AND` c')       = (foldCond f c) `mappend` (foldCond f c')
 foldCond f (c `OR` c')        = max (foldCond f c) (foldCond f c')
 foldCond f CondOpt            = mempty
-foldCond f c@(RemoveAfter c') = (f c) `mappend` (foldCond f c')
 foldCond f c                  = f c
 
 data Measurement = Count Int | Grams Int | Milliletres Int
@@ -123,10 +123,6 @@ toTemp t = addCondition (CondTemp t)
 forTime :: Time -> Recipe -> Recipe
 forTime t = addCondition (CondTime t)
 
-removeAfter :: Time -> Recipe -> Recipe
-removeAfter t = addCondition
-    (RemoveAfter $ CondTime t)
-
 hours :: Int -> Time
 hours = Time . (*) 3600
 
@@ -174,7 +170,7 @@ tempToTime i = Time i * 2
 -- Preheat time (use with HeatAt)
 -- 10m
 preheatTime :: Int -> Time
-preheatTime _ = Time 600
+preheatTime = const $ Time 600
 
 time :: Recipe -> Time
 time = foldr (\a t -> t + timeAction a) 0
@@ -182,7 +178,7 @@ time = foldr (\a t -> t + timeAction a) 0
 timeAction :: Action -> Time
 timeAction (GetIngredient _) = 10
 timeAction Heat = mempty
-timeAction (HeatAt t) = mempty
+timeAction (HeatAt t) = preheatTime t
 timeAction Wait = mempty
 timeAction (Combine _) = 10
 timeAction (Conditional a c) = t' + foldCond f c
@@ -190,7 +186,6 @@ timeAction (Conditional a c) = t' + foldCond f c
         t' = timeAction a
         f (CondTime t) = t
         f (CondTemp t) = tempToTime t
-        f (RemoveAfter _) = 10
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 20
 

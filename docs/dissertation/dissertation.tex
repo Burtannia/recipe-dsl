@@ -147,7 +147,7 @@ Domain Specific Languages (DSLs) are programming languages that
 are designed for use in a certain problem domain rather than
 being general purpose. As such they trade range of expression
 for clarity of expression. A frequently used example of a DSL
-is the popular SQL used for accessing databases.
+is the popular database querying language, SQL.
 
 \medbreak
 
@@ -206,6 +206,7 @@ embedded actions.
 
 \section{Combinators}
 \subsection{Initial Definitions}
+
 
 \subsection{Sequencing Problem}
 \subsection{Conditionals}
@@ -310,11 +311,289 @@ their number of nodes.
 \subsection{Quickspec}
 
 \section{Scheduling Recipes}
+
+Now that we have a solid representation of our recipes in Haskell we can think about how
+these could be scheduled.
+
 \subsection{Modelling a Kitchen}
-\subsection{Scheduling Method}
+
+The first step of scheduling a recipe is to consider some representation of the
+environment within which it is scheduled. Abstracting from the details we can
+break a kitchen down into a set of stations for example an oven and a kettle.
+We also need some sort of global observables for example, time.
+
+\begin{lstlisting}
+    data Env = Env
+        { eStations :: [Station]
+        , eObs      :: [IO Obs]
+        }
+
+    data Station = Station
+        { stName     :: String
+        , stConstrF  :: ConstraintF
+        , stObs      :: [IO Obs]
+        }
+
+    type ConstraintF = Recipe -> Maybe [Process]
+\end{lstlisting}
+
+Stations consist of a name, a constraint function and a set of local observables such as temperature.
+The constraint function takes a recipe and returns a list of processes required to perform that recipe.
+In the event that the station cannot handle that particular recipe then \texttt{Nothing} is returned.
+A process is an intermediate translation of our recipes. One might say it's our sort of assembly
+language, sitting between our high level combinators and some device specific instructions that the
+developer of a robot chef might write.
+
+\begin{lstlisting}
+    data Process =
+        Input
+        | Output
+        | Preheat Int
+        | DoNothing
+        | PCombine String
+        | EvalCond Condition
+        | MeasureOut Measurement
+\end{lstlisting}
+
+Most of these are self explanatory, \texttt{PCombine} and \texttt{MeasureOut} are just renamings of
+the actions \texttt{Combine} and \texttt{Measure}. \texttt{EvalCond} is inserted after \texttt{Input}
+which when interpreted will check the condition, if true then skip to \texttt{Output} else it will
+run all processes up until \texttt{Output} before jumping back to the condition again. As an example
+the following part of our cup of tea recipe:
+
+\begin{lstlisting}
+    Conditional (CondTemp 100) Heat ->
+        [Input, EvalCond (CondTemp 100), Output]
+\end{lstlisting}
+
+The water is put into the kettle which then heats it until the temperature is 100 degrees
+before the water is taken out. You might be wondering why there is no "heat" process.
+That's because something is heated as a side effect of being placed in a device which becomes hot
+rather than as an explicit action of that device. Device specific details such as the kettle turning
+on when the water is added or turning off on output is not covered here as these details can
+be abstracted away being \texttt{Input} and \texttt{Output}.
+
+\subsection{Scheduling Methods}
+
+Now that we have a model of a cooking environment we need to choose a method for scheduling the recipes.
+Scheduling is in itself a complex problem and therefore the solution used for this project is by
+now means suggested as a well refined solution but merely a demonstration of using the recipe system
+for a more concrete purpose.
+
 \subsubsection{Linear Programming}
+The first consideration was linear programming (LP). LP works by taking a linear function, called
+the objective function, which is minimised or maximised according to a set of linear constraints.
+For our recipes the objective function would be the end time of the final step which we would then
+want to minimise in order to make the recipe as efficient as possible. We then might consider the
+following constraints.
+
+\[ end_r = start_r + dur_r \quad \forall r \]
+
+\[ start_r \geq end_d \quad \forall d,r \quad | \quad d \in dependencies(r) \]
+
+That is the end time of each recipe is equal to its start time plus its duration and a recipe
+must start at or after the end time of its dependencies.
+
+The problem arose with choosing which station to schedule each action on. For any action we
+have a set of stations that can perform that action. We can then expand our first constraint
+to handle this.
+
+\[ end_{r_s} = start_{r_s} + dur_{r_s} \quad \forall r,s \quad | \quad s \in validStations(r) \]
+
+But we only want one of the valid stations to be selected which leaves us with the problem
+of modelling logical OR in this context. One potential way is to use a set of binary variables
+as follows.
+
+\[ end_r = \sum (end_{r_s} * bin_{r_s}) \quad \forall r,s \quad | \quad s \in validStations(r) \]
+
+\[ \sum_{s}^{validStations(r)} end_{r_s} = 1 \quad \forall r \]
+
+The issue with the above is that it involves the multiplication of two variables. As such this
+is no longer a linear constraint. A long time was spent considering whether or not our recipes
+could in fact be expressed as linear systems. After reformulating the problem several times
+and not finding a solution I decided to move on from linear programming and find something else.
+
 \subsubsection{Bin Packing}
-\subsubsection{Implementing a Scheduler}
+
+Bin packing is a much more general optimisation problem. It is the problem of packing a number
+of objects with fixed dimensions into a number of bins of fixed dimensions such that the number
+of bins is minimised. This problem as it is doesn't bare much resemblance to our recipes however,
+adjusting the problem as follows provides something more useful.
+
+\medbreak
+
+Given a number of objects of fixed height and a number of bins of infinite height where each
+bin can only hold certain types of object. Pack the objects into the bins such that the
+height of the tallest stack is minimised and a set of constraints regarding order of
+objects is met. We can model our stations as a stack of actions which they must perform,
+these are our bins. Our objects are either the station performing one of our actions
+or being idle for a certain time. We can then say that the height an action begins on
+the stack must be greater than or equal to the height that its dependencies end on their
+respective stacks.
+
+\medbreak
+
+As an abstract example, imagine a recipe, r1, which has sub-recipes: r2, r3 and r4. All the
+recipes must be scheduled on station 2, except r3 which must be scheduled on station 1.
+Below is a diagram showing r1 and a potential stack setup.
+
+\begin{figure}[h]
+\includegraphics[width=10cm, keepaspectratio]{stacks.png}
+\centering
+\caption{Recipe tree and stack schedule for r1.}
+\end{figure}
+
+\subsection{Optimisations and Heuristics}
+
+Now that we have a way to translate our recipes into a form of schedule we need to consider
+optimisations we can apply during the scheduling process. As mentioned in the introduction,
+you have no doubt done this while cooking at home. In the case of making a cup of tea you
+may start the kettle boiling before you get the milk out of the fridge. That way, you and
+the kettle are working in parallel and thus saving time.
+
+\medbreak
+
+Heuristics are "rules of thumb" that are applied to a problem solver in order to guide it
+in the decision making process. An everyday example might be preferring motorways over country roads
+when planning a journey; they have a higher speed limit and traffic capacity thus making
+them a faster route in the general case. There are two decisions we can apply heuristics to
+when scheduling recipes. The first is which leaf of the recipe tree to schedule first.
+Referring back to the section on topological sorting, the leaves of the tree at a given time
+are comprise the set of actions we can choose to perform next. The second decision is which
+of the available stations to schedule this action on.
+
+\subsubsection{Leaf Choice Heuristics}
+
+The first heuristic used in leaf choice is "shortest task first". This may seem counter intuitive however,
+if we think about the way in which recipes are typically structured, it makes sense. It is frequent
+to have a small task such as "get water" followed by a longer task performed by another station
+for example "boil water". Let's say that "get milk" was a long task to complete. It would make more
+sense to do the short "get water" task first, start the kettle boiling, then use that time to
+"get milk". If we "get milk" first then we're performing a long task, meanwhile the kettle is idle
+waiting for some water.
+
+\medbreak
+
+The second heuristic is applied in the event that multiple leaves contain a task of the shortest length.
+It is based on the same principle as above, that if we have short task such as "get water" followed
+by a lengthy task such as "boil water" we want to "get water" as soon as possible so that the kettle
+can be boiling while we do the other tasks. This is formalised as "longest branch first". In the
+event that there are multiple "shortest tasks" then the task on the longest branch will be chosen
+to try and ensure that if we have a long task that depends on a short task, it will be started
+as soon as possible.
+
+\subsubsection{Stack Choice Heuristics}
+
+Now that we have selected which leaf to schedule, we need to choose which station to schedule it on.
+In many cases this is a simple task as many actions can only be performed by one station. In the event
+that multiple stations can be used then we use three heuristics to choose, each shortening the list of
+potential stations.
+
+\medbreak
+
+The first is to pick whichever station is in least demand. This is done by scanning through all unscheduled
+actions and calculating their time divided by the number of stations that action could be performed on.
+For example if an action a had a time of 10 and could be performed on either of 2 stations then the demand
+that a would create for each station would be 5. The reason for this heuristic is rather intuitive. If we
+have a choice between a station which a lot of other actions need and a relatively uneeded station, we should
+choose the uneeded station to reduce the load on the high demand station. This heuristic could obviously
+be inverted if the goal was to minimise stations used rather than time taken.
+
+\medbreak
+
+The second heuristic is "least idle time". One's first thought might be to add the action to the emptiest
+stack however, in the event that the action is waiting on a long dependency, it could cause lots of idle
+time to be added to an otherwise empty stack. Therefore we choose the stack which allows the action to be
+started closest to the end time of its dependencies which may mean placing it on a fuller stack rather than
+an emptier one.
+
+\medbreak
+
+It is unlikely that the first two heuristics didn't filter the potential stations down to one, but if they
+didn't then we select the stack that is least full. Providing there are no caveats like idle time, as mentioned
+above, then placing an action on an emptier stack should result in a shorter overall time in most cases.
+
+\subsection{Implementation}
+
+For the sake of space, I shalln't go into the details of the code here as there is quite a lot of it
+However, below is some pseudo-code to demonstrate the general flow of the scheduling functions.
+
+\begin{lstlisting}
+    data Task = Active Label | Idle Time
+
+    type Stack = [Task]
+
+    type Schedule = Map StName Stack
+
+    schedule :: Recipe -> Env -> Schedule
+    schedule r env = do
+        tree = labelRecipe r
+        schedule' env tree tree emptySch
+        where
+            schedule' env fullTree tree sch = do
+                l = chooseLeaf tree
+                st = chooseStation fullTree l env sch
+                stack = lookup st sch
+                stack' = Active l : stack
+                newSch = insert st stack' sch
+                if l == root fullTree
+                    then
+                        newSch
+                    else
+                        tree' = removeFrom tree l
+                        schedule' env fullTree tree' newSch
+\end{lstlisting}
+
+The main function \texttt{schedule} takes a recipe and an environment then returns a schedule.
+It first labels the recipe, this is to avoid issues with a set of actions appearing on multiple
+branches. It then passes the environment, two copies of the recipe tree and an empty initial
+schedule to the sub-routine \texttt{schedule'}. The reason for passing two copies of the tree
+is that one is maintained as the full tree in order to maintain access to the children of the
+node we are scheduling even after those child nodes have been scheduled and removed from the other
+tree. The functions \texttt{chooseLeaf} and \texttt{chooseStation} apply the various heuristics
+and return the best leaf and best station respectively. Next we add the leaf to the stack of
+the chosen station and update the schedule. We then check to see if the node we just
+scheduled is the root of the tree, if it then we have finished and can return our new schedule
+otherwise we pass our new schedule and updated tree to the next iteration of \texttt{schedule'}.
+
+\subsection{Cold Toast}
+
+This method of scheduling seems to work however, there is one problem that arises from us
+reordering steps in order to optimise them. Consider the following recipe for tea and buttered toast,
+for conciseness I have omitted the ingredient definitions.
+
+\begin{lstlisting}
+    cupOfTea :: Recipe
+    cupOfTea = optional $ combine "mix" milk
+        $ waitFor (minutes 5)
+        $ combine "mix" teabag
+        $ heatTo 100 water
+
+    butteredToast :: Recipe
+    butteredToast = combine "spread" butter
+        $ heatFor (minutes 3) bread
+
+    teaWithToast :: Recipe
+    teaWithToast = combine "place next to"
+        butteredToast
+        cupOfTea
+\end{lstlisting}
+
+It could be the case that, when scheduling, first the bread is toasting, then the cup of tea is
+made, then the butter is added to the toast. The problem with this is that by the time we come
+to spread the butter on the toast, it has gone cold. We need some way to ensure that the butter
+is added immediately after the toast is finished. To do this we have a new combinator called
+\texttt{Transaction} which wraps any other action. This can then be interpretted by the scheduling
+function to mean that the action which it wraps and it's immediate children should be scheduled
+together meaning that no other actions can end up in between. Our buttered toast recipe is now
+as follows.
+
+\begin{lstlisting}
+    butteredToast :: Recipe
+    butteredToast = transaction
+        $ combine "spread" butter
+        $ heatFor (minutes 3) bread
+\end{lstlisting}
 
 \section{Recipe Properties}
 \subsection{Folding Over Recipes}
@@ -324,8 +603,7 @@ their number of nodes.
 
 \section{Development Process}
 \subsection{Project Management}
-
-\section{Evaluation and Testing}
+\subsection{Evaluation and Testing}
 \subsection{Test Recipes}
 \subsection{QuickCheck}
 

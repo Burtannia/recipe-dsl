@@ -9,6 +9,7 @@ import Recipe.Properties
 import Recipe.QS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Control.Monad.Trans.State
 
 -------------------------------------
 -- TEST RECIPES
@@ -23,20 +24,20 @@ milk = ingredient "milk"
 
 cupOfTea :: Recipe
 cupOfTea = optional $ combine "mix" milk
-    $ removeAfter (minutes 5)
+    $ waitFor (minutes 5)
     $ combine "mix" teabag
     $ heatTo 100 water
 
 cupOfTea' :: Recipe
 cupOfTea' = optional $ combine "mix" 
-    ( removeAfter (minutes 5)
+    ( waitFor (minutes 5)
     $ combine "mix" teabag
     $ heatTo 100 water ) milk
 
 cupOfTeaQ :: Recipe
 cupOfTeaQ = optional
     $ combine "mix" (measure (Milliletres 10) milk)
-    $ removeAfter (minutes 5)
+    $ waitFor (minutes 5)
     $ combine "mix" (measure (Count 1) teabag)
     $ heatTo 100
     $ measure (Milliletres 300) water
@@ -47,16 +48,15 @@ butter, bread :: Recipe
 butter = ingredient "butter"
 bread = ingredient "bread"
 
-toastBread :: Recipe
-toastBread = heatAt 600 (ingredient "bread")
-
-toastBreadFor :: Time -> Recipe
-toastBreadFor t = addCondition (CondTime t) toastBread
-
 butteredToast :: Recipe
 butteredToast = transaction
     $ combine "spread" butter
-    $ toastBreadFor (minutes 3)
+    $ heatFor (minutes 3) bread
+
+teaWithToast :: Recipe
+teaWithToast = combine "place next to"
+    butteredToast
+    cupOfTea
 
 -------------------------------------
 -- CUSTOM COMBINATORS
@@ -107,7 +107,7 @@ boilInWaterForM t r = forTime (t * 60)
 -------------------------------------
 
 env :: Env
-env = Env { eStations = [kettle, chef, toaster]
+env = Env { eStations = [kettle, chef, chef2, toaster]
           , eObs = []
           }
 
@@ -118,7 +118,10 @@ kettle = let kettleConstr r@(Node a ts)
                     Transaction a -> kettleConstr $ popT r
                     _ -> Nothing
              kettleTemp = return $ ObsTemp 100
-          in Station "kettle" [] [] kettleConstr [kettleTemp]
+          in Station "kettle" kettleConstr [kettleTemp]
+
+toastBread :: Recipe
+toastBread = heat (ingredient "bread")
 
 toaster :: Station
 toaster = let toasterConstr r@(Node a ts)
@@ -129,7 +132,7 @@ toaster = let toasterConstr r@(Node a ts)
                     Transaction a -> toasterConstr $ popT r
                     _ -> Nothing
               toasterTemp = return $ ObsTemp 600
-           in Station "toaster" [] [] toasterConstr [toasterTemp]
+           in Station "toaster" toasterConstr [toasterTemp]
 
 chef :: Station
 chef = let chefConstr r@(Node a ts) = case a of
@@ -141,7 +144,19 @@ chef = let chefConstr r@(Node a ts) = case a of
                 Measure m       -> Just [Input, MeasureOut m, Output]
                 Transaction a   -> chefConstr $ popT r
                 _               -> Nothing
-        in Station "chef" [] [] chefConstr []
+        in Station "chef" chefConstr []
+
+chef2 :: Station
+chef2 = let chefConstr r@(Node a ts) = case a of
+                GetIngredient _ -> Just [Input]
+                Combine s       -> Just [Input, PCombine s, Output]
+                Wait            -> Just [Input, DoNothing, Output]
+                Conditional _ c -> (chefConstr $ popCond r)
+                                    >>= return . addEvalCond c
+                Measure m       -> Just [Input, MeasureOut m, Output]
+                Transaction a   -> chefConstr $ popT r
+                _               -> Nothing
+         in Station "chef2" chefConstr []
 
 -------------------------------------
 -- TEST PROPERTIES

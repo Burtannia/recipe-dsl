@@ -15,27 +15,31 @@
 \BOOKMARK [2][-]{subsection.3.2}{Quickspec}{section.3}% 15
 \BOOKMARK [1][-]{section.4}{Scheduling Recipes}{}% 16
 \BOOKMARK [2][-]{subsection.4.1}{Modelling a Kitchen}{section.4}% 17
-\BOOKMARK [2][-]{subsection.4.2}{Scheduling Method}{section.4}% 18
+\BOOKMARK [2][-]{subsection.4.2}{Scheduling Methods}{section.4}% 18
 \BOOKMARK [3][-]{subsubsection.4.2.1}{Linear Programming}{subsection.4.2}% 19
 \BOOKMARK [3][-]{subsubsection.4.2.2}{Bin Packing}{subsection.4.2}% 20
-\BOOKMARK [3][-]{subsubsection.4.2.3}{Implementing a Scheduler}{subsection.4.2}% 21
-\BOOKMARK [1][-]{section.5}{Recipe Properties}{}% 22
-\BOOKMARK [2][-]{subsection.5.1}{Folding Over Recipes}{section.5}% 23
-\BOOKMARK [2][-]{subsection.5.2}{Time and Cost}{section.5}% 24
-\BOOKMARK [2][-]{subsection.5.3}{Generating Recipes}{section.5}% 25
-\BOOKMARK [2][-]{subsection.5.4}{Improving Recipes}{section.5}% 26
-\BOOKMARK [1][-]{section.6}{Development Process}{}% 27
-\BOOKMARK [2][-]{subsection.6.1}{Project Management}{section.6}% 28
-\BOOKMARK [1][-]{section.7}{Evaluation and Testing}{}% 29
-\BOOKMARK [2][-]{subsection.7.1}{Test Recipes}{section.7}% 30
-\BOOKMARK [2][-]{subsection.7.2}{QuickCheck}{section.7}% 31
-\BOOKMARK [1][-]{section.8}{Summary and Reflections}{}% 32
-\BOOKMARK [2][-]{subsection.8.1}{Project Management}{section.8}% 33
-\BOOKMARK [2][-]{subsection.8.2}{Contributions}{section.8}% 34
-\BOOKMARK [2][-]{subsection.8.3}{Future Work}{section.8}% 35
-\BOOKMARK [2][-]{subsection.8.4}{Reflections}{section.8}% 36
-\BOOKMARK [1][-]{section.9}{Related Work}{}% 37
-\BOOKMARK [2][-]{subsection.9.1}{Pretty Printing}{section.9}% 38
-\BOOKMARK [2][-]{subsection.9.2}{Financial Contracts}{section.9}% 39
-\BOOKMARK [2][-]{subsection.9.3}{Deep vs Shallow Embedding}{section.9}% 40
-\BOOKMARK [2][-]{subsection.9.4}{Regions}{section.9}% 41
+\BOOKMARK [2][-]{subsection.4.3}{Optimisations and Heuristics}{section.4}% 21
+\BOOKMARK [3][-]{subsubsection.4.3.1}{Leaf Choice Heuristics}{subsection.4.3}% 22
+\BOOKMARK [3][-]{subsubsection.4.3.2}{Stack Choice Heuristics}{subsection.4.3}% 23
+\BOOKMARK [2][-]{subsection.4.4}{Implementation}{section.4}% 24
+\BOOKMARK [2][-]{subsection.4.5}{Cold Toast}{section.4}% 25
+\BOOKMARK [1][-]{section.5}{Recipe Properties}{}% 26
+\BOOKMARK [2][-]{subsection.5.1}{Folding Over Recipes}{section.5}% 27
+\BOOKMARK [2][-]{subsection.5.2}{Time and Cost}{section.5}% 28
+\BOOKMARK [2][-]{subsection.5.3}{Generating Recipes}{section.5}% 29
+\BOOKMARK [2][-]{subsection.5.4}{Improving Recipes}{section.5}% 30
+\BOOKMARK [1][-]{section.6}{Development Process}{}% 31
+\BOOKMARK [2][-]{subsection.6.1}{Project Management}{section.6}% 32
+\BOOKMARK [2][-]{subsection.6.2}{Evaluation and Testing}{section.6}% 33
+\BOOKMARK [2][-]{subsection.6.3}{Test Recipes}{section.6}% 34
+\BOOKMARK [2][-]{subsection.6.4}{QuickCheck}{section.6}% 35
+\BOOKMARK [1][-]{section.7}{Summary and Reflections}{}% 36
+\BOOKMARK [2][-]{subsection.7.1}{Project Management}{section.7}% 37
+\BOOKMARK [2][-]{subsection.7.2}{Contributions}{section.7}% 38
+\BOOKMARK [2][-]{subsection.7.3}{Future Work}{section.7}% 39
+\BOOKMARK [2][-]{subsection.7.4}{Reflections}{section.7}% 40
+\BOOKMARK [1][-]{section.8}{Related Work}{}% 41
+\BOOKMARK [2][-]{subsection.8.1}{Pretty Printing}{section.8}% 42
+\BOOKMARK [2][-]{subsection.8.2}{Financial Contracts}{section.8}% 43
+\BOOKMARK [2][-]{subsection.8.3}{Deep vs Shallow Embedding}{section.8}% 44
+\BOOKMARK [2][-]{subsection.8.4}{Regions}{section.8}% 45

@@ -7,8 +7,6 @@ import Data.Tree
 
 data Station = Station
     { stName     :: String
-    , stInputs   :: [StName]
-    , stOutputs  :: [StName]
     , stConstrF  :: ConstraintF
     , stObs      :: [IO Obs] -- local observables e.g. temp
     }
