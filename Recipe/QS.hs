@@ -1,29 +1,69 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Recipe.QS where
 
 import Recipe.Recipe
 import QuickSpec
 import Test.QuickCheck
-import Control.Monad (liftM, liftM2)
+import Control.Monad (liftM, liftM2, liftM3)
 import Data.Tree
 
 -------------------------------------
 -- Arbitrary Instances
 -------------------------------------
 
-instance Arbitrary Action where
-    arbitrary = oneof
-        [ genIng
-        , return Heat
-        , liftM HeatAt genTemp
-        , return Wait
-        , liftM Combine genMethod
-        , liftM2 Conditional arbitrary arbitrary
-        , liftM Transaction arbitrary
-        , liftM Measure arbitrary
-        ]
+instance {-# OVERLAPPING #-} Arbitrary Recipe where
+    arbitrary = genRecipe
 
-genIng :: Gen Action
-genIng = liftM (GetIngredient . show) ((choose (1, 100)) :: Gen Int)
+genRecipe :: Gen Recipe
+genRecipe = sized $ \n ->
+    let bin = resize (n `div` 2) genRecipe
+        un  = resize (n-1) genRecipe
+     in case n of
+        1 -> genIng
+        _ -> oneof [genUnRec un, genBinRec bin bin]
+
+genIng :: Gen Recipe
+genIng = liftM (ingredient . show) ((choose (1, 100)) :: Gen Int)
+
+genUnRec :: Gen Recipe -> Gen Recipe
+genUnRec un = oneof
+    [ liftM heat un
+    , liftM2 heatAt genTemp un
+    , liftM wait un
+    , liftM2 addCondition arbitrary un
+    , liftM transaction un
+    , liftM2 measure arbitrary un ]
+
+genBinRec :: Gen Recipe -> Gen Recipe -> Gen Recipe
+genBinRec r1 r2 = liftM3 combine genMethod r1 r2
+
+-- instance Arbitrary Action where
+--     arbitrary = oneof
+--         [ genIng
+--         , return Heat
+--         , liftM HeatAt genTemp
+--         , return Wait
+--         , liftM Combine genMethod
+--         , liftM2 Conditional arbitrary arbitrary
+--         , liftM Transaction arbitrary
+--         , liftM Measure arbitrary ]
+
+-- genIng :: Gen Action
+-- genIng = liftM (GetIngredient . show) ((choose (1, 100)) :: Gen Int)
+
+-- genUnAct :: Gen Action
+-- genUnAct = oneof
+--     [ return Heat
+--     , liftM HeatAt genTemp
+--     , return Wait
+--     , liftM2 Conditional arbitrary arbitrary
+--     , liftM Transaction arbitrary
+--     , liftM Measure arbitrary ]
+
+-- genBinAct :: Gen Action
+-- genBinAct = liftM Combine genMethod
 
 genTemp :: Gen Int
 genTemp = choose (100, 240)
@@ -55,15 +95,6 @@ instance Arbitrary Measurement where
         , liftM Grams (elements [10,20..1000])
         , liftM Milliletres (elements [10,20..1000]) ]
 
-genRecipe :: Gen Recipe
-genRecipe = sized $ \n ->
-    let bin = resize (n `div` 2) (vectorOf 2 arbitrary)
-        un  = resize (n-1) (vectorOf 1 arbitrary) in
-    oneof $
-        [ liftM2 Node arbitrary (return [])
-        , liftM2 Node arbitrary un
-        , liftM2 Node arbitrary bin ]
-
 -------------------------------------
 -- QuickSpec Stuff
 -------------------------------------
@@ -82,8 +113,13 @@ qsRecipe = quickSpec
     , con "transaction" (transaction :: Recipe -> Recipe)
     , con "measure" (measure :: Measurement -> Recipe -> Recipe)
 
+    -- , con "optional" (optional :: Recipe -> Recipe)
+    -- , con "toTemp" (toTemp :: Int -> Recipe -> Recipe)
+    -- , con "forTime" (forTime :: Time -> Recipe -> Recipe)
+    -- , con "hours" (hours :: Int -> Time)
+    -- , con "minutes" (minutes :: Int -> Time)
+
     , monoType (Proxy :: Proxy Recipe)
     , monoType (Proxy :: Proxy Measurement)
     , monoType (Proxy :: Proxy Condition)
-    , monoType (Proxy :: Proxy Time)
-    ]
+    , monoType (Proxy :: Proxy Time) ]
