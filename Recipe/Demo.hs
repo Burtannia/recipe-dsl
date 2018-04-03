@@ -21,28 +21,25 @@ water = ingredient "water"
 teabag = ingredient "teabag"
 milk = ingredient "milk"
 
-boilingWater :: Recipe
-boilingWater = heatTo 100 water
-
 cupOfTea :: Recipe
-cupOfTea = optional $ combine "mix" milk blackTea
-    where
-        wait5 = \r -> addCondition (CondTime 300) (wait r)
-        blackTea = wait5 $ combine "pour" boilingWater teabag
+cupOfTea = optional $ combine "mix" milk
+    $ removeAfter (minutes 5)
+    $ combine "mix" teabag
+    $ heatTo 100 water
+
+cupOfTea' :: Recipe
+cupOfTea' = optional $ combine "mix" 
+    ( removeAfter (minutes 5)
+    $ combine "mix" teabag
+    $ heatTo 100 water ) milk
 
 cupOfTeaQ :: Recipe
 cupOfTeaQ = optional
     $ combine "mix" (measure (Milliletres 10) milk)
-        $ waitFor (minutes 5)
-        $ combine "pour" (heatTo 100
-            $ measure (Milliletres 300) water)
-            $ measure (Count 1) teabag
-
-cupOfTea' :: Recipe
-cupOfTea' = optional
-    $ combine "mix" (waitFor (minutes 5)
-                        $ combine "pour"
-                            (heatTo 100 water) teabag) milk
+    $ removeAfter (minutes 5)
+    $ combine "mix" (measure (Count 1) teabag)
+    $ heatTo 100
+    $ measure (Milliletres 300) water
 
 -- Buttered Toast
 
@@ -102,7 +99,8 @@ preheatOil = \atTmp toTmp ->
 
 boilInWaterForM :: Time -> Recipe -> Recipe
 boilInWaterForM t r = forTime (t * 60) 
-    (combine "place in" r boilingWater)
+    $ combine "place in" r
+    $ heatTo 100 water
 
 -------------------------------------
 -- TEST STATIONS

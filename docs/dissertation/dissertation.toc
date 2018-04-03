@@ -1,42 +1,42 @@
 \select@language {english}
-\contentsline {section}{\numberline {1}Abstract and Acknowledgements}{4}{section.1}
-\contentsline {section}{\numberline {2}Introduction and Motivation}{6}{section.2}
-\contentsline {subsection}{\numberline {2.1}Overview}{6}{subsection.2.1}
-\contentsline {subsection}{\numberline {2.2}Cooking with Computers}{6}{subsection.2.2}
-\contentsline {subsection}{\numberline {2.3}DSLs and Haskell}{6}{subsection.2.3}
-\contentsline {subsection}{\numberline {2.4}Deep and Shallow Embedding}{6}{subsection.2.4}
-\contentsline {section}{\numberline {3}Development Process}{6}{section.3}
-\contentsline {subsection}{\numberline {3.1}Project Management}{6}{subsection.3.1}
-\contentsline {section}{\numberline {4}Combinators}{6}{section.4}
-\contentsline {subsection}{\numberline {4.1}Initial Definitions}{6}{subsection.4.1}
-\contentsline {subsection}{\numberline {4.2}Sequencing Problem}{6}{subsection.4.2}
-\contentsline {subsection}{\numberline {4.3}Conditionals}{6}{subsection.4.3}
-\contentsline {subsection}{\numberline {4.4}Transactions}{6}{subsection.4.4}
-\contentsline {subsection}{\numberline {4.5}Moving to a Tree of Actions}{6}{subsection.4.5}
-\contentsline {subsection}{\numberline {4.6}Final Definitions}{6}{subsection.4.6}
-\contentsline {subsection}{\numberline {4.7}Custom Combinators}{6}{subsection.4.7}
-\contentsline {section}{\numberline {5}Deriving Equality}{6}{section.5}
-\contentsline {subsection}{\numberline {5.1}Topological Sorting}{6}{subsection.5.1}
-\contentsline {subsection}{\numberline {5.2}Quickspec}{6}{subsection.5.2}
-\contentsline {section}{\numberline {6}Modelling a Kitchen}{6}{section.6}
-\contentsline {subsection}{\numberline {6.1}Stations}{6}{subsection.6.1}
-\contentsline {subsection}{\numberline {6.2}Scheduling}{6}{subsection.6.2}
-\contentsline {subsubsection}{\numberline {6.2.1}Linear Programming}{6}{subsubsection.6.2.1}
-\contentsline {subsubsection}{\numberline {6.2.2}Implementing Scheduler}{6}{subsubsection.6.2.2}
-\contentsline {section}{\numberline {7}Recipe Properties}{6}{section.7}
-\contentsline {subsection}{\numberline {7.1}Folding Over Recipes}{6}{subsection.7.1}
-\contentsline {subsection}{\numberline {7.2}Time and Cost}{6}{subsection.7.2}
-\contentsline {subsection}{\numberline {7.3}Flavours}{6}{subsection.7.3}
-\contentsline {subsection}{\numberline {7.4}Generating New Recipes}{6}{subsection.7.4}
-\contentsline {section}{\numberline {8}Evaluation and Testing}{6}{section.8}
-\contentsline {subsection}{\numberline {8.1}Test Recipes}{6}{subsection.8.1}
-\contentsline {subsection}{\numberline {8.2}QuickCheck}{6}{subsection.8.2}
-\contentsline {section}{\numberline {9}Summary and Reflections}{6}{section.9}
-\contentsline {subsection}{\numberline {9.1}Project Management}{6}{subsection.9.1}
-\contentsline {subsection}{\numberline {9.2}Contributions}{6}{subsection.9.2}
-\contentsline {subsection}{\numberline {9.3}Future Work}{6}{subsection.9.3}
-\contentsline {subsection}{\numberline {9.4}Reflections}{6}{subsection.9.4}
-\contentsline {section}{\numberline {10}Related Work}{6}{section.10}
-\contentsline {subsection}{\numberline {10.1}Pretty Printing}{6}{subsection.10.1}
-\contentsline {subsection}{\numberline {10.2}Financial Contracts}{6}{subsection.10.2}
-\contentsline {subsection}{\numberline {10.3}Ivory and Ion}{6}{subsection.10.3}
+\contentsline {section}{\numberline {1}Introduction and Motivation}{4}{section.1}
+\contentsline {subsection}{\numberline {1.1}Overview}{4}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2}DSLs and Haskell}{5}{subsection.1.2}
+\contentsline {subsection}{\numberline {1.3}Deep and Shallow Embedding}{6}{subsection.1.3}
+\contentsline {section}{\numberline {2}Combinators}{7}{section.2}
+\contentsline {subsection}{\numberline {2.1}Initial Definitions}{7}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Sequencing Problem}{7}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}Conditionals}{7}{subsection.2.3}
+\contentsline {subsection}{\numberline {2.4}Transactions}{7}{subsection.2.4}
+\contentsline {subsection}{\numberline {2.5}Moving to a Tree of Actions}{7}{subsection.2.5}
+\contentsline {subsection}{\numberline {2.6}Final Definitions}{7}{subsection.2.6}
+\contentsline {subsection}{\numberline {2.7}Custom Combinators}{7}{subsection.2.7}
+\contentsline {section}{\numberline {3}Deriving Equality}{7}{section.3}
+\contentsline {subsection}{\numberline {3.1}Topological Sorting}{7}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Quickspec}{11}{subsection.3.2}
+\contentsline {section}{\numberline {4}Scheduling Recipes}{11}{section.4}
+\contentsline {subsection}{\numberline {4.1}Modelling a Kitchen}{11}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Scheduling Method}{11}{subsection.4.2}
+\contentsline {subsubsection}{\numberline {4.2.1}Linear Programming}{11}{subsubsection.4.2.1}
+\contentsline {subsubsection}{\numberline {4.2.2}Bin Packing}{11}{subsubsection.4.2.2}
+\contentsline {subsubsection}{\numberline {4.2.3}Implementing a Scheduler}{11}{subsubsection.4.2.3}
+\contentsline {section}{\numberline {5}Recipe Properties}{11}{section.5}
+\contentsline {subsection}{\numberline {5.1}Folding Over Recipes}{11}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}Time and Cost}{11}{subsection.5.2}
+\contentsline {subsection}{\numberline {5.3}Generating Recipes}{11}{subsection.5.3}
+\contentsline {subsection}{\numberline {5.4}Improving Recipes}{11}{subsection.5.4}
+\contentsline {section}{\numberline {6}Development Process}{11}{section.6}
+\contentsline {subsection}{\numberline {6.1}Project Management}{11}{subsection.6.1}
+\contentsline {section}{\numberline {7}Evaluation and Testing}{11}{section.7}
+\contentsline {subsection}{\numberline {7.1}Test Recipes}{11}{subsection.7.1}
+\contentsline {subsection}{\numberline {7.2}QuickCheck}{11}{subsection.7.2}
+\contentsline {section}{\numberline {8}Summary and Reflections}{11}{section.8}
+\contentsline {subsection}{\numberline {8.1}Project Management}{11}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Contributions}{11}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Future Work}{11}{subsection.8.3}
+\contentsline {subsection}{\numberline {8.4}Reflections}{11}{subsection.8.4}
+\contentsline {section}{\numberline {9}Related Work}{11}{section.9}
+\contentsline {subsection}{\numberline {9.1}Pretty Printing}{11}{subsection.9.1}
+\contentsline {subsection}{\numberline {9.2}Financial Contracts}{11}{subsection.9.2}
+\contentsline {subsection}{\numberline {9.3}Deep vs Shallow Embedding}{11}{subsection.9.3}
+\contentsline {subsection}{\numberline {9.4}Regions}{11}{subsection.9.4}

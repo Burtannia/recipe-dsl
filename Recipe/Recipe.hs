@@ -31,10 +31,9 @@ instance Eq a => Ord (Tree a) where
 -- of recipe 1 is a subset of the topological sorts
 -- of recipe 2 or vice versa.
 instance {-# OVERLAPPING #-} Eq Recipe where
-    (==) r1 r2 = let xs = topologicals r1
-                     ys = topologicals r2
-                     elems = [x `elem` ys | x <- xs]
-                  in all (True ==) elems
+    (==) r1 r2 = let xs = sort $ topologicals r1
+                     ys = sort $ topologicals r2
+                  in xs == ys
 
 -- |Time is a wrapper around an Int representing seconds.
 newtype Time = Time Int
@@ -53,15 +52,16 @@ instance Monoid Time where
     mempty = Time 0
     mappend = (+)
 
-data Condition = CondTime Time | CondTemp Int | CondOpt
+data Condition = CondTime Time | CondTemp Int | CondOpt | RemoveAfter Condition
     | Condition `AND` Condition | Condition `OR` Condition
     deriving (Show, Eq, Ord)
 
 foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
-foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
-foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
-foldCond f CondOpt      = mempty
-foldCond f c            = f c
+foldCond f (c `AND` c')       = (foldCond f c) `mappend` (foldCond f c')
+foldCond f (c `OR` c')        = max (foldCond f c) (foldCond f c')
+foldCond f CondOpt            = mempty
+foldCond f c@(RemoveAfter c') = (f c) `mappend` (foldCond f c')
+foldCond f c                  = f c
 
 data Measurement = Count Int | Grams Int | Milliletres Int
     deriving (Eq)
@@ -123,6 +123,10 @@ toTemp t = addCondition (CondTemp t)
 forTime :: Time -> Recipe -> Recipe
 forTime t = addCondition (CondTime t)
 
+removeAfter :: Time -> Recipe -> Recipe
+removeAfter t = addCondition
+    (RemoveAfter $ CondTime t)
+
 hours :: Int -> Time
 hours = Time . (*) 3600
 
@@ -173,7 +177,7 @@ preheatTime :: Int -> Time
 preheatTime _ = Time 600
 
 time :: Recipe -> Time
-time = foldr (\a t -> t + timeAction a) 0 --foldTree (\a ts -> timeAction a + mconcat ts)
+time = foldr (\a t -> t + timeAction a) 0
 
 timeAction :: Action -> Time
 timeAction (GetIngredient _) = 10
@@ -186,11 +190,12 @@ timeAction (Conditional a c) = t' + foldCond f c
         t' = timeAction a
         f (CondTime t) = t
         f (CondTemp t) = tempToTime t
+        f (RemoveAfter _) = 10
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 20
 
 topologicals :: Recipe -> [[Action]]
-topologicals (Node a [])  = [[a]]
+topologicals (Node a []) = [[a]]
 topologicals t = concat
     [map (a:) (topologicals' l) | l@(Node a _) <- ls]
     where
