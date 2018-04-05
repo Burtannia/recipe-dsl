@@ -239,7 +239,8 @@ the different orders that the actions of a recipe can be performed
 in while creating the same recipe. We want a way of generating
 all combinations of nodes such that nodes higher in the tree
 appear after their children in the list thus preserving the
-order of our actions.
+order of our actions. In other words we want a method of enumerating
+all valid execution paths through our recipe.
 
 \medbreak
 
@@ -257,8 +258,9 @@ of all topological sorts of that recipe.
             ls = leaves t
 \end{lstlisting}
 
-As an example, consider this alternate definition for our
-cup of tea recipe. 
+This is similar to the operational semantics given by unfolding a
+term to provide a list of execution paths \cite{hutton}. As an example,
+consider this alternate definition for our cup of tea recipe.
 
 \begin{lstlisting}
     cupOfTea' :: Recipe
@@ -277,36 +279,47 @@ Printing the trees for this recipe gives a different result from our original re
 \caption{Alternate cup of tea recipe printed as a tree.}
 \end{figure}
 
-In Haskell one must make their data type an instance of the \texttt{Eq} typeclass in
-order to make use of the \texttt{==} operator. The equality instance for recipes is
-defined as follows.
+In Haskell one must make their type an instance of the \texttt{Eq} typeclass in
+order to make use of the \texttt{==} operator. In order to run QuickSpec on recipes
+as discussed in a later section, we also need an instance of \texttt{Ord}.
+This means implementing a function \texttt{compare}, which when given two recipes,
+returns an ordering for example "less than" (\texttt{LT}).
 
 \begin{lstlisting}
-    instance {-# OVERLAPPING #-} Eq Recipe where
-        (==) r1 r2 = let xs = sort $ topologicals r1
-                         ys = sort $ topologicals r2
-                      in xs == ys
+    instance Ord Recipe where
+        compare t1 t2 = let xs = sort $ topologicals t1
+                            ys = sort $ topologicals t2
+                         in compare xs ys
 \end{lstlisting}
 
-Because \texttt{Recipe = Tree Action} it naturally uses the equality instance for
-\texttt{Tree} but we want to use our topological sorting. That's what the "overlapping"
-annotation is for. As for the actual definition, we are simply taking the topological sorts
-of each recipe, sorting them and then checking if those two lists are equal. If they are
-then our recipes are equal. Using the above definition, the expression \texttt{cupOfTea == cupOfTea'}
-evaluates to \texttt{True} showing that, as desired, our two recipes are equal.
+What we're doing here is taking the list of topological sorts of each recipe, sorting those
+lists so that we have some consistent or and then comparing them. The \texttt{compare} function
+is already implemented for lists of topological sorts as they have type \texttt{[[Action]]}
+and thus they use the ordering instance already defined for Haskell lists. We do however,
+need to define ordering for \texttt{Action} and all the types that \texttt{Action} uses
+for example \texttt{Condition} for this to work. For this we just let GHC derive them for
+us as they don't need to have any special meaning, they just need to provide a consistent
+way of sorting the lists.
 
 \medbreak
 
-As a side note \texttt{sort} requires an instance of \texttt{Ord} which means that values have some
-natural order. This isn't defined for \texttt{Tree} by default and as such I have defined it as follows.
+What this results in is recipes being equal if and only if their topological sorts are identical.
+Recipe a will be less than recipe b if the list of recipe a's topological sorts is shorter than recipe b's.
+Similarly the inverse is true of recipe a being greater than recipe b. Things become a little less
+clear when the two lists are the same length. Ordering is then deferred to which lists of actions
+consists of actions with lower ordering as defined by the derived ordering instance for actions.
+Once again this has no actual meaning but provides the list comparison we need. With ordering defined for recipes,
+defining \texttt{(==)} becomes trivial as we just check if \texttt{compare} evaluates to \texttt{EQ}.
 
 \begin{lstlisting}
-    instance Eq a => Ord (Tree a) where
-        compare t1 t2 = compare (length t1) (length t2)
+    instance {-# OVERLAPPING #-} Eq Recipe where
+        (==) r1 r2 = compare r1 r2 == EQ
 \end{lstlisting}
 
-This simply compares trees based on their length i.e.
-their number of nodes.
+Because \texttt{Recipe = Tree Action} it naturally uses the equality instance for
+\texttt{Tree} but we want to use our \texttt{compare} function which makes use of topological sorting.
+That's what the "overlapping" annotation is for. Using the above definition, the expression
+\texttt{cupOfTea == cupOfTea'} evaluates to \texttt{True} showing that, as desired, our two recipes are equal.
 
 \subsection{Quickspec}
 
@@ -340,6 +353,27 @@ We also need some sort of global observables for example, time.
 Stations consist of a name, a constraint function and a set of local observables such as temperature.
 The constraint function takes a recipe and returns a list of processes required to perform that recipe.
 In the event that the station cannot handle that particular recipe then \texttt{Nothing} is returned.
+Observables are represented as follows. I have also provided the function that checks whether a
+condition is true given a list of observables.
+
+\begin{lstlisting}
+    data Obs = ObsTemp Int
+             | ObsTime Time
+             | ObsOpt String Bool
+
+    evalCond :: Condition -> [Obs] -> Bool
+    evalCond (CondTime t) os = case [o | o@(ObsTime _) <- os] of
+        [] -> False
+        (ObsTime t' : _) -> t == t'
+    evalCond (CondTemp t) os = case [o | o@(ObsTemp _) <- os] of
+        [] -> False
+        (ObsTemp t' : _) -> t == t'
+    evalCond (CondOpt s) os = case [o | o@(ObsOpt s' _) <- os, s == s'] of
+        [] -> False
+        (ObsOpt _ b : _) -> b
+    evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
+\end{lstlisting}
+
 A process is an intermediate translation of our recipes. One might say it's our sort of assembly
 language, sitting between our high level combinators and some device specific instructions that the
 developer of a robot chef might write.
@@ -358,8 +392,8 @@ developer of a robot chef might write.
 Most of these are self explanatory, \texttt{PCombine} and \texttt{MeasureOut} are just renamings of
 the actions \texttt{Combine} and \texttt{Measure}. \texttt{EvalCond} is inserted after \texttt{Input}
 which when interpreted will check the condition, if true then skip to \texttt{Output} else it will
-run all processes up until \texttt{Output} before jumping back to the condition again. As an example
-the following part of our cup of tea recipe:
+run all processes up until \texttt{Output} before jumping back to the condition again. As an example,
+here is part of our cup of tea recipe translated into a list of processes.
 
 \begin{lstlisting}
     Conditional (CondTemp 100) Heat ->
@@ -372,6 +406,45 @@ That's because something is heated as a side effect of being placed in a device 
 rather than as an explicit action of that device. Device specific details such as the kettle turning
 on when the water is added or turning off on output is not covered here as these details can
 be abstracted away being \texttt{Input} and \texttt{Output}.
+
+\medbreak
+
+Now let's consider what stations we require to make our cup of tea. At the most basic level
+we need a kettle and a chef. For conciseness I shall only discuss the kettle.
+
+\begin{lstlisting}
+    kettle :: Station
+    kettle = let kettleConstr r@(Node a ts)
+                    | r == heatTo 100 (ingredient "water") = Just [Input, Output]
+                    | otherwise = case a of
+                        Transaction a -> kettleConstr $ popT r
+                        _ -> Nothing
+                 kettleTemp = return $ ObsTemp 100
+              in Station "kettle" kettleConstr [kettleTemp]
+\end{lstlisting}
+
+Here we're creating a station with a name of "kettle", creating the constraint function
+and also providing a temperature observable. We have no actual kettle to retrieve the temperature
+from so for now we are just providing a constant temperature of 100 degrees. The constraint function
+simply checks if the recipe passed is "boiling water" or "boiling water" wrapped in a transaction (Section 4.5),
+returning Nothing if it's not.
+
+\medbreak
+
+We can now speicfy our environment as follows. I have added an extra uneeded station, a toaster,
+to demonstrate that it remains unused when scheduling making a cup of tea.
+
+\begin{lstlisting}
+    env :: Env
+    env = Env { eStations = [kettle, chef, toaster]
+              , eObs = [ getTime
+                       , return $ ObsOpt "milk" True ] }
+\end{lstlisting}
+
+The function \texttt{getTime} simply returns the UTC time converted to \texttt{ObsTime}.
+We then need to provide a value for our optional "add milk" step. The observables are
+wrapped in IO meaning they can come from external sources for example, the command line
+if we so desired.
 
 \subsection{Scheduling Methods}
 
@@ -556,6 +629,39 @@ the chosen station and update the schedule. We then check to see if the node we 
 scheduled is the root of the tree, if it then we have finished and can return our new schedule
 otherwise we pass our new schedule and updated tree to the next iteration of \texttt{schedule'}.
 
+\medbreak
+
+The function \texttt{scheduleAndPrint} schedules a recipe on a given environment
+and prints the result in a more readable way, showing each action as a step rather
+than a collection of the more low level processes. Below is the result of running
+\texttt{scheduleAndPrint} on our cup of tea and the environment created above.
+
+\begin{lstlisting}
+scheduleAndPrint cupOfTea env = 
+
+chef:
+0h 0m 0s: 3) Get water
+0h 0m 10s: 2) Get teabag
+0h 0m 20s: 1) Get milk
+0h 0m 30s: Idle: 0h 3m 0s
+0h 3m 30s: 5) mix (2) and (4)
+0h 3m 40s: 6) Wait for 0h 5m 0s
+0h 8m 40s: 7) mix (1) and (6) (optional)
+
+kettle:
+0h 0m 0s: Idle: 0h 0m 10s
+0h 0m 10s: 4) Heat (3) until temperature 100
+
+toaster:
+\end{lstlisting}
+
+As you can see the scheduling function tells the chef to get the water first so that the
+kettle can start boiling it as soon as possible. After 10 seconds the kettle can start
+boiling the water, meanwhile the chef acquires the other ingredients before becoming idle
+until the kettle has finished. Once the water is boiled the chef adds the teabag before
+waiting for 5 minutes. After that they optionally add milk. Meanwhile our uneeded toaster
+does nothing.
+
 \subsection{Cold Toast}
 
 This method of scheduling seems to work however, there is one problem that arises from us
@@ -596,8 +702,121 @@ as follows.
 \end{lstlisting}
 
 \section{Recipe Properties}
+
+In this section we will explore recipes across various semantic domains and how this can
+help us to create new recipes.
+
 \subsection{Folding Over Recipes}
-\subsection{Time and Cost}
+
+One function that is particularly useful in exploring semantics is \texttt{fold}.
+Folding is the process of taking some whole made up of parts and creating a single
+value from it. For example folding texttt{(+)} over a list of numbers \texttt{[1,2,3]}
+returns 6. We can use folding to create denotational semantics for our recipes \cite{hutton}.
+Denotational semantics involves terms being evaluated via a mapping to a value in a certain
+semantic domain.
+
+\begin{lstlisting}
+    foldRecipe :: Monoid a => (Action -> a) -> Recipe -> a
+    foldRecipe f (Node a ts) =
+        let vs = map (foldRecipe f) ts
+         in f a `mappend` (mconcat vs)
+\end{lstlisting}
+
+Now that we have defined folding over recipes, we can take any function which maps actions
+to some value and use it to evaluate our recipe. The one caveat is that the values must form
+a monoid. This simply means that the values should have some "empty" value and that there should
+be some natural way of appending them. As an example the \texttt{Monoid} instance of
+\texttt{Time} is given below.
+
+\begin{lstlisting}
+    instance Monoid Time where
+        mempty = 0
+        mappend = (+)
+\end{lstlisting}
+
+\subsection{Time}
+
+Two important semantic domains regarding recipes are cost and time. In order to calculate the
+time of a recipe using \texttt{foldRecipe} we first need a function of type \texttt{Action -> Time}.
+
+\begin{lstlisting}
+    timeAction :: Action -> Time
+    timeAction (GetIngredient _) = 10
+    timeAction Heat = 0
+    timeAction (HeatAt t) = preheatTime t
+    timeAction Wait = 0
+    timeAction (Combine _) = 10
+    timeAction (Conditional _ c) = foldCond f c
+        where
+            f (CondTime t) = t
+            f (CondTemp t) = tempToTime t
+            f (CondOpt s) = 0
+    timeAction (Transaction a) = timeAction a
+    timeAction (Measure m) = 20
+\end{lstlisting}
+
+These times are just intended to be estimates, a more complex function might take into account which
+station each action is scheduled on. The only other point of note here is \texttt{foldCond}.
+This function allows us to abstract the details of "and" and "or" conditions to a more general
+case as follows.
+
+\begin{lstlisting}
+    foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
+    foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
+    foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
+    foldCond f c            = f c
+\end{lstlisting}
+
+If the condition we are handling is logical and over two conditions then we can simply apply our function
+to each of the sub-conditions and join the results, hence the requirement that the value we're
+creating have a monoid instance. In the that event we're dealing with the logical or of two conditions then
+we apply our function to each of the sub-conditions as before, except this time we take the largest value.
+This provides us with a "worst case scenario" as it would take whichever condition would take the longest
+duration to be met. This works in other semantic domains too. Imagine we added a condition on mass and thus
+extracted the measurement from our \texttt{Measure} combinator. If we calculated the cost of a recipe, as we shall
+do in the next section, we would need to quantify the ingredients. Using \texttt{foldCond} on logical or over two
+conditions in the domain of mass would provide us with the largest mass possible leading to the highest price and
+once again the "worst case scenario". Our use of \texttt{max} also holds when evaluating conditions to boolean values
+as \texttt{max True False = True} thus holding the meaning of logical or.
+
+\medbreak
+
+We can now define our function \texttt{time} for a recipe as follows.
+
+\begin{lstlisting}
+    time :: Recipe -> Time
+    time = foldRecipe timeAction
+\end{lstlisting}
+
+We can also define a function \texttt{schLength} which tells us the length of a schedule.
+
+\begin{lstlisting}
+    schLength :: Schedule -> Recipe -> Time
+    schLength sch r =
+        let rMap = mkLabelMap $ labelRecipeR r
+            stacks = Map.elems sch
+            ts = map (\s -> stackHeight s rMap) stacks
+         in maximum ts
+\end{lstlisting}
+
+One of the great things about Haskell is that it allows us to keep the recipe labelling
+functions pure. As such we can recreate the map of labels to recipes that was used in
+scheduling at any point and know it will be the same; we need not worry that some side
+effect has caused it to be different.
+
+\medbreak
+
+If we run the above functions on our cup of tea then we see that our scheduling has
+saved us 20 seconds off the estimated time by parallelising certain steps.
+
+\begin{lstlisting}
+    time cupOfTea = 0h 9m 10s
+
+    schLength (scheduleRecipe cupOfTea env) cupOfTea = 0h 8m 50s
+\end{lstlisting}
+
+\subsection{Cost}
+
 \subsection{Generating Recipes}
 \subsection{Improving Recipes}
 
@@ -618,6 +837,7 @@ as follows.
 \subsection{Financial Contracts}
 \subsection{Deep vs Shallow Embedding}
 \subsection{Regions}
+
 \newpage
 
     \begin{thebibliography}{8}
@@ -665,7 +885,7 @@ as follows.
         \url{https://www.youtube.com/watch?v=uR_VzYxvbxg}
         Online. Accessed April 2, 2018.
 
-        \bibitem{hutton-fold}
+        \bibitem{hutton}
         Graham Hutton. Fold and Unfold for Program Semantics. Department of
         Computer Science, University of Nottingham. September 1998.
 

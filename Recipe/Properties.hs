@@ -9,24 +9,25 @@ import qualified Data.Map.Strict as Map
 import           Data.Tree
 import           Recipe.Recipe
 
-type PropertySet k v = [(k, v)]
+type PropertyList v = [(String, v)]
 
-vals :: [(k,v)] -> [v]
-vals = map snd
+lookupProp :: Monoid v => PropertyList v -> String -> v
+lookupProp ps s = case lookup s ps of
+    Nothing -> mempty
+    Just v -> v
 
-concatVals :: Monoid v => [(k,v)] -> v
-concatVals = mconcat . vals
+evalProps :: Monoid v => PropertyList v -> Recipe -> v
+evalProps ps = foldRecipe f
+    where
+        f (GetIngredient s) = lookupProp ps s
+        f _ = mempty        
 
-evalProperties :: (Eq k, Monoid v, Foldable t) => PropertySet k v -> t k -> v
-evalProperties ps =
-    let valFor x = concatVals $ filter (\(k,v) -> k == x) ps
-     in foldr (\x v -> valFor x `mappend` v) mempty
-
-evalPropertiesQ :: (Eq k, Integral v, Monoid v, Foldable t) => PropertySet k (v, Measurement) -> t (k, Measurement) -> v
-evalPropertiesQ ps =
-    let valsFor (x,m) = vals $ filter (\(k,v) -> k == x) ps
-        quantValFor (x,m) = mconcat $ map (applyQuant m) (valsFor (x,m))
-     in foldr (\x v -> quantValFor x `mappend` v) mempty
+evalPropsQ :: (Integral v, Monoid v) => PropertyList (v, Measurement) -> [(String, Measurement)] -> v
+evalPropsQ ps xs = mconcat $ map evalPropsQ' xs
+    where
+        evalPropsQ' (s,m) = case lookup s ps of
+            Nothing -> mempty
+            Just (v,m') -> applyQuant m (v,m')
 
 applyQuant :: Integral v => Measurement -> (v, Measurement) -> v
 applyQuant m (v,m') =
@@ -56,11 +57,19 @@ instance Show Price where
     show Price {..} =
         let pounds = pence `div` 100
             pence' = pence `mod` 100
-         in '£' : show pounds ++ '.' : show pence'
-
+            showPence p
+                | p < 10 = '0' : show p
+                | otherwise = show p
+         in '£' : show pounds ++ '.' : showPence pence'
+        
 instance Monoid Price where
     mempty = Price 0
     mappend = (+)
+
+type PriceList = PropertyList (Price, Measurement)
+
+price :: PriceList -> Recipe -> Price
+price ps r = evalPropsQ ps (ingredientsQ r)
 
 -------------------------------------
 -- Food Type
@@ -69,13 +78,13 @@ instance Monoid Price where
 data FoodType = Meat | Veg
     deriving (Show, Eq)
 
-selectMeatTwoVeg :: PropertySet String FoodType -> [String]
+selectMeatTwoVeg :: PropertyList FoodType -> [String]
 selectMeatTwoVeg is =
     let ms = filter (\(_,t) -> t == Meat) is
         vs = filter (\(_,t) -> t == Veg) is
      in map fst $ head ms : take 2 vs
         
-mkRecipe :: [String] -> PropertySet String Recipe -> Recipe
+mkRecipe :: [String] -> PropertyList Recipe -> Recipe
 mkRecipe is rs =
     let parts = map (\s -> case lookup s rs of
                             Just r -> r

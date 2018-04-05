@@ -50,6 +50,13 @@ type Stack = [Task]
 
 type Schedule = Map StName Stack
 
+schLength :: Schedule -> Recipe -> Time
+schLength sch r =
+    let rMap = mkLabelMap $ labelRecipeR r
+        stacks = Map.elems sch
+        ts = map (\s -> stackHeight s rMap) stacks
+     in maximum ts
+
 -- heuristic 1 (least demand):
 
 duration :: Label -> Map Label Recipe -> Time

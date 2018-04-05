@@ -9,7 +9,8 @@ import Recipe.Properties
 import Recipe.QS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Control.Monad.Trans.State
+import Data.IORef
+import Data.Time.Clock
 
 -------------------------------------
 -- TEST RECIPES
@@ -23,19 +24,19 @@ teabag = ingredient "teabag"
 milk = ingredient "milk"
 
 cupOfTea :: Recipe
-cupOfTea = optional $ combine "mix" milk
+cupOfTea = optional "milk" $ combine "mix" milk
     $ waitFor (minutes 5)
     $ combine "mix" teabag
     $ heatTo 100 water
 
 cupOfTea' :: Recipe
-cupOfTea' = optional $ combine "mix" 
+cupOfTea' = optional "milk" $ combine "mix" 
     ( waitFor (minutes 5)
     $ combine "mix" teabag
     $ heatTo 100 water ) milk
 
 cupOfTeaQ :: Recipe
-cupOfTeaQ = optional
+cupOfTeaQ = optional "milk"
     $ combine "mix" (measure (Milliletres 10) milk)
     $ waitFor (minutes 5)
     $ combine "mix" (measure (Count 1) teabag)
@@ -106,10 +107,39 @@ boilInWaterForM t r = forTime (t * 60)
 -- TEST STATIONS
 -------------------------------------
 
+test :: IO ()
+test = do
+    c <- newClock
+    getTime' c >>= print
+    tick c
+    getTime' c >>= print
+    tick c
+    getTime' c >>= print
+
+tick :: Clock -> IO ()
+tick c = modifyIORef' c (+1)
+
+newClock :: IO Clock
+newClock = newIORef 0
+
+type Clock = IORef Int
+
+getTime' :: Clock -> IO Obs
+getTime' c = do
+    i <- readIORef c
+    (return . ObsTime . Time) i
+
+getTime :: IO Obs
+getTime = do
+    ut <- getCurrentTime
+    let t = floor $ utctDayTime ut
+    let obs = (ObsTime . Time) t
+    return obs
+
 env :: Env
-env = Env { eStations = [kettle, chef, chef2, toaster]
-          , eObs = []
-          }
+env = Env { eStations = [kettle, chef, toaster]
+          , eObs = [ getTime
+                   , return $ ObsOpt "milk" True ] }
 
 kettle :: Station
 kettle = let kettleConstr r@(Node a ts)
@@ -162,25 +192,13 @@ chef2 = let chefConstr r@(Node a ts) = case a of
 -- TEST PROPERTIES
 -------------------------------------
 
-priceList :: PropertySet String Price
-priceList = [ ("teabag", 2)
-            , ("milk", 1)
-            , ("sugar", 5)
-            , ("water", 0) ]
+priceList :: PriceList
+priceList = [ ("teabag", (639, Count 240))
+            , ("milk", (70, Milliletres 1000))
+            , ("sugar", (69, Grams 1000))
+            , ("water", (0, Milliletres 1)) ]
 
-priceListQ :: PropertySet String (Price, Measurement)
-priceListQ = [ ("teabag", (639, Count 240))
-             , ("milk", (70, Milliletres 1000))
-             , ("sugar", (69, Grams 1000))
-             , ("water", (0, Count 1)) ]
-
-priceOfTea :: Price
-priceOfTea = evalProperties priceList (ingredients cupOfTea)
-
-priceOfTeaQ :: Price
-priceOfTeaQ = evalPropertiesQ priceListQ (ingredientsQ cupOfTeaQ)
-
-ingList :: PropertySet String FoodType
+ingList :: PropertyList FoodType
 ingList = [ ("chicken breast", Meat)
           , ("beef sirloin", Meat)
           , ("lamb chop", Meat)
@@ -191,7 +209,7 @@ ingList = [ ("chicken breast", Meat)
           , ("green cabbage", Veg)
           , ("potato", Veg) ]
 
-recList :: PropertySet String Recipe
+recList :: PropertyList Recipe
 recList = [ ("chicken breast", heatAtForM 200 40 $ ingredient "chicken breast")
           , ("beef sirloin", heatAtForM 200 20 $ ingredient "beef sirloin")
           , ("lamb chop", heatAtForM 200 17 $ ingredient "lamb chop")

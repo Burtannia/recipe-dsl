@@ -1,7 +1,7 @@
 # Fdb version 3
-["pdflatex"] 1522790920 "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" "dissertation.pdf" "dissertation" 1522790922
+["pdflatex"] 1522898904 "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" "dissertation.pdf" "dissertation" 1522898906
   "/etc/texmf/web2c/texmf.cnf" 1507416320 1101 af7716885e081ab43982cab7b4672c1a ""
-  "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" 1522790920 28704 8b62846d7a2a6f524496228073a258d0 ""
+  "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" 1522898903 38566 603755cc190a8f858f2eb218c22fa10d ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1272929888 3287 e6b82fe08f5336d4d5ebc73fb1152e87 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -110,14 +110,14 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1507416353 1863403 f3ff9a4253bcb5fb9a9baaf0c572cb01 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1507416391 3856426 289e8d49aa4b9079937da61e2fc2ef78 ""
   "cupOfTea2.png" 1522711299 11756 4c8bf50658013e091ec4ac7e01ba48fc ""
-  "dissertation.aux" 1522790922 5920 7dcf633a83ca560879cbfdf04515c5fc ""
-  "dissertation.out" 1522790922 2926 2834cb95b0377865ed4830ed3c34fd5e ""
-  "dissertation.tex" 1522790920 28704 8b62846d7a2a6f524496228073a258d0 ""
-  "dissertation.toc" 1522790922 3697 30bdeb1f5646c5b82db45ffe16cbec3c ""
+  "dissertation.aux" 1522898906 6030 723827480b22737779687ca74f04c4f8 ""
+  "dissertation.out" 1522898906 2971 4fedb607df25e08a33bf8c2a2936322b ""
+  "dissertation.tex" 1522898903 38566 603755cc190a8f858f2eb218c22fa10d ""
+  "dissertation.toc" 1522898906 3758 db281aa6aec956773a2fefa76d265c2f ""
   "stacks.png" 1522780892 27796 63a2e669871bc3e48bf854aa6b6b377d ""
   (generated)
   "dissertation.toc"
+  "dissertation.aux"
   "dissertation.out"
   "dissertation.pdf"
-  "dissertation.aux"
   "dissertation.log"

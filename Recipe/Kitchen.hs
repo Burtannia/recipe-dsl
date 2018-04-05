@@ -4,6 +4,7 @@ module Recipe.Kitchen where
 
 import Recipe.Recipe
 import Data.Tree
+import Data.Monoid
 
 data Station = Station
     { stName     :: String
@@ -18,7 +19,20 @@ type StName = String
 
 data Obs = ObsTemp Int
          | ObsTime Time
+         | ObsOpt String Bool
          deriving Show
+
+evalCond :: Condition -> [Obs] -> Bool
+evalCond (CondTime t) os = case [o | o@(ObsTime _) <- os] of
+    [] -> False
+    (ObsTime t' : _) -> t == t'
+evalCond (CondTemp t) os = case [o | o@(ObsTemp _) <- os] of
+    [] -> False
+    (ObsTemp t' : _) -> t == t'
+evalCond (CondOpt s) os = case [o | o@(ObsOpt s' _) <- os, s == s'] of
+    [] -> False
+    (ObsOpt _ b : _) -> b
+evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 
 type ConstraintF = Recipe -> Maybe [Process]
 

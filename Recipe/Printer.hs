@@ -15,7 +15,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Control.Monad.IO.Class (liftIO)
-import Diagrams.Prelude hiding (Time)
+import Diagrams.Prelude hiding (Time, duration)
 import Diagrams.Backend.SVG.CmdLine
 
 -------------------------------------
@@ -44,7 +44,7 @@ steps = steps' . labelRecipeA
                         l'' = (map extractLabel ts) !! 1
                 toString (Conditional a c) = toString a ++ condToString c
                     where
-                        condToString (CondOpt) = " (optional)"
+                        condToString (CondOpt _) = " (optional)"
                         condToString (CondTemp t) = " until temperature " ++ show t
                         condToString (CondTime t) = " for " ++ show t
                 toString (Transaction a) = "Immediately " ++ toString a
@@ -118,6 +118,7 @@ printSchedule sch = printSchedule' (Map.toList sch)
     where
         printSchedule' [] _ _ = return ()
         printSchedule' ((name, stack) : xs) sMap rMap = do
+            putStrLn ""
             putStrLn $ name ++ ":"
             evalStateT (printStack stack sMap rMap) (Time 0)
             printSchedule' xs sMap rMap
@@ -132,8 +133,8 @@ printStack (Active l : xs) sMap rMap = do
     let step = (show startT) ++ ": " ++ show l ++ ") " ++ s
     liftIO $ putStrLn step
 
-    let (Node a _) = fromJust $ Map.lookup l rMap
-    put (startT + timeAction a)
+    let t = duration l rMap
+    put (startT + t)
 
 printStack (Idle t : xs) sMap rMap = do
     printStack xs sMap rMap

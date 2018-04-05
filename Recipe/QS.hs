@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Recipe.QS where
 
@@ -8,6 +9,7 @@ import QuickSpec
 import Test.QuickCheck
 import Control.Monad (liftM, liftM2, liftM3)
 import Data.Tree
+import Recipe.Kitchen
 
 -------------------------------------
 -- Arbitrary Instances
@@ -25,7 +27,7 @@ genRecipe = sized $ \n ->
         _ -> oneof [genUnRec un, genBinRec bin bin]
 
 genIng :: Gen Recipe
-genIng = liftM (ingredient . show) ((choose (1, 100)) :: Gen Int)
+genIng = liftM (ingredient . show) (choose (1, 100) :: Gen Int)
 
 genUnRec :: Gen Recipe -> Gen Recipe
 genUnRec un = oneof
@@ -38,32 +40,6 @@ genUnRec un = oneof
 
 genBinRec :: Gen Recipe -> Gen Recipe -> Gen Recipe
 genBinRec r1 r2 = liftM3 combine genMethod r1 r2
-
--- instance Arbitrary Action where
---     arbitrary = oneof
---         [ genIng
---         , return Heat
---         , liftM HeatAt genTemp
---         , return Wait
---         , liftM Combine genMethod
---         , liftM2 Conditional arbitrary arbitrary
---         , liftM Transaction arbitrary
---         , liftM Measure arbitrary ]
-
--- genIng :: Gen Action
--- genIng = liftM (GetIngredient . show) ((choose (1, 100)) :: Gen Int)
-
--- genUnAct :: Gen Action
--- genUnAct = oneof
---     [ return Heat
---     , liftM HeatAt genTemp
---     , return Wait
---     , liftM2 Conditional arbitrary arbitrary
---     , liftM Transaction arbitrary
---     , liftM Measure arbitrary ]
-
--- genBinAct :: Gen Action
--- genBinAct = liftM Combine genMethod
 
 genTemp :: Gen Int
 genTemp = choose (100, 240)
@@ -82,7 +58,7 @@ instance Arbitrary Condition where
         
 singleCond :: Gen Condition
 singleCond = oneof
-    [ return CondOpt
+    [ liftM (CondOpt . show) (choose (1, 10) :: Gen Int)
     , liftM CondTime arbitrary
     , liftM CondTemp genTemp ]
 
@@ -94,6 +70,15 @@ instance Arbitrary Measurement where
         [ liftM Count (elements [1..10])
         , liftM Grams (elements [10,20..1000])
         , liftM Milliletres (elements [10,20..1000]) ]
+
+instance Arbitrary Obs where
+    arbitrary = oneof
+        [ liftM ObsTemp genTemp
+        , liftM ObsTime arbitrary
+        , liftM2 ObsOpt (liftM show (choose (1, 10) :: Gen Int)) arbitrary ]
+
+instance Observe [Obs] Bool Condition where
+    observe obs c = evalCond c obs
 
 -------------------------------------
 -- QuickSpec Stuff
@@ -113,7 +98,7 @@ qsRecipe = quickSpec
     , con "transaction" (transaction :: Recipe -> Recipe)
     , con "measure" (measure :: Measurement -> Recipe -> Recipe)
 
-    -- , con "optional" (optional :: Recipe -> Recipe)
+    -- , con "optional" (optional :: String -> Recipe -> Recipe)
     -- , con "toTemp" (toTemp :: Int -> Recipe -> Recipe)
     -- , con "forTime" (forTime :: Time -> Recipe -> Recipe)
     -- , con "hours" (hours :: Int -> Time)
@@ -121,5 +106,5 @@ qsRecipe = quickSpec
 
     , monoType (Proxy :: Proxy Recipe)
     , monoType (Proxy :: Proxy Measurement)
-    , monoType (Proxy :: Proxy Condition)
+    --, monoTypeObserve (Proxy :: Proxy Condition)
     , monoType (Proxy :: Proxy Time) ]

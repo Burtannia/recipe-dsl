@@ -25,16 +25,17 @@ data Action = GetIngredient String
             | Measure Measurement
             deriving (Show, Eq, Ord)
 
-instance Eq a => Ord (Tree a) where
-    compare t1 t2 = compare (length t1) (length t2)
+-- |Ordering compares the number of different topological
+-- sorts of each recipe.
+instance Ord Recipe where
+    compare t1 t2 = let xs = sort $ topologicals t1
+                        ys = sort $ topologicals t2
+                     in compare xs ys
 
--- |Two Recipes are equal if the set of topological sorts
--- of recipe 1 is a subset of the topological sorts
--- of recipe 2 or vice versa.
+-- |Two Recipes are equal if their sets of topological sorts
+-- are equal.
 instance {-# OVERLAPPING #-} Eq Recipe where
-    (==) r1 r2 = let xs = sort $ topologicals r1
-                     ys = sort $ topologicals r2
-                  in xs == ys
+    (==) r1 r2 = compare r1 r2 == EQ
 
 -- |Time is a wrapper around an Int representing seconds.
 newtype Time = Time Int
@@ -50,18 +51,17 @@ instance Show Time where
                     ++ show s ++ "s"
 
 instance Monoid Time where
-    mempty = Time 0
+    mempty = 0
     mappend = (+)
 
-data Condition = CondTime Time | CondTemp Int | CondOpt
+data Condition = CondTime Time | CondTemp Int | CondOpt String
     | Condition `AND` Condition | Condition `OR` Condition
     deriving (Show, Eq, Ord)
 
 foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
-foldCond f (c `AND` c')       = (foldCond f c) `mappend` (foldCond f c')
-foldCond f (c `OR` c')        = max (foldCond f c) (foldCond f c')
-foldCond f CondOpt            = mempty
-foldCond f c                  = f c
+foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
+foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
+foldCond f c            = f c
 
 data Measurement = Count Int | Grams Int | Milliletres Int
     deriving (Eq)
@@ -114,8 +114,8 @@ measure m r = Node (Measure m) [r]
 
 -- Nicer Conditions and Time
 
-optional :: Recipe -> Recipe
-optional = addCondition CondOpt
+optional :: String -> Recipe -> Recipe
+optional s = addCondition (CondOpt s)
 
 toTemp :: Int -> Recipe -> Recipe
 toTemp t = addCondition (CondTemp t)
@@ -133,10 +133,16 @@ minutes = Time . (*) 60
 -- UTILITY FUNCTIONS
 -------------------------------------
 
+foldRecipe :: Monoid a => (Action -> a) -> Recipe -> a
+foldRecipe f (Node a ts) =
+    let vs = map (foldRecipe f) ts
+     in f a `mappend` (mconcat vs)
+
 ingredients :: Recipe -> [String]
-ingredients (Node a ts) = case a of
-    GetIngredient s -> s : concatMap ingredients ts
-    _               -> concatMap ingredients ts
+ingredients = foldRecipe f
+    where
+        f (GetIngredient s) = [s]
+        f _ = []
 
 ingredientsQ :: Recipe -> [(String, Measurement)]
 ingredientsQ (Node (Measure m) ts) = case ts of
@@ -173,19 +179,20 @@ preheatTime :: Int -> Time
 preheatTime = const $ Time 600
 
 time :: Recipe -> Time
-time = foldr (\a t -> t + timeAction a) 0
+time = foldRecipe timeAction
 
 timeAction :: Action -> Time
 timeAction (GetIngredient _) = 10
-timeAction Heat = mempty
+timeAction Heat = 0
 timeAction (HeatAt t) = preheatTime t
-timeAction Wait = mempty
+timeAction Wait = 0
 timeAction (Combine _) = 10
 timeAction (Conditional a c) = t' + foldCond f c
     where
         t' = timeAction a
         f (CondTime t) = t
         f (CondTemp t) = tempToTime t
+        f (CondOpt s) = 0
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 20
 
