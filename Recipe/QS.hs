@@ -16,15 +16,12 @@ import Recipe.Kitchen
 -------------------------------------
 
 instance {-# OVERLAPPING #-} Arbitrary Recipe where
-    arbitrary = genRecipe
-
-genRecipe :: Gen Recipe
-genRecipe = sized $ \n ->
-    let bin = resize (n `div` 2) genRecipe
-        un  = resize (n-1) genRecipe
-     in case n of
-        1 -> genIng
-        _ -> oneof [genUnRec un, genBinRec bin bin]
+    arbitrary = sized $ \n ->
+        let bin = resize (n `div` 2) arbitrary
+            un  = resize (n-1) arbitrary
+        in case n of
+            1 -> genIng
+            _ -> oneof [genUnRec un, genBinRec bin bin]
 
 genIng :: Gen Recipe
 genIng = liftM (ingredient . show) (choose (1, 100) :: Gen Int)

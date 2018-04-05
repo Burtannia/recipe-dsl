@@ -194,7 +194,7 @@ timeAction (Conditional a c) = t' + foldCond f c
         f (CondTemp t) = tempToTime t
         f (CondOpt s) = 0
 timeAction (Transaction a) = timeAction a
-timeAction (Measure m) = 20
+timeAction (Measure m) = 10
 
 topologicals :: Recipe -> [[Action]]
 topologicals (Node a []) = [[a]]

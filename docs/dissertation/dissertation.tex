@@ -24,6 +24,7 @@
 \lstloadlanguages{Haskell}
 \lstset
 {
+    escapeinside={(*@}{@*)},
     basicstyle=\small\ttfamily,
     flexiblecolumns=false,
     basewidth={0.5em,0.45em},
@@ -206,21 +207,14 @@ embedded actions.
 
 \section{Combinators}
 \subsection{Initial Definitions}
-
-
 \subsection{Sequencing Problem}
 \subsection{Conditionals}
-\subsection{Transactions}
 \subsection{Moving to a Tree of Actions}
 \subsection{Final Definitions}
 \subsection{Custom Combinators}
 
 \section{Deriving Equality}
-In this section I shall discuss what it means for two recipes
-to be equal and how that has been used with QuickSpec \cite{quickspec, quickspec2}
-in order to find algebraic properties held by recipes.
 
-\subsection{Topological Sorting}
 When considering what it means for two recipes to be equal one
 might consider that they must have the same ingredients
 and the same actions must be performed on those ingredients,
@@ -320,8 +314,6 @@ Because \texttt{Recipe = Tree Action} it naturally uses the equality instance fo
 \texttt{Tree} but we want to use our \texttt{compare} function which makes use of topological sorting.
 That's what the "overlapping" annotation is for. Using the above definition, the expression
 \texttt{cupOfTea == cupOfTea'} evaluates to \texttt{True} showing that, as desired, our two recipes are equal.
-
-\subsection{Quickspec}
 
 \section{Scheduling Recipes}
 
@@ -626,7 +618,7 @@ node we are scheduling even after those child nodes have been scheduled and remo
 tree. The functions \texttt{chooseLeaf} and \texttt{chooseStation} apply the various heuristics
 and return the best leaf and best station respectively. Next we add the leaf to the stack of
 the chosen station and update the schedule. We then check to see if the node we just
-scheduled is the root of the tree, if it then we have finished and can return our new schedule
+scheduled is the root of the tree, if it is, then we have finished and can return our new schedule
 otherwise we pass our new schedule and updated tree to the next iteration of \texttt{schedule'}.
 
 \medbreak
@@ -662,7 +654,7 @@ until the kettle has finished. Once the water is boiled the chef adds the teabag
 waiting for 5 minutes. After that they optionally add milk. Meanwhile our uneeded toaster
 does nothing.
 
-\subsection{Cold Toast}
+\subsection{Transactions}
 
 This method of scheduling seems to work however, there is one problem that arises from us
 reordering steps in order to optimise them. Consider the following recipe for tea and buttered toast,
@@ -736,7 +728,7 @@ be some natural way of appending them. As an example the \texttt{Monoid} instanc
 
 \subsection{Time}
 
-Two important semantic domains regarding recipes are cost and time. In order to calculate the
+An important semantic domain for recipes is time. In order to calculate the
 time of a recipe using \texttt{foldRecipe} we first need a function of type \texttt{Action -> Time}.
 
 \begin{lstlisting}
@@ -752,7 +744,7 @@ time of a recipe using \texttt{foldRecipe} we first need a function of type \tex
             f (CondTemp t) = tempToTime t
             f (CondOpt s) = 0
     timeAction (Transaction a) = timeAction a
-    timeAction (Measure m) = 20
+    timeAction (Measure m) = 10
 \end{lstlisting}
 
 These times are just intended to be estimates, a more complex function might take into account which
@@ -772,8 +764,8 @@ to each of the sub-conditions and join the results, hence the requirement that t
 creating have a monoid instance. In the that event we're dealing with the logical or of two conditions then
 we apply our function to each of the sub-conditions as before, except this time we take the largest value.
 This provides us with a "worst case scenario" as it would take whichever condition would take the longest
-duration to be met. This works in other semantic domains too. Imagine we added a condition on mass and thus
-extracted the measurement from our \texttt{Measure} combinator. If we calculated the cost of a recipe, as we shall
+duration to be met. This works in other semantic domains too. Imagine we added a condition of mass and thus
+extracted the measurement from our \texttt{Measure} combinator (Section 5.3). If we calculated the cost of a recipe, as we shall
 do in the next section, we would need to quantify the ingredients. Using \texttt{foldCond} on logical or over two
 conditions in the domain of mass would provide us with the largest mass possible leading to the highest price and
 once again the "worst case scenario". Our use of \texttt{max} also holds when evaluating conditions to boolean values
@@ -815,22 +807,256 @@ saved us 20 seconds off the estimated time by parallelising certain steps.
     schLength (scheduleRecipe cupOfTea env) cupOfTea = 0h 8m 50s
 \end{lstlisting}
 
-\subsection{Cost}
+\subsection{Price}
+
+Another semantic domain to consider for recipes is their price. For this we
+need to quantify our ingredients with the \texttt{Measure} combinator.
+
+\begin{lstlisting}
+    data Measurement = Count Int | Grams Int | Milliletres Int
+
+    measure :: Measurement -> Recipe -> Recipe
+    measure m r = Node (Measure m) [r]
+\end{lstlisting}
+
+Below is our cup of tea recipe, updated with quantified ingredients.
+
+\begin{lstlisting}
+    cupOfTeaQ :: Recipe
+    cupOfTeaQ = optional "milk"
+        $ combine "mix" (measure (Milliletres 10) milk)
+        $ waitFor (minutes 5)
+        $ combine "mix" (measure (Count 1) teabag)
+        $ heatTo 100
+        $ measure (Milliletres 300) water
+\end{lstlisting}
+
+We now need some representation of the price of the individual ingredients.
+Below is an implementation of a \texttt{PriceList} which itself is based on
+a more generic \texttt{PropertyList}.
+
+\begin{lstlisting}
+    type PropertyList v = [(String, v)]
+
+    type PriceList = PropertyList (Price, Measurement)
+\end{lstlisting}
+
+Finally we need to get a list of our quantified ingredients and check them
+against the price list.
+
+\begin{lstlisting}
+    evalPropsQ :: (Integral v, Monoid v) => PropertyList (v, Measurement)
+                    -> [(String, Measurement)] -> v
+    evalPropsQ ps xs = mconcat $ map evalPropsQ' xs
+        where
+            evalPropsQ' (s,m) = case lookup s ps of
+                Nothing -> mempty
+                Just (v,m') -> applyQuant m (v,m')
+\end{lstlisting}
+
+The function \texttt{evalPropsQ} takes a list of properties, that have a \texttt{Measurement}
+component, and a list of \texttt{String} keys that also have a \texttt{Measurement}.
+We then lookup each key in our list, use \texttt{applyQuant} which calculates the ratio
+of measurements returning the actual price (or other value) for our quantity, and finally
+join the results together making use of our value's monoid instance.
+
+\medbreak
+
+We can now define \texttt{price} for our recipes. Note \texttt{ingredientsQ} takes a recipe
+and returns a list of ingredient names paired with their measurements.
+
+\begin{lstlisting}
+    price :: PriceList -> Recipe -> Price
+    price ps r = evalPropsQ ps (ingredientsQ r)
+\end{lstlisting}
+
+Returning to our quantified cup of tea, we get the following.
+
+\begin{lstlisting}
+    priceList :: PriceList
+    priceList = [ ("teabag", (639, Count 240))
+                , ("milk", (70, Milliletres 1000))
+                , ("sugar", (69, Grams 1000))
+                , ("water", (0, Milliletres 1)) ]
+
+    price priceList cupOfTeaQ = (*@{\pounds}@*)0.04
+\end{lstlisting}
+
+\subsection{QuickSpec}
+
+QuickSpec \cite{quickspec, quickspec2} is a Haskell library for automatically generating
+laws about your program. In order to do this QuickSpec requires a way of generating
+random values of the relevant type. We can provide this by making our recipe type
+an instance of the \texttt{Arbitrary} typeclass.
+
+\begin{lstlisting}
+    instance {-# OVERLAPPING #-} Arbitrary Recipe where
+        arbitrary = sized $ \n ->
+            let bin = resize (n `div` 2) genRecipe
+                un  = resize (n-1) genRecipe
+            in case n of
+                1 -> genIng
+                _ -> oneof [genUnRec un, genBinRec bin bin]
+
+    genIng :: Gen Recipe
+    genIng = liftM (ingredient . show)
+        (choose (1, 100) :: Gen Int)
+
+    genUnRec :: Gen Recipe -> Gen Recipe
+    genUnRec un = oneof
+        [ liftM heat un
+        , liftM2 heatAt genTemp un
+        , liftM wait un
+        , liftM2 addCondition arbitrary un
+        , liftM transaction un
+        , liftM2 measure arbitrary un ]
+
+    genBinRec :: Gen Recipe -> Gen Recipe -> Gen Recipe
+    genBinRec r1 r2 = liftM3 combine genMethod r1 r2
+\end{lstlisting}
+
+The first point of note is that our recipes are generated as sized values meaning
+that they have a number of sub-recipes. If a recipe is size 1 then we should generate
+an ingredient. Random ingredients are just provided as a random number between 1 and 100.
+If the size of the recipe is greater than 1 then we can either generate a unary recipe
+or a binary recipe. This refers to how many children the recipe should have. The only
+valid binary recipe we have is combine, the rest are all unary as they only apply to
+one sub-recipe. Instances of \texttt{Arbitrary} are also required for all the other types
+needed to make recipes such as \texttt{Time} and \texttt{Measurement}. For the sake
+of space I shalln't go into them here, they are relatively straightforward compared to
+the above.
+
+\medbreak
+
+The other interesting definition is that for \texttt{Condition} as conditions don't
+have a natural ordering instance. Instead, QuickSpec allows us to test for observational
+equality. That is we must specify a function \texttt{observe test a} for which the
+following property holds: \textit{two values x and y are considered equal,
+if for many random values of type test, observe test x == observe test y}.
+
+\begin{lstlisting}
+    instance Arbitrary Obs where
+        arbitrary = oneof
+            [ liftM ObsTemp genTemp
+            , liftM ObsTime arbitrary
+            , liftM2 ObsOpt (liftM show
+                (choose (1, 10) :: Gen Int)) arbitrary ]
+
+    instance Observe [Obs] Bool Condition where
+        observe obs c = evalCond c obs
+\end{lstlisting}
+
+Below we are generating random lists of our \texttt{Obs} type and evaluating our
+condition against them (Section 4.1). Now that we have all of our instances,
+we can pass our recipe functions to QuickSpec and see what laws it finds.
 
 \subsection{Generating Recipes}
+
 \subsection{Improving Recipes}
 
 \section{Development Process}
-\subsection{Project Management}
-\subsection{Evaluation and Testing}
-\subsection{Test Recipes}
-\subsection{QuickCheck}
 
-\section{Summary and Reflections}
 \subsection{Project Management}
+
+The project has been managed using the scrum development method with the time
+between supervisor meetings actings as the sprints, typically two weeks in length.
+This allowed lots of flexibility regarding the prioritisation of project
+components and the length of time spent on them. Due to the research nature
+of the project it wasn't clear from the outset exactly which parts would take the
+longest or be the most challenging. An example of this is that
+quite a significant amount of time was spent in the first part of the project
+considering various semantics for recipes before other parts of the language
+were started. In the second part of the project a lot of time was spent
+with scheduling recipes. Trying to express the constraints in linear form
+was a huge challenge and in the end it seems as though it wasn't actually possible
+hence the move to bin packing.
+
+\medbreak
+
+Throughout the project, a Trello board was used to keep track of tasks
+and prioritise them appropriately. The files for the project were stored
+on GitLab providing version control and backups. Furthermore, GitLab's
+continuous integration (CI) servers were used to compile the code and run
+some examples to ensure any issues were found as soon as possible.
+
+\subsection{Evaluation and Testing}
+
+\subsubsection{Test Recipes}
+
+\subsubsection{QuickCheck}
+
+\section{Summary}
+
 \subsection{Contributions}
+
+While DSLs are a widely explored field, nothing along the lines of a recipe DSL
+currently exists. My contributions to filling this gap are the following:
+
+\begin{itemize}
+    \item A small set of combinators that can be used to describe a wide variety of recipes.
+
+    \item Interpretations of recipes specified using these combinators within various semantic domains.
+
+    \item A concrete implementation of the recipes in the form of stations in an environment.
+
+    \item A demonstration of how operational semantics (topological sorting) can be used in
+    scheduling to optimise a recipe via parallelisation.
+
+    \item Mapping of various properties to recipes potentially leading to the ability
+    to suggest improvements or substitutions.
+
+    \item Exploration into how, given a certain model (cuisine), one can write functions that
+    generate recipes.
+\end{itemize}
+
 \subsection{Future Work}
+
+As mentioned above, there does not currently exist much, if any, work in the area of
+a recipe DSL and as such there is huge scope for future work. More work is needed
+to perfect and further refine the combinators. There is currently no way to
+"remove" a recipe from another recipe for example removing the teabag from our cup of tea.
+An unsafe version of this may just presume that way was added can in fact be removed
+and that it was even added in the first place however, creating a sensible remove
+combinator would no doubt require more thought.
+
+\medbreak
+
+There is also one rather difficult issue of handling recipes that have multiple
+outputs. For example let's say we roasted some meat and then wanted to take out the
+meat juices to make gravy but also do something with the meat. This completely breaks
+our tree structure as we would have the roast meat node branching up into two nodes,
+roasted meat and meat juices.
+
+\medbreak
+
+It goes without saying that further optimisations and research could be done into the
+scheduling part of this project; scheduling is, itself, a huge area of research.
+The scheduling solutions expressed above were mainly to demonstrate the use of
+the operational semantics of recipes.
+
+\medbreak
+
+Our model of a cooking environment was rather simple and didn't consider any requirement
+of transferring recipes between stations. For example, once something has been heated
+by an oven, it is then immediately available to any other station that needs to perform
+an action on it regardless of whether a chef is available to take it out of the oven or not.
+
+\medbreak
+
+There is also the task of translating our processes to actual instructions specific to a certain
+robot. It would be interesting to see what sort of issues would arise from this as they could then
+be used to direct attention to which areas of the project are most in need of further development.
+
 \subsection{Reflections}
+
+Being a research oriented project this was certainly different from anything I'd ever done before.
+Throughout the project there were times when I noticed that I was focusing too much on perfecting
+certain areas of the project, as if I was developing an actual piece of software, rather than
+exploring the key parts of each area. For example, rather than taking the combinators I already
+had and exploring different ways to interpret them, I sometimes wanted to ensure that every feature
+that could ever be wanted could be expressed. This got easier to deal with as the project
+continued and my supervisor also helped to keep me focused on the important things when we discussed
+which tasks should be focused on before the following meeting.
 
 \section{Related Work}
 \subsection{Pretty Printing}
@@ -840,7 +1066,7 @@ saved us 20 seconds off the estimated time by parallelising certain steps.
 
 \newpage
 
-    \begin{thebibliography}{8}
+    \begin{thebibliography}{11}
 
         \bibitem{robot}
         The Guardian. 2015. \textit{Future of food: how we cook}.

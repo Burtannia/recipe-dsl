@@ -6,41 +6,38 @@
 \BOOKMARK [2][-]{subsection.2.1}{Initial Definitions}{section.2}% 6
 \BOOKMARK [2][-]{subsection.2.2}{Sequencing Problem}{section.2}% 7
 \BOOKMARK [2][-]{subsection.2.3}{Conditionals}{section.2}% 8
-\BOOKMARK [2][-]{subsection.2.4}{Transactions}{section.2}% 9
-\BOOKMARK [2][-]{subsection.2.5}{Moving to a Tree of Actions}{section.2}% 10
-\BOOKMARK [2][-]{subsection.2.6}{Final Definitions}{section.2}% 11
-\BOOKMARK [2][-]{subsection.2.7}{Custom Combinators}{section.2}% 12
-\BOOKMARK [1][-]{section.3}{Deriving Equality}{}% 13
-\BOOKMARK [2][-]{subsection.3.1}{Topological Sorting}{section.3}% 14
-\BOOKMARK [2][-]{subsection.3.2}{Quickspec}{section.3}% 15
-\BOOKMARK [1][-]{section.4}{Scheduling Recipes}{}% 16
-\BOOKMARK [2][-]{subsection.4.1}{Modelling a Kitchen}{section.4}% 17
-\BOOKMARK [2][-]{subsection.4.2}{Scheduling Methods}{section.4}% 18
-\BOOKMARK [3][-]{subsubsection.4.2.1}{Linear Programming}{subsection.4.2}% 19
-\BOOKMARK [3][-]{subsubsection.4.2.2}{Bin Packing}{subsection.4.2}% 20
-\BOOKMARK [2][-]{subsection.4.3}{Optimisations and Heuristics}{section.4}% 21
-\BOOKMARK [3][-]{subsubsection.4.3.1}{Leaf Choice Heuristics}{subsection.4.3}% 22
-\BOOKMARK [3][-]{subsubsection.4.3.2}{Stack Choice Heuristics}{subsection.4.3}% 23
-\BOOKMARK [2][-]{subsection.4.4}{Implementation}{section.4}% 24
-\BOOKMARK [2][-]{subsection.4.5}{Cold Toast}{section.4}% 25
-\BOOKMARK [1][-]{section.5}{Recipe Properties}{}% 26
-\BOOKMARK [2][-]{subsection.5.1}{Folding Over Recipes}{section.5}% 27
-\BOOKMARK [2][-]{subsection.5.2}{Time}{section.5}% 28
-\BOOKMARK [2][-]{subsection.5.3}{Cost}{section.5}% 29
-\BOOKMARK [2][-]{subsection.5.4}{Generating Recipes}{section.5}% 30
-\BOOKMARK [2][-]{subsection.5.5}{Improving Recipes}{section.5}% 31
-\BOOKMARK [1][-]{section.6}{Development Process}{}% 32
-\BOOKMARK [2][-]{subsection.6.1}{Project Management}{section.6}% 33
-\BOOKMARK [2][-]{subsection.6.2}{Evaluation and Testing}{section.6}% 34
-\BOOKMARK [2][-]{subsection.6.3}{Test Recipes}{section.6}% 35
-\BOOKMARK [2][-]{subsection.6.4}{QuickCheck}{section.6}% 36
-\BOOKMARK [1][-]{section.7}{Summary and Reflections}{}% 37
-\BOOKMARK [2][-]{subsection.7.1}{Project Management}{section.7}% 38
-\BOOKMARK [2][-]{subsection.7.2}{Contributions}{section.7}% 39
-\BOOKMARK [2][-]{subsection.7.3}{Future Work}{section.7}% 40
-\BOOKMARK [2][-]{subsection.7.4}{Reflections}{section.7}% 41
-\BOOKMARK [1][-]{section.8}{Related Work}{}% 42
-\BOOKMARK [2][-]{subsection.8.1}{Pretty Printing}{section.8}% 43
-\BOOKMARK [2][-]{subsection.8.2}{Financial Contracts}{section.8}% 44
-\BOOKMARK [2][-]{subsection.8.3}{Deep vs Shallow Embedding}{section.8}% 45
-\BOOKMARK [2][-]{subsection.8.4}{Regions}{section.8}% 46
+\BOOKMARK [2][-]{subsection.2.4}{Moving to a Tree of Actions}{section.2}% 9
+\BOOKMARK [2][-]{subsection.2.5}{Final Definitions}{section.2}% 10
+\BOOKMARK [2][-]{subsection.2.6}{Custom Combinators}{section.2}% 11
+\BOOKMARK [1][-]{section.3}{Deriving Equality}{}% 12
+\BOOKMARK [1][-]{section.4}{Scheduling Recipes}{}% 13
+\BOOKMARK [2][-]{subsection.4.1}{Modelling a Kitchen}{section.4}% 14
+\BOOKMARK [2][-]{subsection.4.2}{Scheduling Methods}{section.4}% 15
+\BOOKMARK [3][-]{subsubsection.4.2.1}{Linear Programming}{subsection.4.2}% 16
+\BOOKMARK [3][-]{subsubsection.4.2.2}{Bin Packing}{subsection.4.2}% 17
+\BOOKMARK [2][-]{subsection.4.3}{Optimisations and Heuristics}{section.4}% 18
+\BOOKMARK [3][-]{subsubsection.4.3.1}{Leaf Choice Heuristics}{subsection.4.3}% 19
+\BOOKMARK [3][-]{subsubsection.4.3.2}{Stack Choice Heuristics}{subsection.4.3}% 20
+\BOOKMARK [2][-]{subsection.4.4}{Implementation}{section.4}% 21
+\BOOKMARK [2][-]{subsection.4.5}{Transactions}{section.4}% 22
+\BOOKMARK [1][-]{section.5}{Recipe Properties}{}% 23
+\BOOKMARK [2][-]{subsection.5.1}{Folding Over Recipes}{section.5}% 24
+\BOOKMARK [2][-]{subsection.5.2}{Time}{section.5}% 25
+\BOOKMARK [2][-]{subsection.5.3}{Price}{section.5}% 26
+\BOOKMARK [2][-]{subsection.5.4}{QuickSpec}{section.5}% 27
+\BOOKMARK [2][-]{subsection.5.5}{Generating Recipes}{section.5}% 28
+\BOOKMARK [2][-]{subsection.5.6}{Improving Recipes}{section.5}% 29
+\BOOKMARK [1][-]{section.6}{Development Process}{}% 30
+\BOOKMARK [2][-]{subsection.6.1}{Project Management}{section.6}% 31
+\BOOKMARK [2][-]{subsection.6.2}{Evaluation and Testing}{section.6}% 32
+\BOOKMARK [3][-]{subsubsection.6.2.1}{Test Recipes}{subsection.6.2}% 33
+\BOOKMARK [3][-]{subsubsection.6.2.2}{QuickCheck}{subsection.6.2}% 34
+\BOOKMARK [1][-]{section.7}{Summary}{}% 35
+\BOOKMARK [2][-]{subsection.7.1}{Contributions}{section.7}% 36
+\BOOKMARK [2][-]{subsection.7.2}{Future Work}{section.7}% 37
+\BOOKMARK [2][-]{subsection.7.3}{Reflections}{section.7}% 38
+\BOOKMARK [1][-]{section.8}{Related Work}{}% 39
+\BOOKMARK [2][-]{subsection.8.1}{Pretty Printing}{section.8}% 40
+\BOOKMARK [2][-]{subsection.8.2}{Financial Contracts}{section.8}% 41
+\BOOKMARK [2][-]{subsection.8.3}{Deep vs Shallow Embedding}{section.8}% 42
+\BOOKMARK [2][-]{subsection.8.4}{Regions}{section.8}% 43

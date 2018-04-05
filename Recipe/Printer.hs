@@ -48,9 +48,7 @@ steps = steps' . labelRecipeA
                         condToString (CondTemp t) = " until temperature " ++ show t
                         condToString (CondTime t) = " for " ++ show t
                 toString (Transaction a) = "Immediately " ++ toString a
-                toString (Measure m) = "Measure " ++ show m ++ case m of
-                    Count _ -> show l
-                    _        -> " of " ++ show l
+                toString (Measure m) = "Measure " ++ show m ++ " of " ++ show l'
                     where l' = head $ map extractLabel ts
                 extractLabel (Node (l,_) _) = l
 

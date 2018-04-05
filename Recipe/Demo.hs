@@ -11,6 +11,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.IORef
 import Data.Time.Clock
+import Data.Monoid
 
 -------------------------------------
 -- TEST RECIPES
@@ -141,12 +142,21 @@ env = Env { eStations = [kettle, chef, toaster]
           , eObs = [ getTime
                    , return $ ObsOpt "milk" True ] }
 
+isBoilWater :: Recipe -> Bool
+isBoilWater r@(Node a ts) = case a of
+    Conditional Heat (CondTemp 100) -> case ts of
+        [Node (GetIngredient "water") []] -> True
+        [Node (Measure _) [Node (GetIngredient "water") []]] -> True
+        _ -> False
+    Transaction _ -> isBoilWater $ popT r
+    _ -> False
+
 kettle :: Station
-kettle = let kettleConstr r@(Node a ts)
-                | r == heatTo 100 (ingredient "water") = Just [Input, Output]
-                | otherwise = case a of
-                    Transaction a -> kettleConstr $ popT r
-                    _ -> Nothing
+kettle = let kettleConstr r =
+                    if isBoilWater r then
+                        Just [Input, Output]
+                    else
+                        Nothing
              kettleTemp = return $ ObsTemp 100
           in Station "kettle" kettleConstr [kettleTemp]
 
@@ -220,4 +230,4 @@ recList = [ ("chicken breast", heatAtForM 200 40 $ ingredient "chicken breast")
           , ("green cabbage", boilInWaterForM 5 $ ingredient "green cabbage") ]
 
 testRecipe :: Recipe
-testRecipe = mkRecipe (selectMeatTwoVeg ingList) recList
+testRecipe = mkRecipe (meatTwoVeg ingList) recList

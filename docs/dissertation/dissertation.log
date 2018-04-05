@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  5 APR 2018 04:28
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  5 APR 2018 10:39
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -734,25 +734,25 @@ Package: titling 2009/09/04 v2.1d maketitle typesetting
 (./dissertation.aux)
 \openout1 = `dissertation.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 63.
-LaTeX Font Info:    ... okay on input line 63.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 63.
-LaTeX Font Info:    ... okay on input line 63.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 63.
-LaTeX Font Info:    ... okay on input line 63.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 63.
-LaTeX Font Info:    ... okay on input line 63.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 63.
-LaTeX Font Info:    ... okay on input line 63.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 63.
-LaTeX Font Info:    ... okay on input line 63.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 63.
-LaTeX Font Info:    ... okay on input line 63.
-Package ragged2e Info: ABD: executing \RaggedRight on input line 63.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 64.
+LaTeX Font Info:    ... okay on input line 64.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 64.
+LaTeX Font Info:    ... okay on input line 64.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 64.
+LaTeX Font Info:    ... okay on input line 64.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 64.
+LaTeX Font Info:    ... okay on input line 64.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 64.
+LaTeX Font Info:    ... okay on input line 64.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 64.
+LaTeX Font Info:    ... okay on input line 64.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 64.
+LaTeX Font Info:    ... okay on input line 64.
+Package ragged2e Info: ABD: executing \RaggedRight on input line 64.
  ABD: EverySelectfont initializing macros
-LaTeX Info: Redefining \selectfont on input line 63.
+LaTeX Info: Redefining \selectfont on input line 64.
 \AtBeginShipoutBox=\box56
-Package hyperref Info: Link coloring OFF on input line 63.
+Package hyperref Info: Link coloring OFF on input line 64.
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
@@ -762,9 +762,9 @@ Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
 \c@section@level=\count133
 )
-LaTeX Info: Redefining \ref on input line 63.
-LaTeX Info: Redefining \pageref on input line 63.
-LaTeX Info: Redefining \nameref on input line 63.
+LaTeX Info: Redefining \ref on input line 64.
+LaTeX Info: Redefining \pageref on input line 64.
+LaTeX Info: Redefining \nameref on input line 64.
 
 (./dissertation.out) (./dissertation.out)
 \@outlinefile=\write3
@@ -800,17 +800,17 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 \c@lstlisting=\count140
-LaTeX Font Info:    Try loading font information for U+msa on input line 64.
+LaTeX Font Info:    Try loading font information for U+msa on input line 65.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 64.
+LaTeX Font Info:    Try loading font information for U+msb on input line 65.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Try loading font information for U+stmry on input line 64.
+LaTeX Font Info:    Try loading font information for U+stmry on input line 65.
 
 (/usr/share/texlive/texmf-dist/tex/latex/stmaryrd/Ustmry.fd) [1
 
@@ -833,13 +833,13 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [3]
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 133.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 134.
 
  (/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 133.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 134.
 
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -861,24 +861,28 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[6]
+[6] <cupOfTea2.png, id=312, 515.67656pt x 140.77594pt>
+File: cupOfTea2.png Graphic file (type png)
+ <use cupOfTea2.png>
+Package pdftex.def Info: cupOfTea2.png used on input line 271.
+(pdftex.def)             Requested size: 360.0pt x 98.2804pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Overfull \hbox (2.99255pt too wide) in paragraph at lines 276--281
+\OT1/cmr/m/n/10.95 as dis-cussed in a later sec-tion, we also need an in-stance
+ of \OT1/cmtt/m/n/10.95 Ord\OT1/cmr/m/n/10.95 . This means 
+ []
+
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[7] <cupOfTea2.png, id=339, 515.67656pt x 140.77594pt>
-File: cupOfTea2.png Graphic file (type png)
- <use cupOfTea2.png>
-Package pdftex.def Info: cupOfTea2.png used on input line 277.
-(pdftex.def)             Requested size: 360.0pt x 98.2804pt.
-
-Overfull \hbox (2.99255pt too wide) in paragraph at lines 282--287
-\OT1/cmr/m/n/10.95 as dis-cussed in a later sec-tion, we also need an in-stance
- of \OT1/cmtt/m/n/10.95 Ord\OT1/cmr/m/n/10.95 . This means 
- []
-
+[7]
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -893,9 +897,14 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [9]
-Overfull \hbox (28.49548pt too wide) in paragraph at lines 371--372
+Overfull \hbox (28.49548pt too wide) in paragraph at lines 363--364
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][
 ][][][][][][][][][][][] 
+ []
+
+
+Overfull \hbox (65.24506pt too wide) in paragraph at lines 410--411
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
@@ -905,10 +914,6 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [10]
-Overfull \hbox (65.24506pt too wide) in paragraph at lines 418--419
-[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
- []
-
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -922,29 +927,26 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[12] <stacks.png, id=445, 523.20468pt x 266.49562pt>
+[12] <stacks.png, id=425, 523.20468pt x 266.49562pt>
 File: stacks.png Graphic file (type png)
  <use stacks.png>
-Package pdftex.def Info: stacks.png used on input line 514.
+Package pdftex.def Info: stacks.png used on input line 506.
 (pdftex.def)             Requested size: 284.52756pt x 144.92615pt.
 
 
-LaTeX Warning: `h' float specifier changed to `ht'.
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
 
+[13 <./stacks.png>]
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[13]
-
-Package Fancyhdr Warning: \headheight is too small (12.0pt): 
- Make it at least 13.59999pt.
- We now make it that large for the rest of the document.
- This may cause the page layout to be inconsistent, however.
-
-[14 <./stacks.png>]
+[14]
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -959,7 +961,7 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [16]
-Overfull \hbox (0.19447pt too wide) in paragraph at lines 667--670
+Overfull \hbox (0.19447pt too wide) in paragraph at lines 659--662
 \OT1/cmr/m/n/10.95 the fol-low-ing recipe for tea and but-tered toast, for con-
 cise-ness I have omit- 
  []
@@ -978,12 +980,12 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [18]
-Overfull \hbox (7.49573pt too wide) in paragraph at lines 764--765
+Overfull \hbox (7.49573pt too wide) in paragraph at lines 756--757
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
  []
 
 
-Overfull \hbox (7.49573pt too wide) in paragraph at lines 765--766
+Overfull \hbox (7.49573pt too wide) in paragraph at lines 757--758
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][
 ] 
  []
@@ -995,13 +997,13 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [19]
-Overfull \hbox (2.62784pt too wide) in paragraph at lines 802--806
+Overfull \hbox (2.62784pt too wide) in paragraph at lines 794--798
 []\OT1/cmr/m/n/10.95 One of the great things about Haskell is that it al-lows u
 s to keep the recipe 
  []
 
 
-Overfull \hbox (11.05316pt too wide) in paragraph at lines 809--811
+Overfull \hbox (11.05316pt too wide) in paragraph at lines 801--803
 []\OT1/cmr/m/n/10.95 If we run the above func-tions on our cup of tea then we s
 ee that our schedul- 
  []
@@ -1013,6 +1015,20 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [20]
+Overfull \hbox (23.24554pt too wide) in paragraph at lines 848--849
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
+ []
+
+
+Overfull \hbox (10.38266pt too wide) in paragraph at lines 857--862
+[]\OT1/cmr/m/n/10.95 The func-tion \OT1/cmtt/m/n/10.95 evalPropsQ \OT1/cmr/m/n/
+10.95 takes a list of prop-er-ties, that have a \OT1/cmtt/m/n/10.95 Measurement
+ 
+ []
+
+LaTeX Font Info:    Font shape `OT1/cmtt/m/ui' in size <10> not available
+(Font)              Font shape `OT1/cmtt/m/it' tried instead on input line 882.
+
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -1034,39 +1050,76 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [23]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 909.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 909.
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[24]
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[25]
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[26]
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[27]
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[28]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1135.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1135.
  (./dissertation.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 909.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 909.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1135.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1135.
+
 Package rerunfilecheck Info: File `dissertation.out' has not changed.
-(rerunfilecheck)             Checksum: 4FEDB607DF25E08A33BF8C2A2936322B;2971.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 909.
+(rerunfilecheck)             Checksum: 151763B4F19B580A29D736C200C8CACB;2779.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1135.
  ) 
 Here is how much of TeX's memory you used:
- 9833 strings out of 493029
- 138143 string characters out of 6136234
- 260297 words of memory out of 5000000
- 12950 multiletter control sequences out of 15000+600000
- 15161 words of font info for 61 fonts, out of 8000000 for 9000
+ 9907 strings out of 493029
+ 139217 string characters out of 6136234
+ 253297 words of memory out of 5000000
+ 12951 multiletter control sequences out of 15000+600000
+ 15329 words of font info for 62 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 33i,11n,43p,318b,1844s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 33i,11n,43p,318b,1845s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/te
-xmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dis
-t/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cms
-y10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on dissertation.pdf (23 pages, 251681 bytes).
+ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmitt10.pfb></usr/share/texlive/t
+exmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-d
+ist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type
+1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfo
+nts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.p
+fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></u
+sr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+Output written on dissertation.pdf (28 pages, 267628 bytes).
 PDF statistics:
- 720 PDF objects out of 1000 (max. 8388607)
- 671 compressed objects within 7 object streams
- 271 named destinations out of 1000 (max. 500000)
- 379 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 812 PDF objects out of 1000 (max. 8388607)
+ 756 compressed objects within 8 object streams
+ 343 named destinations out of 1000 (max. 500000)
+ 355 words of extra memory for PDF output out of 10000 (max. 10000000)
 
