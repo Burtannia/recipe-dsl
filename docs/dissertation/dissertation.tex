@@ -206,12 +206,87 @@ as it can be represented as some construction of the deeply
 embedded actions.
 
 \section{Combinators}
-\subsection{Initial Definitions}
+
+In this section I shall use various example recipes to demonstrate
+the different combinators.
+
+\subsection{Implementing a Cup of Tea}
+
+We first need to describe what a cup of tea is. It's boiling water
+mixed with a teabag for a certain amount of time, possible with milk added.
+This leads us into the following definition.
+
+\begin{lstlisting}
+    water, teabag, milk :: Recipe
+    water = ingredient "water"
+    teabag = ingredient "teabag"
+    milk = ingredient "milk"
+
+    cupOfTea :: Recipe
+    cupOfTea = combine "mix" milk ((combine "place in" teabag (heat 100 water)) >>> wait 5)
+\end{lstlisting}
+
+Here we have introduced several things. Firstly our \texttt{heat} combinator which heats an
+ingredient to a temperature. We then have \texttt{combine} which takes a String as a description
+of how to combine, followed by the two recipes it combines. \texttt{wait} and \texttt{ingredient} are
+relatively self-explanatory which leaves \texttt{>>>}. This is our sequencing combinator
+where \texttt{a >>> b} means "do a then do b". The types for these are as follows.
+
+\begin{lstlisting}
+    ingredient :: String -> Recipe
+    heat :: Int -> Recipe -> Recipe
+    wait :: Int -> Recipe
+    combine :: String -> Recipe -> Recipe -> Recipe
+    (>>>) :: Recipe -> Recipe -> Recipe
+\end{lstlisting}
+
+In order to keep the recipes as simple as possible when exploring ways to manipulate them
+we will not concern ourselves with precise measurements or exactly how something is chopping
+up. We will presume a sort of "cooking show" style where ingredients are already prepared.
+We will in fact add a measurement combinator in Section 5.3 when discussing the price of a recipe.
+However, there wasn't a part of the project in which it was obvious that a "chopping" combinator
+would make much difference to our interpretations and as such it was omitted. It could of course
+be added if this DSL were to be used in practice.
+
 \subsection{Sequencing Problem}
+
+As we continued to explore the semantics of the combinators defined above, we began to
+notice an issue with the sequencing combinator. When considering the topological sorts
+of a recipe as in Section 3, we make use of the sequencing provided by the tree-like structure
+of recipes. For example \texttt{heat 100 r} implicitly requires that \texttt{r} be performed
+before it can be heated. In the case of sequence, things get a little less clear. Consider
+the recipe \texttt{r1 >>> r2}, that is "r1 then r2". There is no need for \texttt{r1} to be
+performed first because \texttt{r2} doesn't make use of it. Let's say we then apply \texttt{heat}
+to this sequence, are we heating \texttt{r1}, \texttt{r2} or both? The reason for this problem
+is that we have added meaning that doesn't exist, we have forced sequencing in a scenario
+in which it does not naturally occur. Paul Hudak writes in his paper \cite{hudak} that a
+"a DSL should capture the semantics of the domain and nothing more".
+
 \subsection{Conditionals}
+
+% combine used to be used on wait to mean doFor
+% contracts-pp -> combinators have 1 job
+
+% heat, heatAt, wait etc. extracted into conditionals
+
 \subsection{Moving to a Tree of Actions}
+
+% easy pretty printing
+% easy labelling
+
 \subsection{Final Definitions}
+
+% cup of tea again
+
 \subsection{Custom Combinators}
+
+% heatTo, heatFor, heatAtFor etc.
+
+% marinate
+
+% boilInWater
+
+% more complex recipe
 
 \section{Deriving Equality}
 
@@ -1017,7 +1092,8 @@ to perfect and further refine the combinators. There is currently no way to
 "remove" a recipe from another recipe for example removing the teabag from our cup of tea.
 An unsafe version of this may just presume that way was added can in fact be removed
 and that it was even added in the first place however, creating a sensible remove
-combinator would no doubt require more thought.
+combinator would no doubt require more thought. There is also a lack of any combinator
+which describes various types of chopping.
 
 \medbreak
 
