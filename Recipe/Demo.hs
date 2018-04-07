@@ -25,13 +25,15 @@ teabag = ingredient "teabag"
 milk = ingredient "milk"
 
 cupOfTea :: Recipe
-cupOfTea = optional "milk" $ combine "mix" milk
+cupOfTea = optional "milk"
+    $ combine "mix" milk
     $ waitFor (minutes 5)
     $ combine "mix" teabag
     $ heatTo 100 water
 
 cupOfTea' :: Recipe
-cupOfTea' = optional "milk" $ combine "mix" 
+cupOfTea' = optional "milk"
+    $ combine "mix" 
     ( waitFor (minutes 5)
     $ combine "mix" teabag
     $ heatTo 100 water ) milk
@@ -60,6 +62,51 @@ teaWithToast = combine "place next to"
     butteredToast
     cupOfTea
 
+-- Chicken Jalfrezi
+
+chicken, redPepper, onion, garlic, tinnedTomatoes, cherryTomatoes :: Recipe
+chicken = ingredient "chicken"
+redPepper = ingredient "red pepper"
+onion = ingredient "onion"
+garlic = ingredient "garlic"
+tinnedTomatoes = ingredient "tinned tomatoes"
+cherryTomatoes = ingredient "cherry tomatoes"
+
+cumin, coriander, turmeric, garamMasala, rice :: Recipe
+cumin = ingredient "cumin"
+coriander = ingredient "coriander"
+turmeric = ingredient "turmeric"
+garamMasala = ingredient "garam masala"
+rice = ingredient "rice"
+
+spiceMix :: Recipe
+spiceMix = multiCombine "mix" cumin [coriander, turmeric]
+
+spicedChicken :: Recipe
+spicedChicken = marinate chicken spiceMix (minutes 20)
+
+cookedChicken :: Recipe
+cookedChicken = heatForM 10
+    $ combine "place in" spicedChicken
+    $ preheatOil
+
+jalfreziSauce :: Recipe
+jalfreziSauce = combine "mix" tinnedTomatoes
+    $ heatForM 10
+    $ combine "place in" garlic
+    $ combine "place in" onion
+    $ preheatOil
+
+chickenJalfrezi :: Recipe
+chickenJalfrezi = heatForM 10
+    $ multiCombine "mix" cherryTomatoes
+        [garamMasala, cookedChicken, jalfreziSauce]
+
+jalfreziWithRice :: Recipe
+jalfreziWithRice = combine "on top"
+    chickenJalfrezi
+    $ boilInWaterForM 10 rice
+
 -------------------------------------
 -- CUSTOM COMBINATORS
 -------------------------------------
@@ -71,14 +118,16 @@ multiCombine :: String -> Recipe -> [Recipe] -> Recipe
 multiCombine s r [] = r
 multiCombine s r rs = foldr (combine s) r rs
 
-marinate :: Recipe -> [Recipe] -> Time -> Recipe
-marinate r [] t     = waitFor t r
-marinate r [i] t    = waitFor t (combine "place in" r i)
-marinate r (i:is) t = waitFor t (combine "place in" r r')
-    where r' = multiCombine "mix" i is
+marinate :: Recipe -> Recipe -> Time -> Recipe
+marinate r m t = waitFor t
+    $ heatTo 4
+    $ combine "cover in" r m
 
 heatFor :: Time -> Recipe -> Recipe
 heatFor t = forTime t . heat
+
+heatForM :: Time -> Recipe -> Recipe
+heatForM t = forTime (minutes t) . heat
 
 heatTo :: Int -> Recipe -> Recipe
 heatTo t = toTemp t . heat
@@ -87,7 +136,7 @@ heatAtFor :: Int -> Time -> Recipe -> Recipe
 heatAtFor temp time = forTime time . heatAt temp
 
 heatAtForM :: Int -> Time -> Recipe -> Recipe
-heatAtForM temp (Time i) = heatAtFor temp (minutes i)
+heatAtForM temp time = heatAtFor temp (minutes time)
 
 heatAtTo :: Int -> Int -> Recipe -> Recipe
 heatAtTo atTmp toTmp = toTemp toTmp . heatAt atTmp
@@ -95,12 +144,11 @@ heatAtTo atTmp toTmp = toTemp toTmp . heatAt atTmp
 oliveOil :: Recipe
 oliveOil = ingredient "olive oil"
 
-preheatOil :: Int -> Int -> Recipe
-preheatOil = \atTmp toTmp ->
-    heatAtTo atTmp toTmp oliveOil
+preheatOil :: Recipe
+preheatOil = heatForM 2 oliveOil
 
 boilInWaterForM :: Time -> Recipe -> Recipe
-boilInWaterForM t r = forTime (t * 60) 
+boilInWaterForM t r = forTime (minutes t) 
     $ combine "place in" r
     $ heatTo 100 water
 
@@ -197,6 +245,27 @@ chef2 = let chefConstr r@(Node a ts) = case a of
                 Transaction a   -> chefConstr $ popT r
                 _               -> Nothing
          in Station "chef2" chefConstr []
+
+hob :: Station
+hob =
+    let hobConstr r@(Node a ts) = case a of
+            Heat -> Just [Input, Output]
+            Wait -> Just [Input, DoNothing, Output]
+            Conditional _ c -> (hobConstr $ popCond r)
+                                >>= return . addEvalCond c
+            Transaction a -> hobConstr $ popT r
+            _ -> Nothing
+     in Station "hob" hobConstr []
+
+fridge :: Station
+fridge =
+    let fridgeConstr r@(Node a ts) = case a of
+            Conditional Heat (CondTemp 4) -> Just [Input, Output]
+            Transaction a -> fridgeConstr $ popT r
+            _ -> Nothing
+     in Station "fridge" fridgeConstr []
+
+
 
 -------------------------------------
 -- TEST PROPERTIES

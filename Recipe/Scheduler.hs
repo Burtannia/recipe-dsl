@@ -157,11 +157,12 @@ chooseStack fullTree unscheduleds l env rMap sch =
 
         ds = demands unscheduleds env rMap -- :: [(StName, Time)]
         ds' = filter (\(st,_) -> st `elem` Map.keys validSch) ds
-        is = idleTime l (Map.toList validSch) (Map.elems sch) fullTree rMap -- :: [(StName, Time)]
-        dMinusIs = map (\(st,dur) ->
-            (st, dur - (fromJust $ lookup st is))) ds' -- need to correct negatives to 0
 
-        sts = sortBy (\(_,t) (_,t') -> compare t t') dMinusIs
+        is = idleTime l (Map.toList validSch) (Map.elems sch) fullTree rMap -- :: [(StName, Time)]
+        dPlusIs = map (\(st,demand) ->
+            (st, demand + (fromJust $ lookup st is))) ds'
+            
+        sts = sortBy (\(_,t) (_,t') -> compare t t') dPlusIs
         (st,min) = head sts
         mins = filter (\(st,t) -> t == min) sts
         minNames = map fst mins

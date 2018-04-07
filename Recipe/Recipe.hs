@@ -123,11 +123,11 @@ toTemp t = addCondition (CondTemp t)
 forTime :: Time -> Recipe -> Recipe
 forTime t = addCondition (CondTime t)
 
-hours :: Int -> Time
-hours = Time . (*) 3600
+hours :: Time -> Time
+hours = (*) 3600
 
-minutes :: Int -> Time
-minutes = Time . (*) 60
+minutes :: Time -> Time
+minutes = (*) 60
 
 -------------------------------------
 -- UTILITY FUNCTIONS

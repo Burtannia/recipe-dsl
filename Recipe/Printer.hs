@@ -15,12 +15,19 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Control.Monad.IO.Class (liftIO)
-import Diagrams.Prelude hiding (Time, duration)
-import Diagrams.Backend.SVG.CmdLine
+import Data.Char (toUpper)
 
 -------------------------------------
 -- Steps
 -------------------------------------
+
+extractLabel :: [Tree (Label, Action)] -> [String]
+extractLabel [t] = [extractLabel' t]
+extractLabel ts = map extractLabel' ts
+
+extractLabel' :: Tree (Label, Action) -> String
+extractLabel' (Node (_, GetIngredient s) _) = s
+extractLabel' (Node (l, _) _) = show l
 
 type Step = (Label, String)
 
@@ -32,25 +39,24 @@ steps = steps' . labelRecipeA
                 ts' = map steps' ts
                 s = toString a
                 toString (GetIngredient s) = "Get " ++ s
-                toString (Heat) = "Heat (" ++ show l' ++ ")"
-                    where l' = head $ map extractLabel ts
-                toString (HeatAt t) = "Heat (" ++ show l' ++ ") at " ++ show t
-                    where l' = head $ map extractLabel ts
+                toString (Heat) = "Heat (" ++ l' ++ ")"
+                    where l' = head $ extractLabel ts
+                toString (HeatAt t) = "Heat (" ++ l' ++ ") at " ++ show t
+                    where l' = head $ extractLabel ts
                 toString Wait = "Wait"
-                toString (Combine s) = s ++ " (" ++ show l' ++ ") and ("
-                    ++ show l'' ++ ")"
+                toString (Combine (c:s)) = toUpper c : s ++ " (" ++ l' ++ ") and ("
+                    ++ l'' ++ ")"
                     where
-                        l' = (map extractLabel ts) !! 0
-                        l'' = (map extractLabel ts) !! 1
+                        l' = extractLabel ts !! 0
+                        l'' = extractLabel ts !! 1
                 toString (Conditional a c) = toString a ++ condToString c
                     where
                         condToString (CondOpt _) = " (optional)"
                         condToString (CondTemp t) = " until temperature " ++ show t
                         condToString (CondTime t) = " for " ++ show t
                 toString (Transaction a) = "Immediately " ++ toString a
-                toString (Measure m) = "Measure " ++ show m ++ " of " ++ show l'
-                    where l' = head $ map extractLabel ts
-                extractLabel (Node (l,_) _) = l
+                toString (Measure m) = "Measure " ++ show m ++ " of " ++ l'
+                    where l' = head $ extractLabel ts
 
 ppSteps :: Recipe -> IO ()
 ppSteps = ppSteps' . steps
@@ -68,34 +74,6 @@ ppTree = putStrLn . drawVerticalTree . fmap show
 
 ppIngredients :: Recipe -> IO ()
 ppIngredients = mapM_ putStrLn . ingredients
-
-drawDiag :: Recipe -> Diagram B
-drawDiag r =
-    let stepTree = steps r
-        lTree = fmap fst stepTree
-        treeDiag = drawDiag' lTree
-        instructions = concat $ flatten $ fmap (\(l,s) ->
-            show l ++ ") " ++ s ++ "\n") stepTree
-        stepsDiag = text instructions # fontSizeL 0.5
-            <> roundedRect 10 20 0.3 # fc white 
-     in treeDiag ||| stepsDiag
-    where
-        drawDiag' (Node l []) = drawAction l
-        drawDiag' (Node l ts) =
-            let na = drawAction l
-                subTrees = map drawDiag' ts
-                nts = foldr1 (|||) subTrees
-                diag = na === nts # center
-             in connectNodes l ts diag
-
-connectNodes :: Label -> [Tree Label] -> Diagram B -> Diagram B
-connectNodes _ [] d = d
-connectNodes l (Node l' _ : ts) d =
-    connectOutside l l' (connectNodes l ts d)
-
-drawAction :: Label -> Diagram B
-drawAction l = text (show l) # fontSizeL 0.7
-    <> circle 1 # pad 2 # fc white # named l
 
 -------------------------------------
 -- Properties

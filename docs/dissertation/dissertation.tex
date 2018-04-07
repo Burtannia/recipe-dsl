@@ -33,7 +33,7 @@
             {\\\\}{{\char`\\\char`\\}}1
             {->}{{$\rightarrow$}}2 {>=}{{$\geq$}}2 {<-}{{$\leftarrow$}}2
             {<=}{{$\leq$}}2 {=>}{{$\Rightarrow$}}2 
-            {\ .}{{$\circ$}}2 {\ .\ }{{$\circ$}}2
+            {\ .\ }{{$\circ$}}2
             {>>}{{>>}}2 {>>=}{{>>=}}2
             {|}{{$\mid$}}1 {\$}{\$}1         
 }
@@ -86,7 +86,6 @@ Consider the following recipe to make a cup of tea:
     - Boil some water
     - Pour over a teabag
     - Wait for 5 minutes
-    - Remove the teabag
     - Add milk (optional)
 \end{lstlisting}
 \end{tt}
@@ -208,7 +207,12 @@ embedded actions.
 \section{Combinators}
 
 In this section I shall use various example recipes to demonstrate
-the different combinators.
+the different combinators. We started off by boiling down several
+recipes, if you'll forgive the pun, into their components and
+then modelling them as combinators. As the project progressed
+we added, removed and modified the combinators to address
+various issues we encountered. This is similar to the approach
+used to write the finanical contracts DSL \cite{contracts}.
 
 \subsection{Implementing a Cup of Tea}
 
@@ -223,7 +227,9 @@ This leads us into the following definition.
     milk = ingredient "milk"
 
     cupOfTea :: Recipe
-    cupOfTea = combine "mix" milk ((combine "place in" teabag (heat 100 water)) >>> wait 5)
+    cupOfTea = combine "mix" milk
+        ((combine "place in" teabag
+            (heat 100 water)) >>> wait 5)
 \end{lstlisting}
 
 Here we have introduced several things. Firstly our \texttt{heat} combinator which heats an
@@ -260,33 +266,308 @@ performed first because \texttt{r2} doesn't make use of it. Let's say we then ap
 to this sequence, are we heating \texttt{r1}, \texttt{r2} or both? The reason for this problem
 is that we have added meaning that doesn't exist, we have forced sequencing in a scenario
 in which it does not naturally occur. Paul Hudak writes in his paper \cite{hudak} that a
-"a DSL should capture the semantics of the domain and nothing more".
+"a DSL should capture the semantics of the domain and nothing more". This was the issue
+that lead to the first major rework of our combinators and a significant breakthrough
+in the form of conditionals.
 
 \subsection{Conditionals}
 
-% combine used to be used on wait to mean doFor
-% contracts-pp -> combinators have 1 job
+In recipes, one pattern that occures a lot is the notion of performing an action until
+a certain condition is met. For example in our cup of tea we need to boil water which is
+the heating of water until the water reaches 100 degrees. We capture this by adding a new
+combinator as follows. Note that we also add some extra custom combinators to provide
+a more convenient means of adding each type of condition.
 
-% heat, heatAt, wait etc. extracted into conditionals
+\begin{lstlisting}
+    addCondition :: Condition -> Recipe -> Recipe
 
-\subsection{Moving to a Tree of Actions}
+    data Condition = CondTime Time | CondTemp Int | CondOpt String
+        | Condition `AND` Condition | Condition `OR` Condition
 
-% easy pretty printing
-% easy labelling
+    optional :: String -> Recipe -> Recipe
+    optional s = addCondition (CondOpt s)
+
+    toTemp :: Int -> Recipe -> Recipe
+    toTemp t = addCondition (CondTemp t)
+
+    forTime :: Time -> Recipe -> Recipe
+    forTime t = addCondition (CondTime t)
+
+    (.&&) :: Condition -> Condition -> Condition
+    (.&&) = AND
+
+    (.||) :: Condition -> Condition -> Condition
+    (.||) = OR
+\end{lstlisting}
+
+This is incredibly powerful because it allows the simplification of a lot of our other
+combinators. One particular issue that conditionals helped with was determining the
+difference between "heat", "heatAt", "heatTo", "heatFor" and their various combinations.
+Initially we used \texttt{combine} with \texttt{wait} to mean "do for" however, this
+feels like a bit of a hack. Combinators should only have one purpose in order to keep
+their semantics concise but here we have given \texttt{combine} an extra use. It not
+only combines two recipes together in the cooking sense but it also adds functionality
+to other combinators.
+
+\medbreak
+
+Extracting the end temperature and time from our heat and wait combinators we get the
+following. Note that the temperature we are heating "at" isn't extracted because
+conditionals capture termination coniditions not components of the action itself.
+
+\begin{lstlisting}
+    heatAt :: Int -> Recipe -> Recipe
+    wait :: Recipe -> Recipe
+\end{lstlisting}
+
+But what about devices that don't have temperature settings such as kettles? To handle
+this we add a generic "heat" combinator as follows.
+
+\begin{lstlisting}
+    heat :: Recipe -> Recipe
+\end{lstlisting}
+
+Now we can define all our other variations of "heat" using these combinators.
+
+\begin{lstlisting}
+    heatFor :: Time -> Recipe -> Recipe
+    heatFor t = forTime t . heat
+
+    heatTo :: Int -> Recipe -> Recipe
+    heatTo t = toTemp t . heat
+
+    heatAtFor :: Int -> Time -> Recipe -> Recipe
+    heatAtFor temp time = forTime time . heatAt temp
+
+    waitFor :: Time -> Recipe -> Recipe
+    waitFor t r = forTime t (wait r)
+\end{lstlisting}
+
+We're not adding new fundamental combinators here, we're just building on a very small
+set of core features. This structure makes the language highly extensible. Users could
+create their own libraries of custom combinators and have them work straight away with
+the other functions mentioned throughout this report.
 
 \subsection{Final Definitions}
 
-% cup of tea again
+This leads us into the final definitions of our fundamental combinators.
+
+\begin{lstlisting}
+    ingredient :: String -> Recipe
+
+    heat :: Recipe -> Recipe
+
+    heatAt :: Int -> Recipe -> Recipe
+
+    wait :: Recipe -> Recipe
+
+    combine :: String -> Recipe -> Recipe -> Recipe
+
+    addCondition :: Condition -> Recipe -> Recipe
+
+    transaction :: Recipe -> Recipe
+
+    measure :: Measurement -> Recipe -> Recipe
+\end{lstlisting}
+
+The first six combinators have already been described. The \texttt{transaction} combinator
+shall be formally introduced in Section 4.5 and \texttt{measure} in Section 5.3 so we shall
+ignore these for now. Using these combinators we can now define our cup of tea as follows.
+
+\begin{lstlisting}
+    cupOfTea :: Recipe
+    cupOfTea = optional "milk"
+        $ combine "mix" milk
+        $ waitFor (minutes 5)
+        $ combine "mix" teabag
+        $ heatTo 100 water
+\end{lstlisting}
+
+As you can see, our custom combinators like \texttt{heatTo} and \texttt{optional},
+as mentioned above, allow us to make the definition very concise. The only function
+we haven't introduced is \texttt{minutes} which simply constructs a \texttt{Time} with
+the given number of minutes. Our \texttt{Time} type holds seconds so \texttt{minutes}
+abstracts away the multiplication by 60. The \texttt{(\$)} operator is Haskell's
+application operator which "has low, right-associative binding precedence"\cite{haskell-docs} and
+as such can allow brackets to be omitted making our definition tidier. What you may
+also notice is that our definition looks very much like our original set of steps
+on at the start of the report but written in reverse. This hopefully means that
+writing recipes in the DSL would be relatively intuitive even for someone who
+isn't particularly familiar with Haskell or programming in general.
+
+\subsection{Tree of Actions}
+
+Shortly into the second half of the project, the decision was made to change the underlying
+implementation of recipes from their own data type that resembled a tree, to an actual tree
+of actions. Prior to this the recipe type was as follows.
+
+\begin{lstlisting}
+    data Recipe = Ingredient String
+                | HeatAt Int Recipe
+                | Heat Recipe
+                ...
+                | Conditional Condition Recipe
+\end{lstlisting}
+
+Eventually, after adding conditionals and later, transactions (Section 4.5) we realised that
+we'd got another problem with sequencing. Conditionals are intended to wrap an action with
+a condition however, as you can see above, the way we do that with this representation is the
+same way we provide sequencing. \texttt{Heat} also wraps a recipe, when visualised as a tree
+this places \texttt{Heat} above that recipe meaning "perform that recipe then heat it afterwards".
+The problem is that this results in the intuitive interpretation of \texttt{Conditional c r}
+being "perform r then evaluate the condition afterwards". This obviously makes no sense as the
+condition is what decides the completion of "r" in the first place.
+
+\medbreak
+
+A further issue with out current representation is that labelling is a little inconvenient.
+We could create a labelled recipe by putting a label and a recipe in a tuple as follows.
+
+\begin{lstlisting}
+    type LRecipe = (Label, Recipe)
+\end{lstlisting}
+
+This might seem like a good solution however, we would need to create a new "labelled"
+version of all of our combinators that takes an \texttt{LRecipe} instead of a \texttt{Recipe}.
+
+\medbreak
+
+The Haskell package \texttt{Data.Tree} provides the following data structure.
+
+\begin{lstlisting}
+    data Tree a = Node { rootLabel :: a
+                       , subForest :: [Tree a] }
+\end{lstlisting}
+
+We can use this to create our recipe type as follows.
+
+\begin{lstlisting}
+    type Recipe = Tree Action
+
+    data Action = GetIngredient String
+                | Heat
+                | HeatAt Int
+                ...
+\end{lstlisting}
+
+With this definition \texttt{Conditional}s and \texttt{Transaction}s really do wrap an
+\texttt{Action} and will therefore appear in the same \texttt{Node} thus removing our
+problem with implied sequencing. It's also trivial to label our tree as we simply
+change the type to \texttt{Tree (Label, Recipe)}. Now that we've got a way of
+labelling recipes we can define functions to print a recipe as a sequence of steps.
+
+\begin{lstlisting}
+    type Step = (Label, String)
+
+    steps :: Recipe -> Tree Step
+
+    ppSteps :: Recipe -> IO ()
+\end{lstlisting}
+
+Running \texttt{ppSteps} on our cup of tea recipe calls \texttt{steps} to convert
+the actions at each node of the tree into a step and then prints them out as follows.
+
+\begin{lstlisting}
+    1) Get milk
+    2) Get teabag
+    3) Get water
+    4) Heat (water) until temperature 100
+    5) Mix (teabag) and (4)
+    6) Wait for 0h 5m 0s
+    7) Mix (milk) and (6) (optional)
+\end{lstlisting}
+
+We refer to previous steps via their label
+
+Finally \texttt{Data.Tree} provides a pretty printing function that allows us
+to output an ASCII drawing of the tree. The tree for our cup of tea recipe is
+as follows.
+
+\begin{figure}[h]
+\includegraphics[width=\textwidth, keepaspectratio]{cupOfTea.png}
+\centering
+\caption{Alternate cup of tea recipe printed as a tree.}
+\end{figure}
+
+One could of course use any other graphics printing package available in Haskell.
 
 \subsection{Custom Combinators}
 
-% heatTo, heatFor, heatAtFor etc.
+As mentioned previously, the combinators are highly extensible. We will now explore this
+further while constructing a more complex recipe, chicken jalfrezi with rice.
+For conciseness I shall omit the ingredient definitions. First of all, let's
+create a marinate combinator for our chicken. This can also make use of the
+fact that we may frequently want to combine many things at once.
 
-% marinate
+\begin{lstlisting}
+    multiCombine :: String -> Recipe -> [Recipe] -> Recipe
+    multiCombine s r [] = r
+    multiCombine s r rs = foldr (combine s) r rs
 
-% boilInWater
+    marinate :: Recipe -> Recipe -> Time -> Recipe
+    marinate r m t = waitFor t
+        $ heatTo 4
+        $ combine "cover in" r m
+\end{lstlisting}
 
-% more complex recipe
+The \texttt{heatTo 4} step implies that recipe must be left to marinate in the fridge,
+or somewhere else that can keep it cool. Secondly we can create a "preheat oil" combinator
+for use when frying our onions and chicken.
+
+\begin{lstlisting}
+    preheatOil :: Recipe
+    preheatOil = heatForM 2 oliveOil
+\end{lstlisting}
+
+Note that \texttt{heatForM} is just a variation of \texttt{heatFor} that takes time as
+minutes rather than seconds for convenience. We can now start to create all the
+components of our chicken jalfrezi.
+
+\begin{lstlisting}
+    spiceMix :: Recipe
+    spiceMix = multiCombine "mix" cumin
+        [coriander, turmeric]
+
+    spicedChicken :: Recipe
+    spicedChicken = marinate chicken
+        spiceMix (minutes 10)
+
+    cookedChicken :: Recipe
+    cookedChicken = heatForM 15
+        $ combine "place in" spicedChicken
+        $ preheatOil
+
+    jalfreziSauce :: Recipe
+    jalfreziSauce = combine "mix" tinnedTomatoes
+        $ heatForM 10
+        $ combine "place in" garlic
+        $ combine "place in" onion
+        $ preheatOil
+\end{lstlisting}
+
+Moving onto the rice, we can abstract the notion of boiling "something" in water as we may
+want to reuse this in the future, for example when cooking vegetables.
+
+\begin{lstlisting}
+    boilInWaterForM :: Time -> Recipe -> Recipe
+    boilInWaterForM t r = forTime (minutes t) 
+        $ combine "place in" r
+        $ heatTo 100 water
+\end{lstlisting}
+
+Now we can finish by combining our chicken and sauce with a few more ingredients,
+heating it for a few more minutes and then placing it on top of some boiled rice.
+
+\begin{lstlisting}
+    chickenJalfrezi :: Recipe
+    chickenJalfrezi = heatForM 10
+        $ multiCombine "mix" cherryTomatoes
+            [garamMasala, cookedChicken, jalfreziSauce]
+
+    jalfreziWithRice :: Recipe
+    jalfreziWithRice = combine "on top" chickenJalfrezi
+        $ boilInWaterForM 10 rice
+\end{lstlisting}
 
 \section{Deriving Equality}
 
@@ -340,7 +621,8 @@ consider this alternate definition for our cup of tea recipe.
 \end{lstlisting}
 
 In this version we combine our tea with milk rather than combing milk with our tea.
-Printing the trees for this recipe gives a different result from our original recipe.
+Printing the tree for this recipe gives a different result from our original recipe.
+But fundamentally we know it to be a variation of the same recipe.
 
 \begin{figure}[h]
 \includegraphics[width=\textwidth, keepaspectratio]{cupOfTea2.png}
@@ -351,7 +633,7 @@ Printing the trees for this recipe gives a different result from our original re
 In Haskell one must make their type an instance of the \texttt{Eq} typeclass in
 order to make use of the \texttt{==} operator. In order to run QuickSpec on recipes
 as discussed in a later section, we also need an instance of \texttt{Ord}.
-This means implementing a function \texttt{compare}, which when given two recipes,
+This means implementing a function \texttt{compare}, which, when given two recipes,
 returns an ordering for example "less than" (\texttt{LT}).
 
 \begin{lstlisting}
@@ -645,7 +927,10 @@ The second heuristic is "least idle time". One's first thought might be to add t
 stack however, in the event that the action is waiting on a long dependency, it could cause lots of idle
 time to be added to an otherwise empty stack. Therefore we choose the stack which allows the action to be
 started closest to the end time of its dependencies which may mean placing it on a fuller stack rather than
-an emptier one.
+an emptier one. We also might consider that choosing an a stack with "high demand" could be worth it if
+it avoids a significant amount of idle time. To model this we implement these two heuristics as one by
+simply adding the idle time and demand of a station together. We can then choose or choose from the
+station(s) with the lowest idle time and demand.
 
 \medbreak
 
@@ -655,7 +940,7 @@ above, then placing an action on an emptier stack should result in a shorter ove
 
 \subsection{Implementation}
 
-For the sake of space, I shalln't go into the details of the code here as there is quite a lot of it
+In the interest of space, I shalln't go into the details of the code here as there is quite a lot of it
 However, below is some pseudo-code to demonstrate the general flow of the scheduling functions.
 
 \begin{lstlisting}
@@ -727,7 +1012,10 @@ kettle can start boiling it as soon as possible. After 10 seconds the kettle can
 boiling the water, meanwhile the chef acquires the other ingredients before becoming idle
 until the kettle has finished. Once the water is boiled the chef adds the teabag before
 waiting for 5 minutes. After that they optionally add milk. Meanwhile our uneeded toaster
-does nothing.
+does nothing. While this scheduling function seems effective, it is also rather inefficient.
+When running it on larger recipes like our chicken jalfrezi, which contains over 30 steps,
+it runs for a long time before running out of memory. As mentioned before, the scheduling
+function isn't the focus of the project and as such not a lot of time was spent on it.
 
 \subsection{Transactions}
 
@@ -780,7 +1068,10 @@ Folding is the process of taking some whole made up of parts and creating a sing
 value from it. For example folding texttt{(+)} over a list of numbers \texttt{[1,2,3]}
 returns 6. We can use folding to create denotational semantics for our recipes \cite{hutton}.
 Denotational semantics involves terms being evaluated via a mapping to a value in a certain
-semantic domain.
+semantic domain. There are multiple semantic domains of interest in recipes hence the choice
+of a deep embedding (Section 1.3). Abstracting the traversal of the recipe from the
+semantic mapping functions, into a fold function results in conciser definitions and
+less repetition.
 
 \begin{lstlisting}
     foldRecipe :: Monoid a => (Action -> a) -> Recipe -> a
@@ -822,10 +1113,12 @@ time of a recipe using \texttt{foldRecipe} we first need a function of type \tex
     timeAction (Measure m) = 10
 \end{lstlisting}
 
-These times are just intended to be estimates, a more complex function might take into account which
-station each action is scheduled on. The only other point of note here is \texttt{foldCond}.
-This function allows us to abstract the details of "and" and "or" conditions to a more general
-case as follows.
+These times are just intended to be estimates, note that most of the "time" is contained within
+conditionals. This is intentional as most of the duration of a recipe is made up of performing an
+action for a given time rather than actions that have a set time. A more complex function might
+also take into account which station each action is scheduled on. The only other point of note
+here is \texttt{foldCond}. This function allows us to abstract the details of "and" and "or"
+conditions to a more general case as follows.
 
 \begin{lstlisting}
     foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
@@ -997,7 +1290,7 @@ If the size of the recipe is greater than 1 then we can either generate a unary 
 or a binary recipe. This refers to how many children the recipe should have. The only
 valid binary recipe we have is combine, the rest are all unary as they only apply to
 one sub-recipe. Instances of \texttt{Arbitrary} are also required for all the other types
-needed to make recipes such as \texttt{Time} and \texttt{Measurement}. For the sake
+needed to make recipes such as \texttt{Time} and \texttt{Measurement}. In the interest
 of space I shalln't go into them here, they are relatively straightforward compared to
 the above.
 
@@ -1068,7 +1361,7 @@ While DSLs are a widely explored field, nothing along the lines of a recipe DSL
 currently exists. My contributions to filling this gap are the following:
 
 \begin{itemize}
-    \item A small set of combinators that can be used to describe a wide variety of recipes.
+    \item A small set of extensible combinators that can be used to describe a wide variety of recipes.
 
     \item Interpretations of recipes specified using these combinators within various semantic domains.
 
@@ -1092,8 +1385,16 @@ to perfect and further refine the combinators. There is currently no way to
 "remove" a recipe from another recipe for example removing the teabag from our cup of tea.
 An unsafe version of this may just presume that way was added can in fact be removed
 and that it was even added in the first place however, creating a sensible remove
-combinator would no doubt require more thought. There is also a lack of any combinator
-which describes various types of chopping.
+combinator would no doubt require more thought. A further consideration, briefly mentioned
+above, is that the \texttt{Measurement} passed to the \texttt{Measure} action should
+potentially be extracted into a condition. This would allow the modelling of a "reduce"
+combinator that could be implemented as something along the lines of the following.
+
+\begin{lstlisting}
+    reduce r t m = addCondition (CondMeasure m) (heatAt t r)
+\end{lstlisting}
+
+In other words: "heat r at temp t until it has reduced to the given measurement".
 
 \medbreak
 
@@ -1107,7 +1408,7 @@ roasted meat and meat juices.
 
 It goes without saying that further optimisations and research could be done into the
 scheduling part of this project; scheduling is, itself, a huge area of research.
-The scheduling solutions expressed above were mainly to demonstrate the use of
+The scheduling solutions expressed above were mainly to demonstrate a use of
 the operational semantics of recipes.
 
 \medbreak
@@ -1142,7 +1443,7 @@ which tasks should be focused on before the following meeting.
 
 \newpage
 
-    \begin{thebibliography}{11}
+    \begin{thebibliography}{12}
 
         \bibitem{robot}
         The Guardian. 2015. \textit{Future of food: how we cook}.
@@ -1174,13 +1475,6 @@ which tasks should be focused on before the following meeting.
         Embedding of Domain-Specific Languages. Chalmers University
         of Technology. February 27, 2015.
 
-        \bibitem{contracts-pp}
-        Simon Peyton Jones, Microsoft Research, Cambridge.
-        Jean-Marc Eber, LexiFi Technologies, Paris. Julian Seward,
-        University of Glasgow. Composing contracts: an adventure in
-        financial engineering (PowerPoint Slides). August 17, 2000.
-        \url{https://www.microsoft.com/en-us/research/publication/composing-contracts-an-adventure-in-financial-engineering/}
-
         \bibitem{core}
         Simon Peyton Jones. Into the Core - Squeezing Haskell into
         Nine Constructors. September 14, 2016.
@@ -1201,6 +1495,16 @@ which tasks should be focused on before the following meeting.
         Nicholas Smallbone. Moa Johansson. Koen Claessen. Maximilian Algehed.
         Chalmers University of Technology.
         Quick Specifications for the Busy Programmer. January 31, 2017.
+
+        \bibitem{quickspec-docs}
+        Nicholas Smallbone. \textit{quickspec: Equational laws for free!}.
+        https://hackage.haskell.org/package/quickspec-2/docs/QuickSpec.html
+        Online. Accessed April 6, 2018.
+
+        \bibitem{haskell-docs}
+        Author Not Stated. Uploaded by Herbert Valerio Riedel. \textit{Prelude}.
+        http://hackage.haskell.org/package/base-4.11.0.0/docs/Prelude.html
+        Online. Accessed April 6, 2018.
 
     \end{thebibliography}   
 

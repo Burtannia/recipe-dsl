@@ -1,7 +1,7 @@
 # Fdb version 3
-["pdflatex"] 1522944172 "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" "dissertation.pdf" "dissertation" 1522944174
+["pdflatex"] 1523062256 "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" "dissertation.pdf" "dissertation" 1523062259
   "/etc/texmf/web2c/texmf.cnf" 1507416320 1101 af7716885e081ab43982cab7b4672c1a ""
-  "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" 1522944170 51808 f5fc7973f9bd9c89ecf8ed0c6504c01a ""
+  "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" 1523062256 64515 26148dcaa4e42584e0b1c77fea5320bc ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1272929888 3287 e6b82fe08f5336d4d5ebc73fb1152e87 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -111,15 +111,16 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1503343927 31343 93828589fb0cea665e553ee5a17ad2d4 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1507416353 1863403 f3ff9a4253bcb5fb9a9baaf0c572cb01 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1507416391 3856426 289e8d49aa4b9079937da61e2fc2ef78 ""
-  "cupOfTea2.png" 1522711299 11756 4c8bf50658013e091ec4ac7e01ba48fc ""
-  "dissertation.aux" 1522944174 5764 05899bcc4a5c7bb3a11a000cb10881a0 ""
-  "dissertation.out" 1522944174 2785 244683c6b0064cc3a64566b065df363a ""
-  "dissertation.tex" 1522944170 51808 f5fc7973f9bd9c89ecf8ed0c6504c01a ""
-  "dissertation.toc" 1522944174 3529 889d1a4ad35041be7920239be74da8e8 ""
+  "cupOfTea.png" 1523043093 12193 a9f5da11ba1f3807961ed52a299c4e8a ""
+  "cupOfTea2.png" 1523043094 12213 71dccff8f74e8a65fd7e10b5c1a00387 ""
+  "dissertation.aux" 1523062259 5964 7a4ffb57da439711e400d43224633f87 ""
+  "dissertation.out" 1523062259 2773 2e68b41bcbc682ee1d6e3725f59506f0 ""
+  "dissertation.tex" 1523062256 64515 26148dcaa4e42584e0b1c77fea5320bc ""
+  "dissertation.toc" 1523062259 3520 4acb2939a3e54274be0b2c8c80c8da33 ""
   "stacks.png" 1522780892 27796 63a2e669871bc3e48bf854aa6b6b377d ""
   (generated)
   "dissertation.toc"
-  "dissertation.log"
-  "dissertation.aux"
   "dissertation.pdf"
   "dissertation.out"
+  "dissertation.aux"
+  "dissertation.log"

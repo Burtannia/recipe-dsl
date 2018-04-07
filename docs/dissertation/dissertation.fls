@@ -185,6 +185,9 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm5.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/stmaryrd/stmary10.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/stmaryrd/stmary7.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/stmaryrd/stmary5.tfm
+INPUT cupOfTea.png
+INPUT ./cupOfTea.png
+INPUT ./cupOfTea.png
 INPUT cupOfTea2.png
 INPUT ./cupOfTea2.png
 INPUT ./cupOfTea2.png
