@@ -196,6 +196,9 @@ INPUT ./stacks.png
 INPUT ./stacks.png
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmitt10.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmti10.tfm
+INPUT meatTwoVeg.png
+INPUT ./meatTwoVeg.png
+INPUT ./meatTwoVeg.png
 INPUT dissertation.aux
 INPUT ./dissertation.out
 INPUT ./dissertation.out

@@ -78,23 +78,11 @@ price ps r = evalPropsQ ps (ingredientsQ r)
 data FoodType = Meat | Veg
     deriving (Show, Eq)
 
-type Cuisine = PropertyList FoodType -> [String]
-
-meatTwoVeg :: Cuisine
-meatTwoVeg is =
-    let ms = filter (\(_,t) -> t == Meat) is
-        vs = filter (\(_,t) -> t == Veg) is
-     in map fst $ head ms : take 2 vs
-
-mkRecipe :: [String] -> PropertyList Recipe -> Recipe
-mkRecipe is rs =
-    let parts = map (\s -> case lookup s rs of
-                            Just r -> r
-                            Nothing -> ingredient s) is
-     in foldr1 (combine "next to") parts
+type Cuisine = PropertyList FoodType -> PropertyList Recipe -> Recipe
 
 -------------------------------------
--- Seasoning
+-- Flavour
 -------------------------------------
 
-data Seasoning = Salt | Sugar | Acid
+data Flavour = Salty | Sweet | Sour
+             | Bitter | Umami | Spice

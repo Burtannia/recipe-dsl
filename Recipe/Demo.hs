@@ -298,5 +298,15 @@ recList = [ ("chicken breast", heatAtForM 200 40 $ ingredient "chicken breast")
           , ("green beans", boilInWaterForM 5 $ ingredient "green beans")
           , ("green cabbage", boilInWaterForM 5 $ ingredient "green cabbage") ]
 
+meatTwoVeg :: Cuisine
+meatTwoVeg is rs =
+    let meats = filter (\(_,t) -> t == Meat) is
+        vegs = filter (\(_,t) -> t == Veg) is
+        ings = map fst $ head meats : take 2 vegs
+        parts = map (\s -> case lookup s rs of
+                             Just r -> r
+                             Nothing -> ingredient s) ings
+     in foldr1 (combine "next to") parts
+
 testRecipe :: Recipe
-testRecipe = mkRecipe (meatTwoVeg ingList) recList
+testRecipe = meatTwoVeg ingList recList

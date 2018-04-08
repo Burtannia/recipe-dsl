@@ -486,7 +486,7 @@ as follows.
 \begin{figure}[h]
 \includegraphics[width=\textwidth, keepaspectratio]{cupOfTea.png}
 \centering
-\caption{Alternate cup of tea recipe printed as a tree.}
+\caption{Cup of tea recipe printed as a tree.}
 \end{figure}
 
 One could of course use any other graphics printing package available in Haskell.
@@ -1167,7 +1167,8 @@ effect has caused it to be different.
 \medbreak
 
 If we run the above functions on our cup of tea then we see that our scheduling has
-saved us 20 seconds off the estimated time by parallelising certain steps.
+saved us 20 seconds off the estimated time by parallelising certain steps. Naturally
+this benefit would potentially be much larger for a recipe with a larger number of steps.
 
 \begin{lstlisting}
     time cupOfTea = 0h 9m 10s
@@ -1320,7 +1321,108 @@ we can pass our recipe functions to QuickSpec and see what laws it finds.
 
 \subsection{Generating Recipes}
 
+While QuickSpec deals with recipes generated arbitrarily, we could also
+consider how we might generate recipes in a more structured way. This could
+then be combined with the semantics discussed above to work out the cheapest
+or most time efficient meals that meet certain criteria. If we want a dish
+to have certain properties then we first need to create a list of our
+available ingredients and map them to their properties. As a simple
+example, here is a list of ingredients given a property called
+\texttt{FoodType} which simply lables whether the ingredient is a meat
+or a vegetable.
+
+\begin{lstlisting}
+    data FoodType = Meat | Veg
+
+    ingList :: PropertyList FoodType
+    ingList = [ ("chicken breast", Meat)
+              , ("beef sirloin", Meat)
+              , ("lamb chop", Meat)
+              , ("broccoli", Veg)
+              , ("carrot", Veg)
+              , ("cauliflower", Veg)
+              , ("green beans", Veg)
+              , ("green cabbage", Veg)
+              , ("potato", Veg) ]
+\end{lstlisting}
+
+We also need to know how to cook each ingredient so we will create another
+list which maps the ingredient to a recipe. There are, of course, many different
+ways that one could cook each ingredient and this could easily be adapted to
+map ingredients to a list of recipes. For simplicity though, we shall just
+stick with one.
+
+\begin{lstlisting}
+    recList :: PropertyList Recipe
+    recList = [ ("chicken breast", heatAtForM 200 40 $ ingredient "chicken breast")
+              , ("beef sirloin", heatAtForM 200 20 $ ingredient "beef sirloin")
+              , ("lamb chop", heatAtForM 200 17 $ ingredient "lamb chop")
+              , ("broccoli", boilInWaterForM 5 $ ingredient "broccoli")
+              , ("carrot", boilInWaterForM 5 $ ingredient "carrot")
+              , ("cauliflower", boilInWaterForM 7 $ ingredient "cauliflower")
+              , ("green beans", boilInWaterForM 5 $ ingredient "green beans")
+              , ("green cabbage", boilInWaterForM 5 $ ingredient "green cabbage") ]
+\end{lstlisting}
+
+Now we need some structured way of selecting ingredients and then combining
+them. We call this a "cuisine". The type of cuisine that we are making provides
+the structure that the ingredients will be placed into. To demonstrate this
+concept we will use the very simple and traditional "meat and two veg".
+
+\begin{lstlisting}
+    type Cuisine = PropertyList FoodType -> PropertyList Recipe -> Recipe
+
+    meatTwoVeg :: Cuisine
+    meatTwoVeg is rs =
+        let meats = filter (\(_,t) -> t == Meat) is
+            vegs = filter (\(_,t) -> t == Veg) is
+            ings = map fst $ head ms : take 2 vs
+            parts = map (\s -> case lookup s rs of
+                                Just r -> r
+                                Nothing -> ingredient s) is
+         in foldr1 (combine "next to") parts
+\end{lstlisting}
+
+Here we are simply seleting a meat and two vegetables, applying their
+recipes from the list and then combining them in an appropriate way.
+Running this example we get the following recipe tree.
+
+\begin{figure}[h]
+\includegraphics[width=\textwidth, keepaspectratio]{meatTwoVeg.png}
+\centering
+\caption{Recipe tree for generated recipe example.}
+\end{figure}
+
+This is of course a very simple example, one could imagine modelling much more complex
+cuisines in this method, maybe even handling the cooking methods for each type of
+ingredient in the cuisine function itself rather than having a list. Below
+is an example of a "roast dinner" function which adapts the measurements and cooking
+times based upon how many it must serve.
+
+% Select meat, weight per person, cooking time accordingly
+% Select two vegetables, boil them
+% Add roast or boiled potatoes
+% Add yorkshire pudding
+% Select sauce to go with meat: cranberry, horseradish, mint sauce, apple sauce
+
 \subsection{Improving Recipes}
+
+We have looked into how we can generate new recipes but what about improving recipes
+that already exist, or indeed that we have generated. One of the simplest ways
+of improving a recipe is to ensure that the flavours are in balance. There
+are five basic flavours that we can sense: salty, sweet, bitter, sour and umami.
+Umami is the most recently discovered flavour and is rather difficult to describe.
+It exists in seaweed and products that have been aged or cured for example cheeses
+and anchovies. The flavour is found a lot in asian cooking which, incidentally might
+be why cooking from the various asian regions is so popular. You might be wondering
+why spice has not been mentioned. That is because spice is not a flavour but a sensation.
+Let's start by creating a data type for these flavours, even though spice is not officially
+a flavour, we will include it in our type as it can still be used to enhance other flavours.
+
+\begin{lstlisting}
+    data Flavour = Salty | Sweet | Sour
+                 | Bitter | Umami | Spice
+\end{lstlisting}
 
 \section{Development Process}
 
