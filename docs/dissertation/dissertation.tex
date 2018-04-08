@@ -468,6 +468,7 @@ Running \texttt{ppSteps} on our cup of tea recipe calls \texttt{steps} to conver
 the actions at each node of the tree into a step and then prints them out as follows.
 
 \begin{lstlisting}
+    > ppSteps cupOfTea =
     1) Get milk
     2) Get teabag
     3) Get water
@@ -989,7 +990,7 @@ than a collection of the more low level processes. Below is the result of runnin
 \texttt{scheduleAndPrint} on our cup of tea and the environment created above.
 
 \begin{lstlisting}
-scheduleAndPrint cupOfTea env = 
+> scheduleAndPrint cupOfTea env = 
 
 chef:
 0h 0m 0s: 3) Get water
@@ -1171,9 +1172,9 @@ saved us 20 seconds off the estimated time by parallelising certain steps. Natur
 this benefit would potentially be much larger for a recipe with a larger number of steps.
 
 \begin{lstlisting}
-    time cupOfTea = 0h 9m 10s
+    > time cupOfTea = 0h 9m 10s
 
-    schLength (scheduleRecipe cupOfTea env) cupOfTea = 0h 8m 50s
+    > schLength (scheduleRecipe cupOfTea env) cupOfTea = 0h 8m 50s
 \end{lstlisting}
 
 \subsection{Price}
@@ -1248,7 +1249,7 @@ Returning to our quantified cup of tea, we get the following.
                 , ("sugar", (69, Grams 1000))
                 , ("water", (0, Milliletres 1)) ]
 
-    price priceList cupOfTeaQ = (*@{\pounds}@*)0.04
+    > price priceList cupOfTeaQ = (*@{\pounds}@*)0.04
 \end{lstlisting}
 
 \subsection{QuickSpec}
@@ -1408,20 +1409,88 @@ times based upon how many it must serve.
 \subsection{Improving Recipes}
 
 We have looked into how we can generate new recipes but what about improving recipes
-that already exist, or indeed that we have generated. One of the simplest ways
-of improving a recipe is to ensure that the flavours are in balance. There
-are five basic flavours that we can sense: salty, sweet, bitter, sour and umami.
-Umami is the most recently discovered flavour and is rather difficult to describe.
-It exists in seaweed and products that have been aged or cured for example cheeses
-and anchovies. The flavour is found a lot in asian cooking which, incidentally might
-be why cooking from the various asian regions is so popular. You might be wondering
-why spice has not been mentioned. That is because spice is not a flavour but a sensation.
-Let's start by creating a data type for these flavours, even though spice is not officially
-a flavour, we will include it in our type as it can still be used to enhance other flavours.
+that already exist, or indeed that we have generated? One of the easiest ways to
+improve a dish is to ensure it has been properly seasoned. Typically people think
+of salt and pepper when seasoning but there is actually a seasoning triangle \cite{seasoning},
+consisting of salt, sugar (sweetness) and acid. A dish will taste better if these
+flavours are all in balance.
+
+\medbreak
+
+Let's start by modelling these seasonings as a data type. We can also model a
+"flavour profile" as a list of seasonings paired with the frequency they appear
+in our recipe.
 
 \begin{lstlisting}
-    data Flavour = Salty | Sweet | Sour
-                 | Bitter | Umami | Spice
+    data Seasoning = Salt | Sweet | Acid
+        deriving (Eq, Ord, Show)
+
+    type Profile = [(Seasoning, Int)]
+\end{lstlisting}
+
+Next we can write a function \texttt{profile} that, given a list of seasonings,
+turns them into a flavour profile.
+
+\begin{lstlisting}
+    profile :: [Seasoning] -> Profile
+    profile [] = [(Salt, 0), (Sweet, 0), (Acid, 0)]
+    profile (s:ss) =
+        let m = profile ss
+            i = fromJust $ lookup s m
+        in insert s (i+1) m
+\end{lstlisting}
+
+Finally we can write a function \texttt{balance} which, given a recipe and
+a mapping from ingredients to the seasoning that they bring to a dish,
+profiles the seasonings it contains before suggesting what needs to be done
+to balance them. If there are no seasonings at all, it will suggest we add
+one of everything. On the other hand, if the seasonings are out of balance,
+it will suggest the amount of each type of seasoning that is required
+to balance the dish.
+
+\begin{lstlisting}
+    balance :: Recipe -> PropertyList Seasoning -> [(Seasoning, Int)]
+    balance r ss =
+        let is = ingredients r
+            flavours = catMaybes $ map (\i -> lookup i ss) ings
+            p = profile flavours
+            (_,maxI) = maximumBy (\(_,i) (_,i') -> compare i i')
+        in case p of
+                [(Salt, 0), (Sweet, 0), (Acid, 0)] -> map (\(s,_) -> (s,1)) p
+                _ -> [(s, maxI - i) | (s,i) <- p]
+\end{lstlisting}
+
+This could be combined with the recipe generation functions from the previous
+section to actually suggest which ingredients could be added to provide
+each seasoning. To add acid in Thai cuisine, one might add lime juice whereas
+in Italian cuisine, red wine might be more appropriate.
+
+\medbreak
+
+As an example, let's consider the following, most basic of recipes, an avocado.
+Avocado is often eaten on its own and has a slightly sweet, creamy flavour.
+Passing this to our \texttt{balance} function we get the following.
+
+\begin{lstlisting}
+    seasonings :: PropertyList Seasoning
+    seasonings = [ ("avocado", Sweet)
+                 , ("salt", Salt)
+                 , ("lime juice", Acid) ]
+
+    > balance (ingredient "avocado") seasonings = [(Salt,1),(Sweet,0),(Acid,1)]
+\end{lstlisting}
+
+As you can see, we need to add some salt and some acid to our avocado in order
+to balance the flavours. Adding some salt and a sequeeze of lime juice
+as follows puts our flavours in balance. This is actually a basic version
+of the popular dip, guacamole.
+
+\begin{lstlisting}
+    guacamole :: Recipe
+    guacamole = multiCombine "mix" avocado
+        [salt, limeJuice]
+
+    > balance guacamole seasonings = [(Salt,0),(Sweet,0),(Acid,0)]
 \end{lstlisting}
 
 \section{Development Process}
@@ -1557,8 +1626,8 @@ which tasks should be focused on before the following meeting.
         Science, Yale University, December 15, 1997.
 
         \bibitem{snoyman}
-        Michael Snoynman. O'Reilly Webcast: Designing Domain Specific
-        Languages with Haskell. January 4, 2013.
+        Michael Snoynman. O'Reilly. \textit{O'Reilly Webcast: Designing
+        Domain Specific Languages with Haskell}. January 4, 2013.
         \url{https://www.youtube.com/watch?v=8k_SU1t50M8}
         Online. Accessed April 2, 2018.
 
@@ -1578,8 +1647,8 @@ which tasks should be focused on before the following meeting.
         of Technology. February 27, 2015.
 
         \bibitem{core}
-        Simon Peyton Jones. Into the Core - Squeezing Haskell into
-        Nine Constructors. September 14, 2016.
+        Simon Peyton Jones. Erlang Solutions. \textit{Into the Core -
+        Squeezing Haskell into Nine Constructors}. September 14, 2016.
         \url{https://www.youtube.com/watch?v=uR_VzYxvbxg}
         Online. Accessed April 2, 2018.
 
@@ -1600,13 +1669,18 @@ which tasks should be focused on before the following meeting.
 
         \bibitem{quickspec-docs}
         Nicholas Smallbone. \textit{quickspec: Equational laws for free!}.
-        https://hackage.haskell.org/package/quickspec-2/docs/QuickSpec.html
+        \url{https://hackage.haskell.org/package/quickspec-2/docs/QuickSpec.html}
         Online. Accessed April 6, 2018.
 
         \bibitem{haskell-docs}
         Author Not Stated. Uploaded by Herbert Valerio Riedel. \textit{Prelude}.
-        http://hackage.haskell.org/package/base-4.11.0.0/docs/Prelude.html
+        \url{http://hackage.haskell.org/package/base-4.11.0.0/docs/Prelude.html}
         Online. Accessed April 6, 2018.
+
+        \bibitem{seasoning}
+        SORTEDfood. \textit{How To Make Your Food Taste Better!} June 19, 2016.
+        \url{https://www.youtube.com/watch?v=mFzCV2wI6Jc}
+        Online. Accessed April 8, 2018.
 
     \end{thebibliography}   
 

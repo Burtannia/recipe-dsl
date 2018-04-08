@@ -28,17 +28,17 @@
 \contentsline {subsection}{\numberline {5.4}QuickSpec}{29}{subsection.5.4}
 \contentsline {subsection}{\numberline {5.5}Generating Recipes}{31}{subsection.5.5}
 \contentsline {subsection}{\numberline {5.6}Improving Recipes}{32}{subsection.5.6}
-\contentsline {section}{\numberline {6}Development Process}{33}{section.6}
-\contentsline {subsection}{\numberline {6.1}Project Management}{33}{subsection.6.1}
-\contentsline {subsection}{\numberline {6.2}Evaluation and Testing}{34}{subsection.6.2}
-\contentsline {subsubsection}{\numberline {6.2.1}Test Recipes}{34}{subsubsection.6.2.1}
-\contentsline {subsubsection}{\numberline {6.2.2}QuickCheck}{34}{subsubsection.6.2.2}
-\contentsline {section}{\numberline {7}Summary}{34}{section.7}
-\contentsline {subsection}{\numberline {7.1}Contributions}{34}{subsection.7.1}
-\contentsline {subsection}{\numberline {7.2}Future Work}{34}{subsection.7.2}
-\contentsline {subsection}{\numberline {7.3}Reflections}{35}{subsection.7.3}
-\contentsline {section}{\numberline {8}Related Work}{36}{section.8}
-\contentsline {subsection}{\numberline {8.1}Pretty Printing}{36}{subsection.8.1}
-\contentsline {subsection}{\numberline {8.2}Financial Contracts}{36}{subsection.8.2}
-\contentsline {subsection}{\numberline {8.3}Deep vs Shallow Embedding}{36}{subsection.8.3}
-\contentsline {subsection}{\numberline {8.4}Regions}{36}{subsection.8.4}
+\contentsline {section}{\numberline {6}Development Process}{34}{section.6}
+\contentsline {subsection}{\numberline {6.1}Project Management}{34}{subsection.6.1}
+\contentsline {subsection}{\numberline {6.2}Evaluation and Testing}{35}{subsection.6.2}
+\contentsline {subsubsection}{\numberline {6.2.1}Test Recipes}{35}{subsubsection.6.2.1}
+\contentsline {subsubsection}{\numberline {6.2.2}QuickCheck}{35}{subsubsection.6.2.2}
+\contentsline {section}{\numberline {7}Summary}{35}{section.7}
+\contentsline {subsection}{\numberline {7.1}Contributions}{35}{subsection.7.1}
+\contentsline {subsection}{\numberline {7.2}Future Work}{35}{subsection.7.2}
+\contentsline {subsection}{\numberline {7.3}Reflections}{36}{subsection.7.3}
+\contentsline {section}{\numberline {8}Related Work}{37}{section.8}
+\contentsline {subsection}{\numberline {8.1}Pretty Printing}{37}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Financial Contracts}{37}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Deep vs Shallow Embedding}{37}{subsection.8.3}
+\contentsline {subsection}{\numberline {8.4}Regions}{37}{subsection.8.4}

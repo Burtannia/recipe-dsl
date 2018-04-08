@@ -310,3 +310,17 @@ meatTwoVeg is rs =
 
 testRecipe :: Recipe
 testRecipe = meatTwoVeg ingList recList
+
+guacamole :: Recipe
+guacamole = multiCombine "mix" avocado
+    [salt, limeJuice]
+
+avocado, salt, limeJuice :: Recipe
+avocado = ingredient "avocado"
+salt = ingredient "salt"
+limeJuice = ingredient "lime juice"
+
+seasonings :: PropertyList Seasoning
+seasonings = [ ("avocado", Sweet)
+             , ("salt", Salt)
+             , ("lime juice", Acid) ]

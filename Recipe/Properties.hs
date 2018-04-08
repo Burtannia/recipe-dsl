@@ -8,6 +8,8 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Tree
 import           Recipe.Recipe
+import Data.Maybe (fromJust, catMaybes)
+import Data.List (maximumBy)
 
 type PropertyList v = [(String, v)]
 
@@ -81,8 +83,29 @@ data FoodType = Meat | Veg
 type Cuisine = PropertyList FoodType -> PropertyList Recipe -> Recipe
 
 -------------------------------------
--- Flavour
+-- Seasoning
 -------------------------------------
 
-data Flavour = Salty | Sweet | Sour
-             | Bitter | Umami | Spice
+data Seasoning = Salt | Sweet | Acid
+    deriving (Eq, Ord, Show)
+
+type Profile = Map Seasoning Int
+
+profile :: [Seasoning] -> Profile
+profile [] = Map.fromList [(Salt, 0), (Sweet, 0), (Acid, 0)]
+profile (s:ss) =
+    let m = profile ss
+        i = fromJust $ Map.lookup s m
+     in Map.insert s (i+1) m
+
+balance :: Recipe -> PropertyList Seasoning -> [(Seasoning, Int)]
+balance r ss =
+    let is = ingredients r
+        flavours = catMaybes $ map (\i -> lookup i ss) is
+        p = Map.toList $ profile flavours
+        (_,maxI) = maximumBy (\(_,i) (_,i') -> compare i i') p
+     in case p of
+            [(Salt, 0), (Sweet, 0), (Acid, 0)] -> map (\(s,_) -> (s,1)) p
+            _ -> [(s, maxI - i) | (s,i) <- p]
+
+
