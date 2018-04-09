@@ -1607,14 +1607,150 @@ continued and my supervisor also helped to keep me focused on the important thin
 which tasks should be focused on before the following meeting.
 
 \section{Related Work}
-\subsection{Pretty Printing}
+
+While a recipe DSL is something that has not previously been researched, there exist many
+great examples of DSLs for other purposes.
+
 \subsection{Financial Contracts}
-\subsection{Deep vs Shallow Embedding}
+
+\textit{Composing contracts} \cite{contracts} was the first paper I read while doing
+research for this project. The topic of the paper was to create a DSL in
+Haskell to describe and process financial contracts. The paper was a huge
+inspiration as it provided the very basis for my approach to the recipe DSL.
+The authors of the paper describe boiling down "the immense soup of
+actively-traded contracts into a reasonably small set of combinators".
+A similar approach was applied to recipes, we boiled down a number of
+recipes into their components. Then, while trying to express other
+recipes and interpret them in various ways, we experienced various
+issues which then resulted in adjustments to the combinators.
+
+\medbreak
+
+Once the authors had developed their set of combinators, they started modelling
+a set of evaluation semantics for their contracts. This was a mapping from
+a contract to a value process where a value process is a "partial function
+from time to a random variable" \cite{contracts}. There is some mathematical
+theory underpinning these value processes but, as stated in the paper, it is
+unlikely to be familiar to computer scientists and as such I won't go into it
+further. All that is needed is the notion that a random variable is some representation
+of the values a contract could hold. This is then used to reason about contracts,
+one can determine equality by comparing the valuation semantics of two contracts.
+We took a similar approach to recipes in terms of topological sorting (Section 3).
+
+\medbreak
+
+In the world of financial contracts there are, many different models for predicting
+change of value over time. This is supported by the contracts DSL by passing a 
+model to the evaluation function. The model contains all the underlying information
+necessary to evaluate the contract. This is similar to the way in which we pass
+an environment when scheduling our recipes. As mentioned previously, we could
+also modify our evaluation functions, for example \texttt{time}, to be based
+on various information stored in the environment. Perhaps a certain station is
+capable of performing an action quicker than another. This is however, moving more
+towards modelling kitchen appliances and away from modelling recipes.
+
+\subsection{DSL Development Method}
+
+In his paper \textit{Domain Specific Languages} \cite{hudak}, Hudak covers DSLs
+in a wider context. He mentions commonly used DSLs such as SQL, for accessing
+databases and HTML for laying out web pages. What has been of particular importance
+throughout this project is his work on "The DSL Software Development Method" which
+is outlined as follows.
+
+\begin{itemize}
+    \item Define your domain.
+    \item Design a DSL that accurately captures the domain semantics.
+    \item Build software tools to support the DSL.
+    \item Develop applications (domain instances) using the new DSL
+    infrastructure.
+\end{itemize}
+
+We defined our domain as that of describing recipes. We then designed our
+combinators in such a way that we captured the semantics of recipes. We could then
+build tools to support the DSL for example our model of a cooking environment
+and our scheduling function. The next step might be to develop some more
+polished applications that make use of the DSL. For example one might consider
+a "drag and drop" GUI to create recipes using a visual tree structure.
+
+\medbreak
+
+Another piece of valuable information found within Hudak's paper is that
+one should focus on the semantics of the DSL and not worry too much about
+the syntax. The only significant change that was made regarding syntax was
+to ensure that, for combinators that are passed a recipe, the recipe is the
+final argument thus allowing convenient use of Haskell's \texttt{(\$)} operator.
+Hudak then goes on to make note of the advantages of embedded DSLs. We discuss
+the choice to embed our recipe DSL in Haskell in Section 1.2. Michael Snoyman,
+creator of Yesod, a Haskell web development framework, made a webcast in which
+he discusses DSLs in Haskell \cite{snoyman}.
+
 \subsection{Regions}
+
+One EDSL mentioned by Hudak in his paper \cite{hudak} that I found particularly
+interesting is the DSL to support a "Geometric Region Server" for the Navy \cite{regions}.
+The authors of \cite{regions} prototyped the EDSL in various programming languages
+including Haskell and C++. A committee chosen by the Navy reviewed the prototypes and
+determined that the Haskell version was the best as it "took significantly less time to
+develop and was considerably more concise and easier to understand". This supports
+our choice of Haskell as the host language for our recipe DSL.
+
+\medbreak
+
+What made the region DSL so interesting is its remarkable simplicity along with the use of
+a shallow embedding (Section 1.3). The Haskell implementation represents regions as
+a function which, given a point, returns a boolean value indicating whether or not
+the point is within the region.
+
+\begin{lstlisting}
+    type Region = Point -> Bool
+\end{lstlisting}
+
+Various supporting functions were then created such as the logical negation of a
+region and the intersection of two regions. Below are the type signatures for
+various functions as written in \cite{regions}.
+
+\begin{lstlisting}
+    circle :: Radius -> Region         -- creates a region with given radius
+    outside :: Region -> Region        -- the logical negation of a region
+    (/\) :: Region -> Region -> Region -- the intersection of two regions
+\end{lstlisting}
+
+With just a few functions, the DSL is able to express much more complex regions
+concisely. The following is the definition given by the authors for a function
+\texttt{annulus} which is "used to define an engageability zone".
+
+\begin{lstlisting}
+    annulus :: Radius -> Radius -> Region
+    annulus r1 r2 = outside (circle r1) /\ circle r2
+\end{lstlisting}
+
+This demonstrates the extensibility of such DSLs and how complex entities
+can be described as a construction of primitives. One might also consider
+how this DSL could be expanded to support regions that move over time.
+It makes sense that such a feature would be useful to the Navy as one
+would hope that their ships are not static. We could add this feature
+as follows.
+
+\begin{lstlisting}
+    type Transformation = Region -> Region
+
+    scale :: Transformation -> Time -> Transformation
+    transform :: Time -> Transformation -> Region -> Region
+\end{lstlisting}
+
+A transformation takes a region and adjusts it in some way. The \texttt{scale}
+function is used to increase or decrease the magnitude of a transformation.
+Imagine a ship travelling at 15 metres per second and that the ship has some
+region around it representing the range of its weapons. One could create a transformation
+that displaces a region 15 metres in the direction the ship is travelling. They could then apply
+\texttt{transform} to their initial region, passing the transformation
+and the elapsed time. This would use the \texttt{scale} function to increase the
+displacement of the region relative to the time elapsed before applying the
+scaled transformation to the initial region to acquire the new region.
 
 \newpage
 
-    \begin{thebibliography}{12}
+    \begin{thebibliography}{13}
 
         \bibitem{robot}
         The Guardian. 2015. \textit{Future of food: how we cook}.
@@ -1681,6 +1817,12 @@ which tasks should be focused on before the following meeting.
         SORTEDfood. \textit{How To Make Your Food Taste Better!} June 19, 2016.
         \url{https://www.youtube.com/watch?v=mFzCV2wI6Jc}
         Online. Accessed April 8, 2018.
+
+        \bibitem{regions}
+        W.E. Carlson, P. Hudak, and M.P. Jones. An experiment using
+        Haskell to prototype ”geometric region servers” for navy command
+        and control. Research Report 1031. Department of Computer Science,
+        Yale University. November 1993.
 
     \end{thebibliography}   
 
