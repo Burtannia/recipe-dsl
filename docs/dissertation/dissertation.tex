@@ -1556,16 +1556,20 @@ to perfect and further refine the combinators. There is currently no way to
 "remove" a recipe from another recipe for example removing the teabag from our cup of tea.
 An unsafe version of this may just presume that way was added can in fact be removed
 and that it was even added in the first place however, creating a sensible remove
-combinator would no doubt require more thought. A further consideration, briefly mentioned
-above, is that the \texttt{Measurement} passed to the \texttt{Measure} action should
-potentially be extracted into a condition. This would allow the modelling of a "reduce"
-combinator that could be implemented as something along the lines of the following.
+combinator would no doubt require more thought.
+
+\medbreak
+
+A further consideration, briefly mentioned previously, is that the \texttt{Measurement}
+passed to the \texttt{Measure} action should potentially be extracted into a condition.
+This would allow the modelling of a "reduceBy" combinator that could be implemented as
+something along the lines of the following.
 
 \begin{lstlisting}
-    reduce r t m = addCondition (CondMeasure m) (heatAt t r)
+    reduceBy r t m = addCondition (CondMeasure m) (heatAt t r)
 \end{lstlisting}
 
-In other words: "heat r at temp t until it has reduced to the given measurement".
+In other words: "heat the given recipe at the given temperature until it has reduced by the given measurement".
 
 \medbreak
 
@@ -1573,7 +1577,7 @@ There is also one rather difficult issue of handling recipes that have multiple
 outputs. For example let's say we roasted some meat and then wanted to take out the
 meat juices to make gravy but also do something with the meat. This completely breaks
 our tree structure as we would have the roast meat node branching up into two nodes,
-roasted meat and meat juices.
+roasted meat and meat juices. This is closely related to the "remove" problem.
 
 \medbreak
 
