@@ -21,6 +21,9 @@ import Data.Char (toUpper)
 -- Steps
 -------------------------------------
 
+-- |Given a list of trees, extract either their labels
+-- or, if a tree's root node is an ingredient, extract
+-- the ingredient name.
 extractLabel :: [Tree (Label, Action)] -> [String]
 extractLabel [t] = [extractLabel' t]
 extractLabel ts = map extractLabel' ts
@@ -29,8 +32,10 @@ extractLabel' :: Tree (Label, Action) -> String
 extractLabel' (Node (_, GetIngredient s) _) = s
 extractLabel' (Node (l, _) _) = show l
 
+-- |Step is a pair of a label (step number) and the instructions for that step.
 type Step = (Label, String)
 
+-- |Translates a recipe into a tree of steps.
 steps :: Recipe -> Tree Step
 steps = steps' . labelRecipeA
     where
@@ -58,6 +63,9 @@ steps = steps' . labelRecipeA
                 toString (Measure m) = "Measure " ++ show m ++ " of " ++ l'
                     where l' = head $ extractLabel ts
 
+-- |Prints one step per line as follows:
+-- 1) ...
+-- 2) ...
 ppSteps :: Recipe -> IO ()
 ppSteps = ppSteps' . steps
     where
@@ -69,9 +77,11 @@ ppSteps = ppSteps' . steps
 -- Tree
 -------------------------------------
 
+-- |Prints the recipe as an ASCII tree.
 ppTree :: Show a => Tree a -> IO ()
 ppTree = putStrLn . drawVerticalTree . fmap show
 
+-- |Prints one ingredient name per line.
 ppIngredients :: Recipe -> IO ()
 ppIngredients = mapM_ putStrLn . ingredients
 
@@ -79,6 +89,7 @@ ppIngredients = mapM_ putStrLn . ingredients
 -- Properties
 -------------------------------------
 
+-- |Prints one ingredient name per line along with it's quantity.
 ppIngredientsQ :: Recipe -> IO ()
 ppIngredientsQ = mapM_ ppQuantIng . ingredientsQ
     where
@@ -89,6 +100,9 @@ ppIngredientsQ = mapM_ ppQuantIng . ingredientsQ
 -- Schedule
 -------------------------------------
 
+-- |Print the given schedule using the given maps.
+-- The first is a map of step numbers to their instructions,
+-- the second is a map of labels to their recipes from the labelled tree.
 printSchedule :: Schedule -> Map Label String -> Map Label Recipe -> IO ()
 printSchedule sch = printSchedule' (Map.toList sch)
     where
@@ -99,6 +113,9 @@ printSchedule sch = printSchedule' (Map.toList sch)
             evalStateT (printStack stack sMap rMap) (Time 0)
             printSchedule' xs sMap rMap
 
+-- |Print the given stack of actions.
+-- The first is a map of step numbers to their instructions,
+-- the second is a map of labels to their recipes from the labelled tree.
 printStack :: Stack -> Map Label String -> Map Label Recipe -> StateT Time IO ()
 printStack [] _ _ = return ()
 printStack (Active l : xs) sMap rMap = do
@@ -122,6 +139,8 @@ printStack (Idle t : xs) sMap rMap = do
 
     put (startT + t)
 
+-- |Schedule the given recipe in the given environemnt
+-- and print the resulting schedule.
 scheduleAndPrint :: Recipe -> Env -> IO ()
 scheduleAndPrint r env =
     let sch = scheduleRecipe r env
