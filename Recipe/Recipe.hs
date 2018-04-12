@@ -18,7 +18,8 @@ type Recipe = Tree Action
 
 -- |Actions represent something that is done during the recipe
 -- and are taken to be "applied" on their child nodes in the
--- tree.
+-- recipe thus providing sequencing.
+-- Not used directly, used via the helper functions.
 data Action = GetIngredient String
             | Heat
             | HeatAt Int
@@ -59,10 +60,11 @@ instance Monoid Time where
     mappend = (+)
 
 -- |Conditions represent an event which you perform a recipe "until".
--- for example, CondTemp 100 wrapped around an Action would represent
--- performing that action until the temperature is 100 degrees.
-data Condition = CondTime Time | CondTemp Int | CondOpt String
-    | Condition `AND` Condition | Condition `OR` Condition
+data Condition = CondTime Time -- ^ Until the given time has elapsed.
+               | CondTemp Int -- ^ Until the temperature has been reached.
+               | CondOpt String -- ^ Optional step, labelled for identification. See observables (Obs).
+               | Condition `AND` Condition -- ^ Logical "and" of two conditions.
+               | Condition `OR` Condition -- ^ Logical "or" of two conditions.
     deriving (Show, Eq, Ord)
 
 -- |Folds a function over a condition. AND will mappend the
@@ -74,7 +76,9 @@ foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
 foldCond f c            = f c
 
 -- |Represents a measurement of something.
-data Measurement = Count Int | Grams Int | Milliletres Int
+data Measurement = Count Int -- ^ Number of something e.g. 1 apple.
+                 | Grams Int -- ^ Number of grams.
+                 | Milliletres Int -- ^ Number of milliletres.
     deriving (Eq)
 
 -- |Returns the magnitude of a measurement.
@@ -93,48 +97,42 @@ instance Show Measurement where
     show (Grams i) = show i ++ "g"
     show (Milliletres i) = show i ++ "ml"
 
--- |Creates a "GetIngredient" action with no
--- child nodes.
+-- |Get an ingredient with the given name.
 ingredient :: String -> Recipe
 ingredient s = Node (GetIngredient s) []
 
--- |Adds a Heat action above the given recipe.
+-- |Heat the given recipe, used when the temperature it
+-- is heated at doesn't matter for example heating water
+-- in a kettle.
 heat :: Recipe -> Recipe
 heat r = Node Heat [r]
 
--- |Adds a HeatAt action with the given
--- temperature above the given recipe.
+-- |Heat the given recipe at the given temperature.
 heatAt :: Int -> Recipe -> Recipe
 heatAt temp r = Node (HeatAt temp) [r]
 
--- |Adds a Wait action above the given recipe.
+-- |Wait after performing the given recipe.
+-- Without being wrapped with CondTime is an
+-- infinitely small wait.
 wait :: Recipe -> Recipe
 wait r = Node Wait [r]
 
--- |Adds a Combine Action above the two recipes.
+-- |Combine the two recipes using the method given
+-- as a String e.g. "mix".
 combine :: String -> Recipe -> Recipe -> Recipe
 combine s r1 r2 = Node (Combine s) [r1, r2]
 
--- |Adds the given condition to the given recipe
--- by wrapping Conditional around the root Action.
+-- |Add the given condition to the root action of
+-- the given recipe. If the action is already
+-- wrapped with a condtion, (AND) is applied
+-- to the two conditions.
 addCondition :: Condition -> Recipe -> Recipe
 addCondition c (Node a ts) = case a of
     Conditional a' c' -> Node a'' ts
         where a'' = Conditional a' (c .&& c')
     _ -> Node (Conditional a c) ts
 
--- |Logical "and" of two conditions.
-(.&&) :: Condition -> Condition -> Condition
-(.&&) = AND
-
--- |Logical "or" of two conditions.
-(.||) :: Condition -> Condition -> Condition
-(.||) = OR
-
 -- |Wraps the root node of a recipe in a transaction.
--- This means that when executing the recipe, the child
--- actions should finish around the same time and the
--- wrapped, parent action should then be executed immediately.
 transaction :: Recipe -> Recipe
 transaction (Node a ts) = Node (Transaction a) ts
 
@@ -145,17 +143,25 @@ measure m r = Node (Measure m) [r]
 
 -- Nicer Conditions and Time
 
--- |Adds the CondOpt condition to the root node of a recipe.
+-- |Applies addCondition CondOpt with the given label.
 optional :: String -> Recipe -> Recipe
 optional s = addCondition (CondOpt s)
 
--- |Adds the CondTemp condition to the root node of a recipe.
+-- |Applies addCondition CondTemp with the given temperature.
 toTemp :: Int -> Recipe -> Recipe
 toTemp t = addCondition (CondTemp t)
 
--- |Adds the CondTime condition to the root node of a recipe.
+-- |Applies addCondition CondTime with the given time.
 forTime :: Time -> Recipe -> Recipe
 forTime t = addCondition (CondTime t)
+
+-- |Creates an AND condition.
+(.&&) :: Condition -> Condition -> Condition
+(.&&) = AND
+
+-- |Creates an OR condition.
+(.||) :: Condition -> Condition -> Condition
+(.||) = OR
 
 -- |Creates a time with the given number of hours: hours 1 = Time 3600.
 hours :: Time -> Time
