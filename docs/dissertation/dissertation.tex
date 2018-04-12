@@ -175,7 +175,7 @@ and that Haskell has very lightweight function application syntax
 allowing us to omit symbols such as brackets in many cases \cite{snoyman}.
 
 \subsection{Deep and Shallow Embedding}
-When writing an EDSL one must choose between deep and shallow embedding.
+When writing an EDSL one must choose between deep and shallow embedding \cite{embedding}.
 Deep embedding means that the DSL's abstract syntax tree (AST) is
 represented using an algebraic data type. On the other hand, shallow
 embedding doesn't have an AST and the language constructs exist purely
@@ -308,6 +308,13 @@ feels like a bit of a hack. Combinators should only have one purpose in order to
 their semantics concise but here we have given \texttt{combine} an extra use. It not
 only combines two recipes together in the cooking sense but it also adds functionality
 to other combinators.
+
+\medbreak
+
+At a more complex level, conditionals could allow us to mix until "mixed".
+The concrete implementation in Section 4 can then be used to link this to a signal
+from a camera in the case of a robotic chef. The camera could monitor the mixture
+until it is somewhat of a uniform colour and then send the signal that mixing is complete.
 
 \medbreak
 
@@ -1267,18 +1274,26 @@ Returning to our quantified cup of tea, we get the following.
 \subsection{QuickSpec}
 
 QuickSpec \cite{quickspec, quickspec2} is a Haskell library for automatically generating
-laws about your program. In order to do this QuickSpec requires a way of generating
+laws about your program. In order to do this, QuickSpec requires a way of generating
 random values of the relevant type. We can provide this by making our recipe type
 an instance of the \texttt{Arbitrary} typeclass.
 
 \begin{lstlisting}
     instance {-# OVERLAPPING #-} Arbitrary Recipe where
-        arbitrary = sized $ \n ->
-            let bin = resize (n `div` 2) genRecipe
-                un  = resize (n-1) genRecipe
-            in case n of
-                1 -> genIng
-                _ -> oneof [genUnRec un, genBinRec bin bin]
+        arbitrary = sized $ \n -> do
+            if n <= 5 then
+                genRecipe n
+            else
+                resize 5 arbitrary
+
+    genRecipe :: Int -> Gen Recipe
+    genRecipe n =
+        let un = resize (n-1) arbitrary
+            bin = resize (n `div` 2) arbitrary
+        in if n == 0 then
+                genIng
+            else
+                oneof [genUnRec un, genBinRec bin bin]
 
     genIng :: Gen Recipe
     genIng = liftM (ingredient . show)
@@ -1298,15 +1313,16 @@ an instance of the \texttt{Arbitrary} typeclass.
 \end{lstlisting}
 
 The first point of note is that our recipes are generated as sized values meaning
-that they have a number of sub-recipes. If a recipe is size 1 then we should generate
+that they have a number of sub-recipes. If a recipe is size 0 then we should generate
 an ingredient. Random ingredients are just provided as a random number between 1 and 100.
-If the size of the recipe is greater than 1 then we can either generate a unary recipe
+If the size of the recipe is greater than 0 then we can either generate a unary recipe
 or a binary recipe. This refers to how many children the recipe should have. The only
 valid binary recipe we have is combine, the rest are all unary as they only apply to
 one sub-recipe. Instances of \texttt{Arbitrary} are also required for all the other types
 needed to make recipes such as \texttt{Time} and \texttt{Measurement}. In the interest
 of space I shalln't go into them here, they are relatively straightforward compared to
-the above.
+the above. We also limit the size to a maximum of 5 due to how computationally expensive
+it is to compare larger recipes.
 
 \medbreak
 
@@ -1314,7 +1330,7 @@ The other interesting definition is that for \texttt{Condition} as conditions do
 have a natural ordering instance. Instead, QuickSpec allows us to test for observational
 equality. That is we must specify a function \texttt{observe test a} for which the
 following property holds: \textit{two values x and y are considered equal,
-if for many random values of type test, observe test x == observe test y}.
+if for many random values of type test, observe test x == observe test y} \cite{quickspec-docs}.
 
 \begin{lstlisting}
     instance Arbitrary Obs where
@@ -1524,9 +1540,51 @@ some examples to ensure any issues were found as soon as possible.
 
 \subsection{Evaluation and Testing}
 
+\subsubsection{QuickCheck}
+
+QuickCheck \cite{quickcheck} is a library for the automated testing of Haskell
+programs. The programmer specifies laws that must hold about their program
+and QuickCheck generates random test cases to check whether or not the
+law holds. A simple example would be to check that reversing a list
+twice gives you the same list you started with.
+
+\medbreak
+
+For our recipes, we already have various laws that were discovered by QuickSpec
+(Section 5.4). We can get QuickCheck to test these so that if we ever make
+a change that breaks these laws, it is detected and we can check whether that
+result was desired or not. This helps us to reason about what our code is actually
+doing and thus have confidence of its correctness.
+
+\medbreak
+
+% Example of converting quickspec law into quickcheck test
+
 \subsubsection{Test Recipes}
 
-\subsubsection{QuickCheck}
+While QuickCheck is great for verifying the correctness of our code, it does
+not measure the conciseness or expressiveness of our combinators. To do this
+we have used various test recipes, as used throughout this report. Below
+is a table detailing what each test recipe was used for specifically,
+naturally all recipes test for conciseness.
+
+\begin{figure}[h]
+\begin{tabular}{ |p{35mm}|p{\textwidth - 40mm}| }
+    \hline
+    \texttt{cupOfTea} & Basic recipe. \\
+    \hline
+    \texttt{cupOfTea'} & Modified \texttt{cupOfTea}, used to test equality. \\
+    \hline
+    \texttt{cupOfTeaQ} & Quantified \texttt{cupOfTea}, used to test the \texttt{Measure} combinator. \\
+    \hline
+    \texttt{butteredToast} & Used to test the \texttt{Transaction} combinator. \\
+    \hline
+    \texttt{jalfreziWithRice} & Much longer and more complex recipe, uses
+        all the combinators except \texttt{Measure} and \texttt{Transaction}. \\
+    \hline
+\end{tabular}
+\caption{Table of test recipes and their descriptions.}
+\end{figure}
 
 \section{Summary}
 
@@ -1802,12 +1860,6 @@ scaled transformation to the initial region to acquire the new region.
         Embedding of Domain-Specific Languages. Chalmers University
         of Technology. February 27, 2015.
 
-        \bibitem{core}
-        Simon Peyton Jones. Erlang Solutions. \textit{Into the Core -
-        Squeezing Haskell into Nine Constructors}. September 14, 2016.
-        \url{https://www.youtube.com/watch?v=uR_VzYxvbxg}
-        Online. Accessed April 2, 2018.
-
         \bibitem{hutton}
         Graham Hutton. Fold and Unfold for Program Semantics. Department of
         Computer Science, University of Nottingham. September 1998.
@@ -1843,6 +1895,11 @@ scaled transformation to the initial region to acquire the new region.
         Haskell to prototype ”geometric region servers” for navy command
         and control. Research Report 1031. Department of Computer Science,
         Yale University. November 1993.
+
+        \bibitem{quickcheck}
+        Koen Claessen. John Hughes. QuickCheck: A Lightweight Tool for
+        Random Testing of Haskell Programs. Chalmers University of Technology.
+        2000.
 
     \end{thebibliography}   
 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  12 APR 2018 05:36
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  12 APR 2018 08:25
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -899,19 +899,19 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [9]
-Overfull \hbox (5.94247pt too wide) in paragraph at lines 386--397
+Overfull \hbox (5.94247pt too wide) in paragraph at lines 393--404
 \OT1/cmr/m/n/10.95 with the given num-ber of min-utes. Our \OT1/cmtt/m/n/10.95 
 Time \OT1/cmr/m/n/10.95 type holds sec-onds so \OT1/cmtt/m/n/10.95 minutes 
  []
 
 
-Overfull \hbox (3.17534pt too wide) in paragraph at lines 386--397
+Overfull \hbox (3.17534pt too wide) in paragraph at lines 393--404
 \OT1/cmr/m/n/10.95 pli-ca-tion op-er-a-tor which "has low, right-associative bi
 nd-ing precedence"[[]] 
  []
 
 
-Overfull \hbox (4.93948pt too wide) in paragraph at lines 400--403
+Overfull \hbox (4.93948pt too wide) in paragraph at lines 407--410
 \OT1/cmr/m/n/10.95 Shortly into the sec-ond half of the project, the de-ci-sion
  was made to change 
  []
@@ -929,10 +929,10 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[11] <cupOfTea.png, id=432, 473.51906pt x 166.37157pt>
+[11] <cupOfTea.png, id=428, 473.51906pt x 166.37157pt>
 File: cupOfTea.png Graphic file (type png)
  <use cupOfTea.png>
-Package pdftex.def Info: cupOfTea.png used on input line 488.
+Package pdftex.def Info: cupOfTea.png used on input line 495.
 (pdftex.def)             Requested size: 360.0pt x 126.48938pt.
 
 
@@ -948,12 +948,15 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[13] <actionsOverTime.png, id=491, 536.0025pt x 237.88875pt>
+[13] <actionsOverTime.png, id=488, 536.0025pt x 237.88875pt>
 File: actionsOverTime.png Graphic file (type png)
 
 <use actionsOverTime.png>
-Package pdftex.def Info: actionsOverTime.png used on input line 595.
+Package pdftex.def Info: actionsOverTime.png used on input line 602.
 (pdftex.def)             Requested size: 199.16928pt x 88.39496pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
 
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -961,14 +964,17 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[14 <./actionsOverTime.png>]
-<cupOfTea2.png, id=508, 473.51906pt x 167.12437pt>
+[14] <cupOfTea2.png, id=508, 473.51906pt x 167.12437pt>
 File: cupOfTea2.png Graphic file (type png)
  <use cupOfTea2.png>
-Package pdftex.def Info: cupOfTea2.png used on input line 641.
+Package pdftex.def Info: cupOfTea2.png used on input line 648.
 (pdftex.def)             Requested size: 360.0pt x 127.06172pt.
 
-Overfull \hbox (2.99255pt too wide) in paragraph at lines 646--651
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Overfull \hbox (2.99255pt too wide) in paragraph at lines 653--658
 \OT1/cmr/m/n/10.95 as dis-cussed in a later sec-tion, we also need an in-stance
  of \OT1/cmtt/m/n/10.95 Ord\OT1/cmr/m/n/10.95 . This means 
  []
@@ -979,19 +985,14 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[15 <./cupOfTea2.png>]
+[15 <./actionsOverTime.png>]
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[16]
-Overfull \hbox (28.49548pt too wide) in paragraph at lines 733--734
-[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][
-][][][][][][][][][][][] 
- []
-
+[16 <./cupOfTea2.png>]
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -999,7 +1000,13 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [17]
-Overfull \hbox (65.24506pt too wide) in paragraph at lines 780--781
+Overfull \hbox (28.49548pt too wide) in paragraph at lines 740--741
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][
+][][][][][][][][][][][] 
+ []
+
+
+Overfull \hbox (65.24506pt too wide) in paragraph at lines 787--788
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
@@ -1023,10 +1030,10 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[20] <stacks.png, id=619, 523.20468pt x 266.49562pt>
+[20] <stacks.png, id=621, 523.20468pt x 266.49562pt>
 File: stacks.png Graphic file (type png)
  <use stacks.png>
-Package pdftex.def Info: stacks.png used on input line 876.
+Package pdftex.def Info: stacks.png used on input line 883.
 (pdftex.def)             Requested size: 284.52756pt x 144.92615pt.
 
 
@@ -1057,7 +1064,7 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [24]
-Overfull \hbox (0.19447pt too wide) in paragraph at lines 1035--1038
+Overfull \hbox (0.19447pt too wide) in paragraph at lines 1042--1045
 \OT1/cmr/m/n/10.95 the fol-low-ing recipe for tea and but-tered toast, for con-
 cise-ness I have omit- 
  []
@@ -1076,18 +1083,18 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [26]
-Overfull \hbox (3.57079pt too wide) in paragraph at lines 1129--1135
+Overfull \hbox (3.57079pt too wide) in paragraph at lines 1136--1142
 []\OT1/cmr/m/n/10.95 These times are just in-tended to be es-ti-mates, note tha
 t most of the "time" 
  []
 
 
-Overfull \hbox (7.49573pt too wide) in paragraph at lines 1137--1138
+Overfull \hbox (7.49573pt too wide) in paragraph at lines 1144--1145
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
  []
 
 
-Overfull \hbox (7.49573pt too wide) in paragraph at lines 1138--1139
+Overfull \hbox (7.49573pt too wide) in paragraph at lines 1145--1146
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][
 ] 
  []
@@ -1099,13 +1106,13 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [27]
-Overfull \hbox (2.62784pt too wide) in paragraph at lines 1175--1179
+Overfull \hbox (2.62784pt too wide) in paragraph at lines 1182--1186
 []\OT1/cmr/m/n/10.95 One of the great things about Haskell is that it al-lows u
 s to keep the recipe 
  []
 
 
-Overfull \hbox (11.05316pt too wide) in paragraph at lines 1182--1185
+Overfull \hbox (11.05316pt too wide) in paragraph at lines 1189--1192
 []\OT1/cmr/m/n/10.95 If we run the above func-tions on our cup of tea then we s
 ee that our schedul- 
  []
@@ -1117,19 +1124,19 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [28]
-Overfull \hbox (23.24554pt too wide) in paragraph at lines 1230--1231
+Overfull \hbox (23.24554pt too wide) in paragraph at lines 1237--1238
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (10.38266pt too wide) in paragraph at lines 1239--1244
+Overfull \hbox (10.38266pt too wide) in paragraph at lines 1246--1251
 []\OT1/cmr/m/n/10.95 The func-tion \OT1/cmtt/m/n/10.95 evalPropsQ \OT1/cmr/m/n/
 10.95 takes a list of prop-er-ties, that have a \OT1/cmtt/m/n/10.95 Measurement
  
  []
 
 LaTeX Font Info:    Font shape `OT1/cmtt/m/ui' in size <10> not available
-(Font)              Font shape `OT1/cmtt/m/it' tried instead on input line 1264
+(Font)              Font shape `OT1/cmtt/m/it' tried instead on input line 1271
 .
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -1152,57 +1159,60 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [31]
-Overfull \hbox (75.74493pt too wide) in paragraph at lines 1370--1371
+Overfull \hbox (75.74493pt too wide) in paragraph at lines 1386--1387
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (54.74518pt too wide) in paragraph at lines 1371--1372
+Overfull \hbox (54.74518pt too wide) in paragraph at lines 1387--1388
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (23.24554pt too wide) in paragraph at lines 1372--1373
+Overfull \hbox (23.24554pt too wide) in paragraph at lines 1388--1389
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (12.74567pt too wide) in paragraph at lines 1373--1374
+Overfull \hbox (12.74567pt too wide) in paragraph at lines 1389--1390
 [][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (44.2453pt too wide) in paragraph at lines 1375--1376
+Overfull \hbox (44.2453pt too wide) in paragraph at lines 1391--1392
 [][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (44.2453pt too wide) in paragraph at lines 1376--1377
+Overfull \hbox (44.2453pt too wide) in paragraph at lines 1392--1393
 [][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (75.74493pt too wide) in paragraph at lines 1377--1378
+Overfull \hbox (75.74493pt too wide) in paragraph at lines 1393--1394
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (1.41115pt too wide) in paragraph at lines 1397--1400
+Overfull \hbox (1.41115pt too wide) in paragraph at lines 1413--1416
 []\OT1/cmr/m/n/10.95 Here we are sim-ply se-let-ing a meat and two veg-eta-bles
 , tak-ing their recipes 
  []
 
-<meatTwoVeg.png, id=860, 979.40906pt x 188.20313pt>
+<meatTwoVeg.png, id=865, 979.40906pt x 188.20313pt>
 File: meatTwoVeg.png Graphic file (type png)
  <use meatTwoVeg.png>
-Package pdftex.def Info: meatTwoVeg.png used on input line 1402.
+Package pdftex.def Info: meatTwoVeg.png used on input line 1418.
 (pdftex.def)             Requested size: 360.0pt x 69.17744pt.
 
 
-LaTeX Warning: `h' float specifier changed to `ht'.
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
 
-
-Overfull \hbox (1.04616pt too wide) in paragraph at lines 1407--1412
+[32]
+Overfull \hbox (1.04616pt too wide) in paragraph at lines 1423--1428
 []\OT1/cmr/m/n/10.95 This is of course a very sim-ple ex-am-ple, one could imag
 -ine mod-elling much 
  []
@@ -1213,24 +1223,18 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[32]
-Overfull \hbox (2.24579pt too wide) in paragraph at lines 1456--1457
+[33 <./meatTwoVeg.png>]
+Overfull \hbox (2.24579pt too wide) in paragraph at lines 1472--1473
 [][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Package Fancyhdr Warning: \headheight is too small (12.0pt): 
- Make it at least 13.59999pt.
- We now make it that large for the rest of the document.
- This may cause the page layout to be inconsistent, however.
-
-[33 <./meatTwoVeg.png>]
-Overfull \hbox (2.24579pt too wide) in paragraph at lines 1463--1464
+Overfull \hbox (2.24579pt too wide) in paragraph at lines 1479--1480
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
  []
 
 
-Overfull \hbox (54.74518pt too wide) in paragraph at lines 1484--1485
+Overfull \hbox (54.74518pt too wide) in paragraph at lines 1500--1501
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
@@ -1247,13 +1251,24 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[35] <project.jpg, id=941, 790.955pt x 468.75125pt>
+[35]
+Overfull \hbox (9.77362pt too wide) in paragraph at lines 1572--1586
+[][]  
+ []
+
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[36] <project.jpg, id=960, 790.955pt x 468.75125pt>
 File: project.jpg Graphic file (type jpg)
  <use project.jpg>
-Package pdftex.def Info: project.jpg used on input line 1562.
+Package pdftex.def Info: project.jpg used on input line 1620.
 (pdftex.def)             Requested size: 360.0pt x 213.35367pt.
 
-Overfull \hbox (17.16635pt too wide) in paragraph at lines 1579--1583
+Overfull \hbox (17.16635pt too wide) in paragraph at lines 1637--1641
 []\OT1/cmr/m/n/10.95 A fur-ther con-sid-er-a-tion, briefly men-tioned pre-vi-ou
 sly, is that the \OT1/cmtt/m/n/10.95 Measurement 
  []
@@ -1264,15 +1279,15 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[36 <./project.jpg>]
+[37 <./project.jpg>]
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[37]
-Overfull \hbox (1.9283pt too wide) in paragraph at lines 1649--1659
+[38]
+Overfull \hbox (1.9283pt too wide) in paragraph at lines 1707--1717
 \OT1/cmr/m/n/10.95 "par-tial func-tion from time to a ran-dom vari-able" [[]]. 
 There is some math- 
  []
@@ -1283,37 +1298,7 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[38]
-
-Package Fancyhdr Warning: \headheight is too small (12.0pt): 
- Make it at least 13.59999pt.
- We now make it that large for the rest of the document.
- This may cause the page layout to be inconsistent, however.
-
 [39]
-Overfull \hbox (38.99536pt too wide) in paragraph at lines 1733--1734
-[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
- []
-
-
-Overfull \hbox (28.49548pt too wide) in paragraph at lines 1734--1735
-[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
- []
-
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 173
-5.
-LaTeX Font Info:    No file OMScmtt.fd. on input line 1735.
-
-LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
-(Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbackslash' on input line 1735.
-
-
-Overfull \hbox (22.99562pt too wide) in paragraph at lines 1735--1736
-[][][][][][]\OMS/cmsy/m/n/10 n[][][][][][][][][][][][][][][][][][][][][][][][][
-][][] 
- []
-
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -1321,6 +1306,29 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [40]
+Overfull \hbox (38.99536pt too wide) in paragraph at lines 1791--1792
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
+ []
+
+
+Overfull \hbox (28.49548pt too wide) in paragraph at lines 1792--1793
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
+ []
+
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 179
+3.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 1793.
+
+LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
+(Font)              using `OMS/cmsy/m/n' instead
+(Font)              for symbol `textbackslash' on input line 1793.
+
+
+Overfull \hbox (22.99562pt too wide) in paragraph at lines 1793--1794
+[][][][][][]\OMS/cmsy/m/n/10 n[][][][][][][][][][][][][][][][][][][][][][][][][
+][][] 
+ []
+
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -1342,28 +1350,35 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  This may cause the page layout to be inconsistent, however.
 
 [43]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1853.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1853.
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[44]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1910.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1910.
  (./dissertation.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1853.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1853.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1910.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1910.
 
 Package rerunfilecheck Info: File `dissertation.out' has not changed.
-(rerunfilecheck)             Checksum: FDD3309666EA6E860485470296B10C19;2705.
+(rerunfilecheck)             Checksum: 173E61EBB08B2489EC2EF9EF3E76F180;2705.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1853.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1910.
  ) 
 Here is how much of TeX's memory you used:
- 10194 strings out of 493029
- 143381 string characters out of 6136234
- 256297 words of memory out of 5000000
+ 10204 strings out of 493029
+ 143536 string characters out of 6136234
+ 260297 words of memory out of 5000000
  12972 multiletter control sequences out of 15000+600000
  15329 words of font info for 62 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 33i,11n,43p,318b,1848s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 33i,11n,43p,318b,1844s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texl
@@ -1377,10 +1392,10 @@ nts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/
 cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.p
 fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></u
 sr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on dissertation.pdf (43 pages, 531603 bytes).
+Output written on dissertation.pdf (44 pages, 538951 bytes).
 PDF statistics:
- 1193 PDF objects out of 1200 (max. 8388607)
- 1111 compressed objects within 12 object streams
- 602 named destinations out of 1000 (max. 500000)
+ 1208 PDF objects out of 1440 (max. 8388607)
+ 1125 compressed objects within 12 object streams
+ 612 named destinations out of 1000 (max. 500000)
  367 words of extra memory for PDF output out of 10000 (max. 10000000)
 
