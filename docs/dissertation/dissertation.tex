@@ -585,7 +585,19 @@ actions in our tree is captured by their level in the tree.
 We can see that the actions we could choose to perform first
 are the leaves of the tree. If we then remove a leaf and perform
 that action then the actions we can perform next are the new
-leaves of the tree. We can use this to generate a list of all
+leaves of the tree. This set of actions we can perform at a given time
+gets smaller as we progress up to the root node of the tree where all
+we can do is perform the final action. The diagram below visualises
+this, albeit the number of actions would not necessarily decrease
+in such a uniform fashion.
+
+\begin{figure}[h]
+\includegraphics[width=7cm, keepaspectratio]{actionsOverTime.png}
+\centering
+\caption{Number of actions decrease over time.}
+\end{figure}
+
+We can use this to generate a list of all
 the different orders that the actions of a recipe can be performed
 in while creating the same recipe. We want a way of generating
 all combinations of nodes such that nodes higher in the tree
@@ -1396,15 +1408,9 @@ Running this example we get the following recipe tree.
 
 This is of course a very simple example, one could imagine modelling much more complex
 cuisines in this method, maybe even handling the cooking methods for each type of
-ingredient in the cuisine function itself rather than having a list. Below
-is an example of a "roast dinner" function which adapts the measurements and cooking
-times based upon how many it must serve.
-
-% Select meat, weight per person, cooking time accordingly
-% Select two vegetables, boil them
-% Add roast or boiled potatoes
-% Add yorkshire pudding
-% Select sauce to go with meat: cranberry, horseradish, mint sauce, apple sauce
+ingredient in the cuisine function itself rather than having a list. This could also
+be interfaced with some sort of machine learning algorithm which has processed
+many recipes in a given cuisine to find common flavour combinations.
 
 \subsection{Improving Recipes}
 
@@ -1532,21 +1538,33 @@ While DSLs are a widely explored field, nothing along the lines of a recipe DSL
 currently exists. My contributions to filling this gap are the following:
 
 \begin{itemize}
-    \item A small set of extensible combinators that can be used to describe a wide variety of recipes.
+    \item A small set of extensible combinators that can be used to describe a wide variety of recipes (Section 2).
 
-    \item Interpretations of recipes specified using these combinators within various semantic domains.
+    \item Interpretations of recipes specified using these combinators within various semantic domains (Section 5).
 
-    \item A concrete implementation of the recipes in the form of stations in an environment.
+    \item A concrete implementation in the form of stations in an environment (Section 4).
 
     \item A demonstration of how operational semantics (topological sorting) can be used in
-    scheduling to optimise a recipe via parallelisation.
+    scheduling to optimise a recipe via parallelisation (Sections 3 \& 4).
 
     \item Mapping of various properties to recipes potentially leading to the ability
-    to suggest improvements or substitutions.
+    to suggest improvements (Sections 5.5 \& 5.6).
 
     \item Exploration into how, given a certain model (cuisine), one can write functions that
-    generate recipes.
+    generate recipes (Section 5.5).
 \end{itemize}
+
+Due to the novel nature of this project there are no doubt other avenues to explore and
+room to further explore those mentioned. The first stage of the project was to describe
+and display recipes. We then proceeded by defining their semantics across various domains
+before finally exploring applications for these semantics. This is illustrated by the
+three levels of the graph below.
+
+\begin{figure}[h]
+\includegraphics[width=\textwidth, keepaspectratio]{project.jpg}
+\centering
+\caption{Diagram displaying overall project structure.}
+\end{figure}
 
 \subsection{Future Work}
 
@@ -1716,7 +1734,7 @@ various functions as written in \cite{regions}.
 \begin{lstlisting}
     circle :: Radius -> Region         -- creates a region with given radius
     outside :: Region -> Region        -- the logical negation of a region
-    (/\) :: Region -> Region -> Region -- the intersection of two regions
+    (/(*@{\textbackslash}@*)) :: Region -> Region -> Region -- the intersection of two regions
 \end{lstlisting}
 
 With just a few functions, the DSL is able to express much more complex regions
@@ -1725,7 +1743,7 @@ concisely. The following is the definition given by the authors for a function
 
 \begin{lstlisting}
     annulus :: Radius -> Radius -> Region
-    annulus r1 r2 = outside (circle r1) /\ circle r2
+    annulus r1 r2 = outside (circle r1) /(*@{\textbackslash}@*) circle r2
 \end{lstlisting}
 
 This demonstrates the extensibility of such DSLs and how complex entities

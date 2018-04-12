@@ -188,6 +188,9 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/stmaryrd/stmary5.tfm
 INPUT cupOfTea.png
 INPUT ./cupOfTea.png
 INPUT ./cupOfTea.png
+INPUT actionsOverTime.png
+INPUT ./actionsOverTime.png
+INPUT ./actionsOverTime.png
 INPUT cupOfTea2.png
 INPUT ./cupOfTea2.png
 INPUT ./cupOfTea2.png
@@ -199,6 +202,9 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmti10.tfm
 INPUT meatTwoVeg.png
 INPUT ./meatTwoVeg.png
 INPUT ./meatTwoVeg.png
+INPUT project.jpg
+INPUT ./project.jpg
+INPUT ./project.jpg
 INPUT dissertation.aux
 INPUT ./dissertation.out
 INPUT ./dissertation.out
