@@ -265,17 +265,22 @@ fridge =
             _ -> Nothing
      in Station "fridge" fridgeConstr []
 
-
-
 -------------------------------------
 -- TEST PROPERTIES
 -------------------------------------
+
+-- Price
 
 priceList :: PriceList
 priceList = [ ("teabag", (639, Count 240))
             , ("milk", (70, Milliletres 1000))
             , ("sugar", (69, Grams 1000))
             , ("water", (0, Milliletres 1)) ]
+
+-- Food Type
+
+data FoodType = Meat | Veg
+    deriving (Show, Eq)
 
 ingList :: PropertyList FoodType
 ingList = [ ("chicken breast", Meat)
@@ -298,18 +303,23 @@ recList = [ ("chicken breast", heatAtForM 200 40 $ ingredient "chicken breast")
           , ("green beans", boilInWaterForM 5 $ ingredient "green beans")
           , ("green cabbage", boilInWaterForM 5 $ ingredient "green cabbage") ]
 
-meatTwoVeg :: Cuisine
-meatTwoVeg is rs =
-    let meats = filter (\(_,t) -> t == Meat) is
-        vegs = filter (\(_,t) -> t == Veg) is
-        ings = map fst $ head meats : take 2 vegs
-        parts = map (\s -> case lookup s rs of
-                             Just r -> r
-                             Nothing -> ingredient s) ings
+-- Cuisine
+
+meatTwoVeg :: Cuisine (FoodType, Recipe)
+meatTwoVeg ps =
+    let meats = filter (\(_,p) -> fst p == Meat) ps
+        vegs = filter (\(_,p) -> fst p == Veg) ps
+        parts = map (\(_,p) -> snd p)
+                $ head meats : take 2 vegs
      in foldr1 (combine "next to") parts
 
 testRecipe :: Recipe
-testRecipe = meatTwoVeg ingList recList
+testRecipe = meatTwoVeg pList
+    where
+        pList = map (\((s, t), (_, r)) -> (s, (t, r))) lists
+        lists = zip ingList recList
+
+-- Seasoning
 
 guacamole :: Recipe
 guacamole = multiCombine "mix" avocado
