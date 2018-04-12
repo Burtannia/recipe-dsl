@@ -13,8 +13,12 @@ import Data.List (sort)
 -- RECIPE DEFINITION
 -------------------------------------
 
+-- |Recipe type is simply a Data.Tree of Actions.
 type Recipe = Tree Action
 
+-- |Actions represent something that is done during the recipe
+-- and are taken to be "applied" on their child nodes in the
+-- tree.
 data Action = GetIngredient String
             | Heat
             | HeatAt Int
@@ -25,8 +29,8 @@ data Action = GetIngredient String
             | Measure Measurement
             deriving (Show, Eq, Ord)
 
--- |Ordering compares the number of different topological
--- sorts of each recipe.
+-- |Ordering finds the list of topological sorts for each
+-- recipe, sorts the lists then compares them.
 instance Ord Recipe where
     compare t1 t2 = let xs = sort $ topologicals t1
                         ys = sort $ topologicals t2
@@ -54,78 +58,110 @@ instance Monoid Time where
     mempty = 0
     mappend = (+)
 
+-- |Conditions represent an event which you perform a recipe "until".
+-- for example, CondTemp 100 wrapped around an Action would represent
+-- performing that action until the temperature is 100 degrees.
 data Condition = CondTime Time | CondTemp Int | CondOpt String
     | Condition `AND` Condition | Condition `OR` Condition
     deriving (Show, Eq, Ord)
 
+-- |Folds a function over a condition. AND will mappend the
+-- values from folding over the two conditions whereas OR
+-- takes the max.
 foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
 foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
 foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
 foldCond f c            = f c
 
+-- |Represents a measurement of something.
 data Measurement = Count Int | Grams Int | Milliletres Int
     deriving (Eq)
 
+-- |Returns the magnitude of a measurement.
 getMeasure :: Measurement -> Int
 getMeasure (Count i) = i
 getMeasure (Grams i) = i
 getMeasure (Milliletres i) = i
 
+-- |Ordering uses the magnitude only.
 instance Ord Measurement where
     compare a b = compare (getMeasure a) (getMeasure b)
 
+-- |Count 1 -> 1, Grams 100 -> 100g, Milliletres 200 -> 200ml.
 instance Show Measurement where
     show (Count i) = show i
     show (Grams i) = show i ++ "g"
     show (Milliletres i) = show i ++ "ml"
 
+-- |Creates a "GetIngredient" action with no
+-- child nodes.
 ingredient :: String -> Recipe
 ingredient s = Node (GetIngredient s) []
 
+-- |Adds a Heat action above the given recipe.
 heat :: Recipe -> Recipe
 heat r = Node Heat [r]
 
+-- |Adds a HeatAt action with the given
+-- temperature above the given recipe.
 heatAt :: Int -> Recipe -> Recipe
 heatAt temp r = Node (HeatAt temp) [r]
 
+-- |Adds a Wait action above the given recipe.
 wait :: Recipe -> Recipe
 wait r = Node Wait [r]
 
+-- |Adds a Combine Action above the two recipes.
 combine :: String -> Recipe -> Recipe -> Recipe
 combine s r1 r2 = Node (Combine s) [r1, r2]
 
+-- |Adds the given condition to the given recipe
+-- by wrapping Conditional around the root Action.
 addCondition :: Condition -> Recipe -> Recipe
 addCondition c (Node a ts) = case a of
     Conditional a' c' -> Node a'' ts
         where a'' = Conditional a' (c .&& c')
     _ -> Node (Conditional a c) ts
 
+-- |Logical "and" of two conditions.
 (.&&) :: Condition -> Condition -> Condition
 (.&&) = AND
 
+-- |Logical "or" of two conditions.
 (.||) :: Condition -> Condition -> Condition
 (.||) = OR
 
+-- |Wraps the root node of a recipe in a transaction.
+-- This means that when executing the recipe, the child
+-- actions should finish around the same time and the
+-- wrapped, parent action should then be executed immediately.
 transaction :: Recipe -> Recipe
 transaction (Node a ts) = Node (Transaction a) ts
 
+-- |Adds a Measure action with the given measurement
+-- above the given recipe.
 measure :: Measurement -> Recipe -> Recipe
 measure m r = Node (Measure m) [r]
 
 -- Nicer Conditions and Time
 
+-- |Adds the CondOpt condition to the root node of a recipe.
 optional :: String -> Recipe -> Recipe
 optional s = addCondition (CondOpt s)
 
+-- |Adds the CondTemp condition to the root node of a recipe.
 toTemp :: Int -> Recipe -> Recipe
 toTemp t = addCondition (CondTemp t)
 
+-- |Adds the CondTime condition to the root node of a recipe.
 forTime :: Time -> Recipe -> Recipe
 forTime t = addCondition (CondTime t)
 
+-- |Creates a time with the given number of hours: hours 1 = Time 3600.
 hours :: Time -> Time
 hours = (*) 3600
 
+-- |Creates a time with the given number of minutes: minutes 1 = Time 60.
 minutes :: Time -> Time
 minutes = (*) 60
 
@@ -133,17 +169,21 @@ minutes = (*) 60
 -- UTILITY FUNCTIONS
 -------------------------------------
 
+-- |Fold a function over a recipe to obtain a value.
 foldRecipe :: Monoid a => (Action -> a) -> Recipe -> a
 foldRecipe f (Node a ts) =
     let vs = map (foldRecipe f) ts
      in f a `mappend` (mconcat vs)
 
+-- |The ingredients of a recipe.
 ingredients :: Recipe -> [String]
 ingredients = foldRecipe f
     where
         f (GetIngredient s) = [s]
         f _ = []
 
+-- |List of ingredients paired with their measurements.
+-- If no measurement is present for an ingredient, it is paired with "Count 0".
 ingredientsQ :: Recipe -> [(String, Measurement)]
 ingredientsQ (Node (Measure m) ts) = case ts of
     [Node (GetIngredient s) _] -> [(s,m)]
@@ -153,9 +193,12 @@ ingredientsQ (Node _ ts) = concatMap ingredientsQ ts
 
 type Label = Int
 
+-- |Replaces the action in each node with a unique label.
 labelRecipe :: Recipe -> Tree Label
 labelRecipe r = fmap fst (labelRecipeR r)
 
+-- |Labels each node of the tree while keeping the entire
+-- recipe from that node downwards in a tuple.
 labelRecipeR :: Recipe -> Tree (Label, Recipe)
 labelRecipeR r = evalState (labelRecipeR' r) 1
     where
@@ -165,22 +208,25 @@ labelRecipeR r = evalState (labelRecipeR' r) 1
             put (l + 1)
             return $ Node (l,r) ts'
 
+-- |Same as labelRecipeR but only keeps the action
+-- from that node.
 labelRecipeA :: Recipe -> Tree (Label, Action)
 labelRecipeA r = fmap (\(l,r) -> (l, rootLabel r))
     (labelRecipeR r)
 
--- Time to reach temp (use with CondTemp)
+-- |Time to reach a certain temperature, for use with CondTemp.
 tempToTime :: Int -> Time
 tempToTime i = Time i * 2
 
--- Preheat time (use with HeatAt)
--- 10m
+-- |Time taken to preheat to a given temperature, for use with HeatAt.
 preheatTime :: Int -> Time
 preheatTime = const $ Time 600
 
+-- |Estimate of the time taken to execute a recipe using timeAction.
 time :: Recipe -> Time
 time = foldRecipe timeAction
 
+-- |Estimate of the time taken to perform a certain action.
 timeAction :: Action -> Time
 timeAction (GetIngredient _) = 10
 timeAction Heat = 0
@@ -196,6 +242,7 @@ timeAction (Conditional a c) = t' + foldCond f c
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 10
 
+-- |Returns a list of all the possible topological sorts of a recipe.
 topologicals :: Recipe -> [[Action]]
 topologicals (Node a []) = [[a]]
 topologicals t = concat
@@ -204,22 +251,25 @@ topologicals t = concat
         topologicals' l = topologicals $ removeFrom t l
         ls = leaves t
 
+-- |Returns True if the given node is a leaf i.e. has no child nodes.
 isLeaf :: Recipe -> Bool
 isLeaf (Node _ []) = True
 isLeaf _           = False
 
+-- |List of all leaves in the recipe.
 leaves :: Recipe -> [Recipe]
 leaves (Node a []) = [Node a []]
 leaves (Node a ts) = concatMap leaves ts
 
--- Removes all occurences of a sub tree from the given tree.
--- Removing a tree from itself does nothing.
+-- |Removes all occurences of a sub recipe from the given recipe.
+-- Removing a recipe from itself does nothing.
 removeFrom :: Recipe -> Recipe -> Recipe
 removeFrom t@(Node a ts) toRem = Node a ts''
     where
         ts'  = deleteAll toRem ts
         ts'' = map (\t -> removeFrom t toRem) ts'
 
+-- |Removes all occurences of a given recipe in a list of recipes.
 deleteAll :: Recipe -> [Recipe] -> [Recipe]
 deleteAll _ [] = []
 deleteAll x (y:ys)
