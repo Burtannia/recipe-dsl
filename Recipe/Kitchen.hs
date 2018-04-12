@@ -26,7 +26,7 @@ type StName = String
 -- |An observable value.
 data Obs = ObsTemp Int -- ^ Observable temperature.
          | ObsTime Time -- ^ Observable time.
-         | ObsOpt String Bool -- ^ Observable option, labelled to correspond with a CondOpt
+         | ObsOpt String Bool -- ^ Observable option, labelled to correspond with a 'CondOpt'
                               -- in a recipe. True would mean to include that optional part of the recipe.
          deriving Show
 
@@ -45,14 +45,14 @@ evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 
 type ConstraintF = Recipe -> Maybe [Process]
 
--- |Removes the condition from the root action of a recipe.
+-- |Removes the 'Condition' from the root action of a recipe.
 -- Does nothing if there is no condition.
 popCond :: Recipe -> Recipe
 popCond (Node (Conditional a c) ts) = Node a ts
 popCond r = r
 
--- |Adds the EvalCond process after the Input process.
--- If Input does not exist then EvalCond is
+-- |Adds the 'EvalCond' process after the 'Input' process.
+-- If 'Input' does not exist then 'EvalCond' is
 -- added to the start.
 addEvalCond :: Condition -> [Process] -> [Process]
 addEvalCond c ps =
@@ -64,7 +64,7 @@ addEvalCond c ps =
         addEvalCond' c (Input:ps) = Input : EvalCond c : ps
         addEvalCond' c (p:ps) = p : addEvalCond' c ps
 
--- |Removes the transaction wrapper from the root action
+-- |Removes the 'Transaction' wrapper from the root action
 -- of the given recipe. Does nothing if there is no
 -- transaction wrapper.
 popT :: Recipe -> Recipe

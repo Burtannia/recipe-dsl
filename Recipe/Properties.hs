@@ -15,7 +15,7 @@ import Data.List (maximumBy)
 -- of a given type.
 type PropertyList v = [(String, v)]
 
--- |Lookup the property of a given key in the PropertyList.
+-- |Lookup the property of a given key in the 'PropertyList'.
 -- Returns mempty if not found.
 lookupProp :: Monoid v => PropertyList v -> String -> v
 lookupProp ps s = case lookup s ps of
@@ -30,7 +30,7 @@ evalProps ps = foldRecipe f
         f (GetIngredient s) = lookupProp ps s
         f _ = mempty        
 
--- |The same as evalProps but considers the quantity of an ingredient used
+-- |The same as 'evalProps' but considers the quantity of an ingredient used
 -- and calculates the ratio accordingly.
 evalPropsQ :: (Integral v, Monoid v) => PropertyList (v, Measurement) -> [(String, Measurement)] -> v
 evalPropsQ ps xs = mconcat $ map evalPropsQ' xs
@@ -41,7 +41,7 @@ evalPropsQ ps xs = mconcat $ map evalPropsQ' xs
 
 -- |Apply the given measurement to the given quantified property.
 -- Returning the value of the property applicable to the given measurement.
--- Informally: applyQuant 100g (£1,50g) means "Every 50g costs £1,
+-- Informally: 'applyQuant' 100g (£1,50g) means "Every 50g costs £1,
 -- I have 100g therefore that costs £2".
 applyQuant :: Integral v => Measurement -> (v, Measurement) -> v
 applyQuant m (v,m') =
@@ -56,6 +56,7 @@ ratio (Grams i) (Grams i') = ratio' i i'
 ratio (Milliletres i) (Milliletres i') = ratio' i i'
 ratio _ _ = 0.0
 
+-- |Helper function to avoid "divide by zero" in 'ratio'.
 ratio' :: Int -> Int -> Float
 ratio' i i' = if i' == 0
     then 0.0
@@ -83,7 +84,7 @@ instance Monoid Price where
     mempty = Price 0
     mappend = (+)
 
--- |PropertyList mapping an ingredient (String) to
+-- |'PropertyList' mapping an ingredient (String) to
 -- a pair of price per measurement.
 type PriceList = PropertyList (Price, Measurement)
 

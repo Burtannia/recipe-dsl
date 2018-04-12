@@ -1,4 +1,26 @@
-module Recipe.Scheduler where
+-- | The scheduling function implemented here is mainly for demonstration purposes.
+-- It is rather inefficient and runs for a very long time thus it is not suitable
+-- for scheduling recipes with more than a small number of 'Action's.
+--
+-- == Leaf Selection Heuristics
+-- 1. Shortest task.
+-- 2. Longest branch.
+--
+-- == Stack Selection Heuristics
+-- 1. Least in-demand first. Calculates an expected time that will be added
+-- to the stack by all the unscheduled tasks.
+-- 2. Least idle time required i.e. the stack which has a height closest
+-- to the minimum start time of the action being scheduled.
+-- 3. Smallest stack.
+
+module Recipe.Scheduler(
+    -- * Types
+    Task (..), Stack, Schedule,
+    -- * Label Helper Functions
+    mkLabelMap, lookupR, childLabels,
+    lookupValSts, validStations,
+    -- * Scheduling Functions
+    duration, scheduleRecipe, initSchedule ) where
 
 import           Control.Monad.Trans.State
 import           Data.Map.Strict           (Map)
@@ -13,26 +35,31 @@ import Data.List (groupBy, sortBy, maximumBy, minimumBy)
 -- Label Helper Functions
 -----------------------------
 
--- map of labels to their recipe
+-- |Create a map of labels to their recipe in the
+-- given tree.
 mkLabelMap :: Tree (Label, Recipe) -> Map Label Recipe
 mkLabelMap = Map.fromList . flatten
 
--- Label -> Recipe
+-- |Given a label, lookup the corresponding recipe
+-- in the map.
 lookupR :: Label -> Map Label Recipe -> Recipe
 lookupR l rMap = fromJust $ Map.lookup l rMap
 
--- Label -> [ChildLabels]
+-- |Get the child labels of a given label in
+-- a given tree.
 childLabels :: Label -> Tree Label -> [Label]
 childLabels l (Node l' ts)
     | l == l'   = map rootLabel ts
     | otherwise = concatMap (childLabels l) ts
 
--- Env -> Label -> [Valid Stations]
+-- |Lookup the stations capable of handling the action
+-- at the root node of the recipe corresponding the to given label.
 lookupValSts :: Env -> Label -> Map Label Recipe -> [StName]
 lookupValSts env l rMap = let r = lookupR l rMap
                            in validStations env r
 
--- Env -> Recipe -> [Valid Stations]
+-- |Lookup the stations capable of handling the action
+-- at the root node of the given recipe.
 validStations :: Env -> Recipe -> [StName]
 validStations env r = let xs = map (applyConstrF r) (eStations env)
                           applyConstrF r st = (stName st, (stConstrF st) r)
@@ -43,13 +70,18 @@ validStations env r = let xs = map (applyConstrF r) (eStations env)
 -- Scheduler
 -----------------------------
 
-data Task = Active Label | Idle Time
+-- |Task performed by a 'Station'.
+data Task = Active Label -- ^ Active performing the action corresponding to the label.
+          | Idle Time -- ^ Idle for a time.
     deriving (Eq, Show)
 
 type Stack = [Task]
 
+-- |Schedule is a map of station names to their 'Stack' of 'Task's
 type Schedule = Map StName Stack
 
+-- |Time a schedule takes, must be given the recipe that
+-- the schedule is for.
 schLength :: Schedule -> Recipe -> Time
 schLength sch r =
     let rMap = mkLabelMap $ labelRecipeR r
@@ -59,23 +91,35 @@ schLength sch r =
 
 -- heuristic 1 (least demand):
 
+-- |Duration that the root action of the recipe
+-- corresponding to the given label will take.
+-- Uses 'timeAction'.
 duration :: Label -> Map Label Recipe -> Time
 duration l rMap = case Map.lookup l rMap of
     Nothing -> error "Recipe not found"
     Just (Node a ts) -> timeAction a
 
+-- Same as removeFrom in Recipe.Recipe just
+-- with labels.
 removeFrom :: Tree Label -> Label -> Tree Label
 removeFrom t@(Node a ts) toRem = Node a ts''
     where
         ts'  = deleteAll toRem ts
         ts'' = map (\t -> removeFrom t toRem) ts'
 
+-- Same as deleteAll in Recipe.Recipe just
+-- with labels.
 deleteAll :: Label -> [Tree Label] -> [Tree Label]
 deleteAll _ [] = []
 deleteAll l (y@(Node l' _):ys)
     | l == l' = deleteAll l ys
     | otherwise = y : deleteAll l ys
 
+-- Calculates demand for each station:
+-- remove leaf from recipe
+-- iterate over tree constructing [(StName, Duration `div` num valid stations)] for each label
+-- group by stname and collapse into 1 tuple for each stname
+-- add in (name,0) for stations that didn't appear
 demands :: Tree Label -> Env -> Map Label Recipe -> [(StName, Time)]
 demands unscheduleds env rMap =
     let durations = concat . flatten $ fmap expectedDurs unscheduleds
@@ -90,14 +134,10 @@ demands unscheduleds env rMap =
         allSts = map stName (eStations env)
         unuseds = filter (\st -> st `notElem` inDemNames) allSts
      in inDemands ++ map (\st -> (st, Time 0)) unuseds
-    -- remove leaf from recipe
-    -- iterate over tree constructing [(StName, Duration `div` num valid stations)]
-    -- group by stname and collapse into 1 tuple for each stname
-    -- need to add in (name,0) for stations that didn't appear
 
 -- heauristic 2 (least idle required):
 
--- |Given a label and a list of valid stations with their stacks, returns
+-- Given a label and a list of valid stations with their stacks, returns
 -- a list of those stations with the required idle time to schedule that label.
 -- Must also be passed a list of all stacks in order to find dependency times.
 -- The tree passed must be the full tree of the labelled recipe without
@@ -123,7 +163,7 @@ endOfLabel l ss rMap = maximum $ map endOfLabel' ss
             let stack' = dropWhile (\x -> not $ x == Active l) stack
              in sumDurations stack' rMap
 
-
+-- Sum the durations of a list of stacks.
 sumDurations :: [Task] -> Map Label Recipe -> Time
 sumDurations [] _ = Time 0
 sumDurations (Active l : ts) rMap = duration l rMap + sumDurations ts rMap
@@ -131,6 +171,8 @@ sumDurations (Idle t : ts) rMap = t + sumDurations ts rMap
 
 -- heuristic 3 (most space):
 
+-- Given a list of station names and their stacks, return the pair
+-- with the most space.
 mostSpace :: [(StName, Stack)] -> Map Label Recipe -> (StName, Stack)
 mostSpace [] _ = error "no stacks"
 mostSpace [x] _ = x
@@ -141,14 +183,16 @@ mostSpace (x@(stName, stack) : y@(stName', stack') : xs) rMap
 stackHeight :: Stack -> Map Label Recipe -> Time
 stackHeight = sumDurations
 
+-- Is the root action of the recipe corresponding
+-- to the given label wrapped in a transaction?
 isTransaction :: Label -> Map Label Recipe -> Bool
 isTransaction l rMap = case Map.lookup l rMap of
     Just (Node (Transaction _) _) -> True
     _ -> False
 
--- need to move this over to all Maps not []
--- heuristic 1 - heuristic 2
--- tie breaker = heuristic 3
+-- Choose the best stack for the given label.
+-- heuristic 1 + heuristic 2
+-- tie breaker is heuristic 3
 -- passed fullTree and tree with label removed
 chooseStack :: Tree Label -> Tree Label -> Label -> Env -> Map Label Recipe -> Schedule -> Schedule
 chooseStack fullTree unscheduleds l env rMap sch =
@@ -179,7 +223,7 @@ chooseStack fullTree unscheduleds l env rMap sch =
             _ -> Active l : Idle iTime : bestStack
      in Map.insert bestName newStack sch
 
--- |Recursive version of chooseStack to work on a list of labels.
+-- Recursive version of chooseStack to work on a list of labels.
 -- Used to schedule all children of a transaction without other recipes
 -- being scheduled in between.
 chooseStackRec :: Tree Label -> Tree Label -> [Label] -> Env -> Map Label Recipe -> Schedule -> Schedule
@@ -188,6 +232,10 @@ chooseStackRec fullTree lTree' (l:ls) env rMap sch =
     let sch' = chooseStack fullTree lTree' l env rMap sch
      in chooseStackRec fullTree lTree' ls env rMap sch'
 
+-- | Schedules a recipe in the given environment.
+-- Will error if no schedule is available e.g. if there
+-- is no 'Station' capable of handling a certain 'Action'.
+-- See documentation at the top for heuristics used.
 scheduleRecipe :: Recipe -> Env -> Schedule
 scheduleRecipe r env = 
     let lTree = labelRecipe r
@@ -211,7 +259,9 @@ scheduleRecipe r env =
                     then newSch
                     else scheduleRecipe' fullTree lTree' rMap newSch
 
-
+-- Given a schedule containing the labels passed as the second
+-- argument, add idle time before them so that they all finish
+-- at the same time.
 adjustSch :: Schedule -> [Label] -> Map Label Recipe -> Schedule
 adjustSch sch ls rMap =
     let stacks = Map.elems sch
@@ -221,6 +271,9 @@ adjustSch sch ls rMap =
         idleReqs = map (\(l,t) -> (l, latest - t)) notLatests
      in adjustStacks sch idleReqs
 
+-- Helper function used by 'adjustSch', applied the idle
+-- time paired with each label by adding it before
+-- any occurences of that label in the stacks.
 adjustStacks :: Schedule -> [(Label, Time)] -> Schedule
 adjustStacks sch [] = sch
 adjustStacks sch ((l,t):ls) =
@@ -230,6 +283,8 @@ adjustStacks sch ((l,t):ls) =
         sch' = Map.insert name stack sch
      in adjustStacks sch' ls
 
+-- Add the given idle time after the given label
+-- in the stack.
 addIdleTime :: Label -> Time -> Stack -> Stack
 addIdleTime l t stack =
     let (xs,ys) = splitAtEq (Active l) stack
@@ -239,6 +294,8 @@ addIdleTime l t stack =
                 _ -> ys
      in xs ++ ys'
 
+-- Splits a list at the given element.
+-- Element is in the second sublist after split.
 splitAtEq :: Eq a => a -> [a] -> ([a],[a])
 splitAtEq a [] = ([],[])
 splitAtEq a ys@(x:xs)
@@ -246,6 +303,7 @@ splitAtEq a ys@(x:xs)
     | otherwise = let (as,bs) = splitAtEq a xs
                    in (x:as, bs)
 
+-- Merge schedule 1 into schedule 2
 -- sch1 values kept on collision as per Map.insert
 mergeInto :: Schedule -> Schedule -> Schedule
 mergeInto sch1 sch2 = recInsert (Map.toList sch1) sch2
@@ -255,10 +313,14 @@ mergeInto sch1 sch2 = recInsert (Map.toList sch1) sch2
             let sch' = Map.insert k v sch
              in recInsert xs sch'
 
+-- |Creates a schedule where each 'Station' in
+-- the given environment has an empty 'Stack'.
 initSchedule :: Env -> Schedule
 initSchedule env = Map.fromList
     [(st,[]) | st <- map stName (eStations env)]
 
+-- Choose which leaf to schedule next from the list.
+-- Uses shortest task followed by longest branch heuristics.
 -- must take full tree
 chooseLeaf :: [Label] -> Tree Label -> Map Label Recipe -> Label
 chooseLeaf [] _ _ = error "No leaves"
@@ -274,22 +336,28 @@ chooseLeaf ls fullTree rMap =
             else fst $ maximumBy (\(_,b) (_,b') ->
                     compare (branchDuration b rMap) (branchDuration b' rMap)) labelsWithBranch
 
+-- Given a list of branches, find the branch
+-- containing the given label.
 getBranch :: [[Label]] -> Label -> [Label]
 getBranch [] _ = error "branch not found"
 getBranch (b:bs) l
     | l `elem` b = b
     | otherwise = getBranch bs l
 
+-- Sum the 'duration' of all labels in a branch.
 branchDuration :: [Label] -> Map Label Recipe -> Time
 branchDuration ls rMap = sum $
     map (\l -> duration l rMap) ls
 
+-- Get the list of all the branches of a tree.
 branches :: Tree Label -> [[Label]]
 branches (Node a []) = [[a]]
 branches (Node a ts) = [a : b | t <- ts
                               , let bs = branches t
                               , b <- bs]
 
+-- Get a list of all labels at the leaves of the recipe
+-- used to create the map.
 leaves :: Tree Label -> Map Label Recipe -> [Label]
 leaves (Node l []) _ = [l]
 leaves (Node l ts) rMap = case Map.lookup l rMap of

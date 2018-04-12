@@ -28,6 +28,9 @@ extractLabel :: [Tree (Label, Action)] -> [String]
 extractLabel [t] = [extractLabel' t]
 extractLabel ts = map extractLabel' ts
 
+-- |Helper function for 'extractLabel'. If a node contains
+-- a label and ingredient, return the name of the ingredient,
+-- else return the label as a String.
 extractLabel' :: Tree (Label, Action) -> String
 extractLabel' (Node (_, GetIngredient s) _) = s
 extractLabel' (Node (l, _) _) = show l
@@ -63,7 +66,7 @@ steps = steps' . labelRecipeA
                 toString (Measure m) = "Measure " ++ show m ++ " of " ++ l'
                     where l' = head $ extractLabel ts
 
--- |Prints one step per line as follows:
+-- |Prints one step per line in the following style.
 -- 1) ...
 -- 2) ...
 ppSteps :: Recipe -> IO ()

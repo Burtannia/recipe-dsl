@@ -31,6 +31,7 @@ cupOfTea = optional "milk"
     $ combine "mix" teabag
     $ heatTo 100 water
 
+-- cupOfTea == cupOfTea'
 cupOfTea' :: Recipe
 cupOfTea' = optional "milk"
     $ combine "mix" 
@@ -38,6 +39,7 @@ cupOfTea' = optional "milk"
     $ combine "mix" teabag
     $ heatTo 100 water ) milk
 
+-- quantified cup of tea
 cupOfTeaQ :: Recipe
 cupOfTeaQ = optional "milk"
     $ combine "mix" (measure (Milliletres 10) milk)

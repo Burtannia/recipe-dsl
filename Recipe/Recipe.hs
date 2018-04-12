@@ -9,9 +9,9 @@ import QuickSpec
 import Test.QuickCheck
 import Data.List (sort)
 
--------------------------------------
--- RECIPE DEFINITION
--------------------------------------
+-------------------------
+-- Defining Recipes
+-------------------------
 
 -- |Recipe type is simply a Data.Tree of Actions.
 type Recipe = Tree Action
@@ -37,16 +37,16 @@ instance Ord Recipe where
                         ys = sort $ topologicals t2
                      in compare xs ys
 
--- |Two Recipes are equal if their sets of topological sorts
+-- |Two recipes are equal if their lists of topological sorts
 -- are equal.
 instance {-# OVERLAPPING #-} Eq Recipe where
     (==) r1 r2 = compare r1 r2 == EQ
 
--- |Time is a wrapper around an Int representing seconds.
+-- |'Time' is a wrapper around an Int representing seconds.
 newtype Time = Time Int
     deriving (Eq, Ord, Num, Real, Enum, Integral)
 
--- |Time is printed in hms format.
+-- |'Time' is printed in hms format.
 instance Show Time where
     show (Time i) = let h = i `div` 3600
                         m = (i `mod` 3600) `div` 60
@@ -67,21 +67,13 @@ data Condition = CondTime Time -- ^ Until the given time has elapsed.
                | Condition `OR` Condition -- ^ Logical "or" of two conditions.
     deriving (Show, Eq, Ord)
 
--- |Folds a function over a condition. AND will mappend the
--- values from folding over the two conditions whereas OR
--- takes the max.
-foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
-foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
-foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
-foldCond f c            = f c
-
 -- |Represents a measurement of something.
 data Measurement = Count Int -- ^ Number of something e.g. 1 apple.
                  | Grams Int -- ^ Number of grams.
                  | Milliletres Int -- ^ Number of milliletres.
     deriving (Eq)
 
--- |Returns the magnitude of a measurement.
+-- |Returns the magnitude of a 'Measurement'.
 getMeasure :: Measurement -> Int
 getMeasure (Count i) = i
 getMeasure (Grams i) = i
@@ -91,40 +83,46 @@ getMeasure (Milliletres i) = i
 instance Ord Measurement where
     compare a b = compare (getMeasure a) (getMeasure b)
 
--- |Count 1 -> 1, Grams 100 -> 100g, Milliletres 200 -> 200ml.
+-- | > show ('Count' 1) = 1
+-- > show ('Grams' 100) = 100g
+-- > show ('Milliletres' 200) = 200ml
 instance Show Measurement where
     show (Count i) = show i
     show (Grams i) = show i ++ "g"
     show (Milliletres i) = show i ++ "ml"
 
+-------------------------
+-- Creating Recipes
+-------------------------
+
 -- |Get an ingredient with the given name.
 ingredient :: String -> Recipe
 ingredient s = Node (GetIngredient s) []
 
--- |Heat the given recipe, used when the temperature it
+-- |'Heat' the given recipe, used when the temperature it
 -- is heated at doesn't matter for example heating water
 -- in a kettle.
 heat :: Recipe -> Recipe
 heat r = Node Heat [r]
 
--- |Heat the given recipe at the given temperature.
+-- |Heat the given recipe at the given temperature. ('HeatAt').
 heatAt :: Int -> Recipe -> Recipe
 heatAt temp r = Node (HeatAt temp) [r]
 
--- |Wait after performing the given recipe.
+-- |'Wait' after performing the given recipe.
 -- Without being wrapped with CondTime is an
 -- infinitely small wait.
 wait :: Recipe -> Recipe
 wait r = Node Wait [r]
 
--- |Combine the two recipes using the method given
+-- |'Combine' the two recipes using the method given
 -- as a String e.g. "mix".
 combine :: String -> Recipe -> Recipe -> Recipe
 combine s r1 r2 = Node (Combine s) [r1, r2]
 
 -- |Add the given condition to the root action of
 -- the given recipe. If the action is already
--- wrapped with a condtion, (AND) is applied
+-- wrapped with a condtion, ('AND') is applied
 -- to the two conditions.
 addCondition :: Condition -> Recipe -> Recipe
 addCondition c (Node a ts) = case a of
@@ -132,48 +130,56 @@ addCondition c (Node a ts) = case a of
         where a'' = Conditional a' (c .&& c')
     _ -> Node (Conditional a c) ts
 
--- |Wraps the root node of a recipe in a transaction.
+-- |Wraps the root node of a recipe in a 'Transaction'.
 transaction :: Recipe -> Recipe
 transaction (Node a ts) = Node (Transaction a) ts
 
--- |Adds a Measure action with the given measurement
+-- |Adds a 'Measure' action with the given 'Measurement'
 -- above the given recipe.
 measure :: Measurement -> Recipe -> Recipe
 measure m r = Node (Measure m) [r]
 
 -- Nicer Conditions and Time
 
--- |Applies addCondition CondOpt with the given label.
+-- |Applies 'addCondition' 'CondOpt' with the given label.
 optional :: String -> Recipe -> Recipe
 optional s = addCondition (CondOpt s)
 
--- |Applies addCondition CondTemp with the given temperature.
+-- |Applies 'addCondition' 'CondTemp' with the given temperature.
 toTemp :: Int -> Recipe -> Recipe
 toTemp t = addCondition (CondTemp t)
 
--- |Applies addCondition CondTime with the given time.
+-- |Applies 'addCondition' 'CondTime' with the given time.
 forTime :: Time -> Recipe -> Recipe
 forTime t = addCondition (CondTime t)
 
--- |Creates an AND condition.
+-- |Creates an 'AND' condition.
 (.&&) :: Condition -> Condition -> Condition
 (.&&) = AND
 
--- |Creates an OR condition.
+-- |Creates an 'OR' condition.
 (.||) :: Condition -> Condition -> Condition
 (.||) = OR
 
--- |Creates a time with the given number of hours: hours 1 = Time 3600.
+-- |Creates a time with the given number of hours: 'hours' 1 = 'Time' 3600.
 hours :: Time -> Time
 hours = (*) 3600
 
--- |Creates a time with the given number of minutes: minutes 1 = Time 60.
+-- |Creates a time with the given number of minutes: 'minutes' 1 = 'Time' 60.
 minutes :: Time -> Time
 minutes = (*) 60
 
--------------------------------------
--- UTILITY FUNCTIONS
--------------------------------------
+-------------------------
+-- Utility Functions
+-------------------------
+
+-- |Folds a function over a condition. AND will mappend the
+-- values from folding over the two conditions whereas OR
+-- takes the max.
+foldCond :: (Ord a, Monoid a) => (Condition -> a) -> Condition -> a
+foldCond f (c `AND` c') = (foldCond f c) `mappend` (foldCond f c')
+foldCond f (c `OR` c')  = max (foldCond f c) (foldCond f c')
+foldCond f c            = f c
 
 -- |Fold a function over a recipe to obtain a value.
 foldRecipe :: Monoid a => (Action -> a) -> Recipe -> a
@@ -189,7 +195,7 @@ ingredients = foldRecipe f
         f _ = []
 
 -- |List of ingredients paired with their measurements.
--- If no measurement is present for an ingredient, it is paired with "Count 0".
+-- If no measurement is present for an ingredient, it is paired with "'Count' 0".
 ingredientsQ :: Recipe -> [(String, Measurement)]
 ingredientsQ (Node (Measure m) ts) = case ts of
     [Node (GetIngredient s) _] -> [(s,m)]
@@ -214,21 +220,21 @@ labelRecipeR r = evalState (labelRecipeR' r) 1
             put (l + 1)
             return $ Node (l,r) ts'
 
--- |Same as labelRecipeR but only keeps the action
+-- |Same as 'labelRecipeR' but only keeps the action
 -- from that node.
 labelRecipeA :: Recipe -> Tree (Label, Action)
 labelRecipeA r = fmap (\(l,r) -> (l, rootLabel r))
     (labelRecipeR r)
 
--- |Time to reach a certain temperature, for use with CondTemp.
+-- |Time to reach a certain temperature, for use with 'CondTemp'.
 tempToTime :: Int -> Time
 tempToTime i = Time i * 2
 
--- |Time taken to preheat to a given temperature, for use with HeatAt.
+-- |Time taken to preheat to a given temperature, for use with 'heatAt'.
 preheatTime :: Int -> Time
 preheatTime = const $ Time 600
 
--- |Estimate of the time taken to execute a recipe using timeAction.
+-- |Estimate of the time taken to execute a recipe using 'timeAction'.
 time :: Recipe -> Time
 time = foldRecipe timeAction
 

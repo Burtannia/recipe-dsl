@@ -1383,20 +1383,18 @@ the structure that the ingredients will be placed into. To demonstrate this
 concept we will use the very simple and traditional "meat and two veg".
 
 \begin{lstlisting}
-    type Cuisine = PropertyList FoodType -> PropertyList Recipe -> Recipe
+    type Cuisine a = PropertyList a -> Recipe
 
-    meatTwoVeg :: Cuisine
-    meatTwoVeg is rs =
-        let meats = filter (\(_,t) -> t == Meat) is
-            vegs = filter (\(_,t) -> t == Veg) is
-            ings = map fst $ head ms : take 2 vs
-            parts = map (\s -> case lookup s rs of
-                                Just r -> r
-                                Nothing -> ingredient s) is
-         in foldr1 (combine "next to") parts
+    meatTwoVeg :: Cuisine (FoodType, Recipe)
+    meatTwoVeg ps =
+        let meats = filter (\(_,p) -> fst p == Meat) ps
+            vegs = filter (\(_,p) -> fst p == Veg) ps
+            parts = map (\(_,p) -> snd p)
+                    $ head meats : take 2 vegs
+        in foldr1 (combine "next to") parts
 \end{lstlisting}
 
-Here we are simply seleting a meat and two vegetables, applying their
+Here we are simply seleting a meat and two vegetables, taking their
 recipes from the list and then combining them in an appropriate way.
 Running this example we get the following recipe tree.
 
@@ -1407,7 +1405,7 @@ Running this example we get the following recipe tree.
 \end{figure}
 
 This is of course a very simple example, one could imagine modelling much more complex
-cuisines in this method, maybe even handling the cooking methods for each type of
+cuisines with this method, maybe even handling the cooking methods for each type of
 ingredient in the cuisine function itself rather than having a list. This could also
 be interfaced with some sort of machine learning algorithm which has processed
 many recipes in a given cuisine to find common flavour combinations.
