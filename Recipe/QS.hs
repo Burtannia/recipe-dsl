@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Recipe.QS where
 
@@ -16,23 +17,19 @@ import Data.List (sort)
 -- Arbitrary Instances
 -------------------------------------
 
--- quickCheck (\s r1 r2 -> combine s r1 r2 == combine s r2 r1)
-
 instance {-# OVERLAPPING #-} Arbitrary Recipe where
-    arbitrary = sized $ \n -> do
-        if n <= 5 then
-            genRecipe n
+    arbitrary = sized $ \n ->
+        if n > 4 then
+            resize 4 arbitrary
         else
-            resize 5 arbitrary
-        
-genRecipe :: Int -> Gen Recipe
-genRecipe n =
-    let un = resize (n-1) arbitrary
-        bin = resize (n `div` 2) arbitrary
-     in if n == 0 then
-            genIng
-        else
-            oneof [genUnRec un, genBinRec bin bin]
+            let un = resize (n-1) arbitrary
+                bin = resize (n `div` 2) arbitrary
+            in case n of
+                    0 -> genIng
+                    1 -> oneof
+                        [genIng, genUnRec un]
+                    _ -> oneof
+                        [genIng, genUnRec un, genBinRec bin bin]
 
 genIng :: Gen Recipe
 genIng = liftM (ingredient . show) (choose (1, 100) :: Gen Int)
@@ -92,24 +89,8 @@ instance Observe [Obs] Bool Condition where
 -- QuickSpec Stuff
 -------------------------------------
 
--- newtype Recipe' = Recipe' Recipe
---     deriving Show
-
--- instance Ord Recipe' where
---     compare (Recipe' r1) (Recipe' r2) =
---         let xs = sort $ topologicals r1
---             ys = sort $ topologicals r2
---          in compare xs ys
-
--- instance Eq Recipe' where
---     (==) r1 r2 =
---         compare r1 r2 == EQ 
-
--- instance Arbitrary Recipe' where
---     arbitrary = liftM Recipe' arbitrary
-
 qsRecipe = quickSpec
-    [ withMaxTermSize 5
+    [ withMaxTestSize 4
     
     , con "ingredient" (ingredient :: String -> Recipe)
     , con "heat" (heat :: Recipe -> Recipe)
@@ -122,17 +103,6 @@ qsRecipe = quickSpec
     , con "transaction" (transaction :: Recipe -> Recipe)
     , con "measure" (measure :: Measurement -> Recipe -> Recipe)
 
-    -- , con "ingredient" (\s -> Recipe' (ingredient s))
-    -- , con "heat" (\r -> Recipe' (heat r))
-    -- , con "heatAt" (\t r -> Recipe' (heatAt t r))
-    -- , con "wait" (\r -> Recipe' (wait r))
-    -- , con "combine" (\s r1 r2 -> Recipe' (combine s r1 r2))
-    -- , con "addCondition" (\c r -> Recipe' (addCondition c r))
-    -- , con ".&&" ((.&&) :: Condition -> Condition -> Condition)
-    -- , con ".||" ((.||) :: Condition -> Condition -> Condition)
-    -- , con "transaction" (\r -> Recipe' (transaction r))
-    -- , con "measure" (\m r -> Recipe' (measure m r))
-
     , con "optional" (optional :: String -> Recipe -> Recipe)
     , con "toTemp" (toTemp :: Int -> Recipe -> Recipe)
     , con "forTime" (forTime :: Time -> Recipe -> Recipe)
@@ -140,7 +110,34 @@ qsRecipe = quickSpec
     , con "minutes" (minutes :: Time -> Time)
 
     , monoType (Proxy :: Proxy Recipe)
-    -- , monoType (Proxy :: Proxy Recipe')
     , monoType (Proxy :: Proxy Measurement)
     , monoTypeObserve (Proxy :: Proxy Condition)
     , monoType (Proxy :: Proxy Time) ]
+
+-------------------------------------
+-- QuickCheck Tests
+-------------------------------------
+
+prop_and_id x =
+    x .&& x == x
+
+prop_or_id x =
+    x .|| x == x
+
+prop_and_comm x y =
+    x .&& y == y .&& x
+
+prop_or_comm x y =
+    x .|| y == y .|| x
+
+prop_min_hours x =
+    minutes (hours x) == hours (minutes x)
+
+prop_min_min x =
+    hours x == minutes (minutes x)
+
+prop_combine_comm s r1 r2 =
+    combine s r1 r2 == combine s r2 r1
+
+return []
+runTests = $quickCheckAll

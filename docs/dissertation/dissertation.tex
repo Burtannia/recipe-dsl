@@ -65,16 +65,39 @@
 \maketitle
 \newpage
 
-% Abstract and Acknowledgements
-% 4 sentence abstract
-% State the problem
-% Why it's an interesting problem
-% What my solution achieves
-% What follows from my solution
+\begin{footnotesize}
+\begin{center}
+\textbf{Abstract}
+\medbreak
+There does not currently exist a standard way to
+computationally model recipes. This is surprising
+as there is much scope
+for the use of computers with recipes whether it
+be robotic chefs or recipe development.
+I provide a set of combinators that can be used to
+concisely model recipes along with various interpretations.
+This provides foundations for future systems that wish
+to model and manipulate recipes.
+
+\vspace{1cm}
+
+\textbf{Acknowledgements}
+\medbreak
+I would like to extend my gratitude to my supervisor,
+Prof. Graham Hutton, for his continued support throughout
+the project, Nick Smallbone, for his assistance with QuickSpec
+and QuickCheck and Dr. Jason Atkin and Martin Handley, for
+their assistance with linear programming. I would also
+like to thank the authors of all referenced works, in
+particular Simon Peyton Jones who also gave a fantastic
+talk on doing research and writing reports.
+\end{center}
+\end{footnotesize}
 
 \newpage
 
 \tableofcontents
+
 \newpage
 
 \section{Introduction and Motivation}
@@ -133,13 +156,20 @@ to solving this problem are the following:
     \item I have provided a set of combinators as an EDSL in Haskell and show that
     they can be used to describe a wide variety of recipes (Section 2).
 
-    \item I have defined a set of actions needed to actually execute a recipe (Section 3).
+    \item I have defined what it means for two recipes to be equal using their
+    operational semantics (Section 3).
 
-    \item I have defined what it means for two recipes to be equal.
+    \item I have scheduled recipes defined in the EDSL using a concrete implementation
+    in the form of a kitchen environment. The schedule is optimised based on the tree-like
+    structure of recipes in the EDSL (Section 4).
 
-    \item I have scheduled recipes defined in the EDSL using a representation
-    of a kitchen environment. The schedule is optimised based on the tree-like
-    structure of recipes in the EDSL.
+    \item I have explored the meaning of recipes in various semantic domains (Section 5).
+
+    \item Using QuickSpec \cite{quickspec, quickspec2}, I have explored the laws that
+    various combinators satisfy (Section 5.4).
+
+    \item I then briefly explored how one could build on top of this EDSL to generate
+    new recipes or improve existing ones (Sections 5.5 \& 5.6).
 \end{itemize}
 
 \subsection{DSLs and Haskell}
@@ -312,7 +342,7 @@ to other combinators.
 \medbreak
 
 At a more complex level, conditionals could allow us to mix until "mixed".
-The concrete implementation in Section 4 can then be used to link this to a signal
+The concrete implementation in Section 4.1 can then be used to link this to a signal
 from a camera in the case of a robotic chef. The camera could monitor the mixture
 until it is somewhat of a uniform colour and then send the signal that mixing is complete.
 
@@ -900,7 +930,7 @@ in the decision making process. An everyday example might be preferring motorway
 when planning a journey; they have a higher speed limit and traffic capacity thus making
 them a faster route in the general case. There are two decisions we can apply heuristics to
 when scheduling recipes. The first is which leaf of the recipe tree to schedule first.
-Referring back to the section on topological sorting, the leaves of the tree at a given time
+Referring back to the section on topological sorting (Section 3), the leaves of the tree at a given time
 are comprise the set of actions we can choose to perform next. The second decision is which
 of the available stations to schedule this action on.
 
@@ -1540,6 +1570,10 @@ some examples to ensure any issues were found as soon as possible.
 
 \subsection{Evaluation and Testing}
 
+This section discusses the methods used to evaluate and test our
+combinators. There are of course more features that could be
+added which will be discussed in Section 7.2.
+
 \subsubsection{QuickCheck}
 
 QuickCheck \cite{quickcheck} is a library for the automated testing of Haskell
@@ -1828,7 +1862,7 @@ scaled transformation to the initial region to acquire the new region.
 
 \newpage
 
-    \begin{thebibliography}{13}
+    \begin{thebibliography}{14}
 
         \bibitem{robot}
         The Guardian. 2015. \textit{Future of food: how we cook}.
