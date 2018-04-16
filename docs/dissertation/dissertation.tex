@@ -763,7 +763,7 @@ condition is true given a list of observables.
     evalCond :: Condition -> [Obs] -> Bool
     evalCond (CondTime t) os = case [o | o@(ObsTime _) <- os] of
         [] -> False
-        (ObsTime t' : _) -> t == t'
+        (ObsTime t' : _) -> t >= t'
     evalCond (CondTemp t) os = case [o | o@(ObsTemp _) <- os] of
         [] -> False
         (ObsTemp t' : _) -> t == t'
@@ -771,7 +771,19 @@ condition is true given a list of observables.
         [] -> False
         (ObsOpt _ b : _) -> b
     evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
+
+    adjustTime :: Condition -> Obs -> Condition
+    adjustTime (CondTime t) (ObsTime t') = CondTime (t + t')
+    adjustTime c _ = c
 \end{lstlisting}
+
+Because recipes are specified in an abstract manner, independent of any specific execution instnace,
+conditions of time are specified relative to the start of the action. During execution we will no doubt
+often use global time to check our time conditions. As such, when an action is started, we need to
+adjust the condition with the absolute time at the start of the action. The \texttt{adjustTime} function
+does this and thus provides a method for converting time based conditions from relative time to absolute time.
+
+\medbreak
 
 A process is an intermediate translation of our recipes. One might say it's our sort of assembly
 language, sitting between our high level combinators and some device specific instructions that the
@@ -1115,7 +1127,7 @@ help us to create new recipes.
 
 One function that is particularly useful in exploring semantics is \texttt{fold}.
 Folding is the process of taking some whole made up of parts and creating a single
-value from it. For example folding texttt{(+)} over a list of numbers \texttt{[1,2,3]}
+value from it. For example folding \texttt{(+)} over a list of numbers \texttt{[1,2,3]}
 returns 6. We can use folding to create denotational semantics for our recipes \cite{hutton}.
 Denotational semantics involves terms being evaluated via a mapping to a value in a certain
 semantic domain. There are multiple semantic domains of interest in recipes hence the choice
@@ -1310,20 +1322,15 @@ an instance of the \texttt{Arbitrary} typeclass.
 
 \begin{lstlisting}
     instance {-# OVERLAPPING #-} Arbitrary Recipe where
-        arbitrary = sized $ \n -> do
-            if n <= 5 then
-                genRecipe n
-            else
-                resize 5 arbitrary
-
-    genRecipe :: Int -> Gen Recipe
-    genRecipe n =
-        let un = resize (n-1) arbitrary
-            bin = resize (n `div` 2) arbitrary
-        in if n == 0 then
-                genIng
-            else
-                oneof [genUnRec un, genBinRec bin bin]
+        arbitrary = sized $ \n ->
+            let un = resize (n-1) arbitrary
+                bin = resize (n `div` 2) arbitrary
+            in case n of
+                    0 -> genIng
+                    1 -> oneof
+                        [genIng, genUnRec un]
+                    _ -> oneof
+                        [genIng, genUnRec un, genBinRec bin bin]
 
     genIng :: Gen Recipe
     genIng = liftM (ingredient . show)
@@ -1377,6 +1384,42 @@ if for many random values of type test, observe test x == observe test y} \cite{
 Below we are generating random lists of our \texttt{Obs} type and evaluating our
 condition against them (Section 4.1). Now that we have all of our instances,
 we can pass our recipe functions to QuickSpec and see what laws it finds.
+For conciesness I shalln't list all the laws regarding conditions, they are
+the expected associativity, commutativity and distributivity of conjuction
+and disjunction.
+
+\begin{lstlisting}
+    5. minutes (hours x) = hours (minutes x)
+    6. hours x = minutes (minutes x)
+
+    13. combine xs (heat (ingredient ys)) (ingredient zs)
+        = combine xs (ingredient zs) (heat (ingredient ys))
+    14. combine xs (ingredient ys) (transaction (ingredient zs))
+        = combine xs (transaction (ingredient zs)) (ingredient ys)
+    15. combine xs (ingredient ys) (wait (ingredient zs))
+        = combine xs (wait (ingredient zs)) (ingredient ys)
+\end{lstlisting}
+
+
+As you can see, QuickSpec discovered the expected properties regarding
+\texttt{minutes} and \texttt{hours}. The interesting
+laws are the final three. Quickspec is hinting at the commutativity of
+\texttt{combine}. With our current implementation, this makes sense,
+as with our two different cup of tea recipes, it doesn't matter whether
+we get the milk first or make the tea first. I'm unsure as to why QuickSpec
+didn't find the general case of \texttt{combine s r1 r2 = combine s r2 r1}.
+This property does in fact hold when tested with QuickCheck (Section 6.2.1).
+
+\medbreak
+
+One question that is raised
+is whether or not the combination method itself is commutative. The answer
+is not always. Certain methods like "mix" seem to be commutative however,
+I'm not sure that spreading toast on butter would yield desirable results.
+This detail seems like something that should be captured by the method itself,
+possibly as an extra part to the method string for example "spread | a b" would
+be rigid in that "a" must be "spread" on "b" and not the other way round.
+It could also be that a dedicated method data type would be suitable.
 
 \subsection{Generating Recipes}
 
@@ -1585,14 +1628,40 @@ twice gives you the same list you started with.
 \medbreak
 
 For our recipes, we already have various laws that were discovered by QuickSpec
-(Section 5.4). We can get QuickCheck to test these so that if we ever make
-a change that breaks these laws, it is detected and we can check whether that
-result was desired or not. This helps us to reason about what our code is actually
-doing and thus have confidence of its correctness.
+(Section 5.4). We can get QuickCheck to test these and thus detect any changes
+that break these properties in the future. This helps us to reason about what our code
+is actually doing and thus have confidence of its correctness.
 
 \medbreak
 
-% Example of converting quickspec law into quickcheck test
+It's trivial to convert our QuickSpec laws into QuickCheck properties that
+we can use to test our code. The following is an example of the general
+case of the \texttt{combine} laws that were mentioned previously.
+
+\begin{lstlisting}
+    prop_combine_comm s r1 r2 =
+        combine s r1 r2 == combine s r2 r1
+\end{lstlisting}
+
+Because our conditions are checked using observational equality, we need
+to make sure that we compare them with \texttt{evalCond} and not \texttt{(==)}.
+Below are two examples, the commutativity of \texttt{(.||)} and the associativity
+of \texttt{(.\&\&)}.
+
+\begin{lstlisting}
+    prop_or_comm x y obs =
+        mkProp (x .|| y) (y .|| x) obs
+
+    prop_and_assoc x y z obs =
+        mkProp ((x .&& y) .&& z) (x .&& (y .&& z)) obs
+
+    mkProp :: Condition -> Condition -> [Obs] -> Bool
+    mkProp lhs rhs obs =
+        evalCond lhs obs == evalCond rhs obs
+\end{lstlisting}
+
+The \texttt{mkProp} function simply abstracts the evaluation and comparison of the two
+sides of the equation thus making the actual property definitions more concise.
 
 \subsubsection{Test Recipes}
 
@@ -1704,8 +1773,10 @@ an action on it regardless of whether a chef is available to take it out of the 
 \medbreak
 
 There is also the task of translating our processes to actual instructions specific to a certain
-robot. It would be interesting to see what sort of issues would arise from this as they could then
-be used to direct attention to which areas of the project are most in need of further development.
+robot. We provided an interface for this in the form of processes (Section 4.1) however, it has not
+been tried in practice. It would be interesting to see what sort of issues would arise from this
+as they could then be used to direct attention to which areas of the project are most in need of
+further development.
 
 \subsection{Reflections}
 

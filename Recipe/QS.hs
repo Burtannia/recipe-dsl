@@ -12,24 +12,26 @@ import Control.Monad (liftM, liftM2, liftM3)
 import Data.Tree
 import Recipe.Kitchen
 import Data.List (sort)
+import Recipe.Demo
 
 -------------------------------------
 -- Arbitrary Instances
 -------------------------------------
 
+-- For some reason, to get QuickSpec to work,
+-- you need to set the base case to 1 and then
+-- you can comment out the current case for 1.
+-- To use QuickCheck a base case of 0 is needed.
 instance {-# OVERLAPPING #-} Arbitrary Recipe where
     arbitrary = sized $ \n ->
-        if n > 4 then
-            resize 4 arbitrary
-        else
-            let un = resize (n-1) arbitrary
-                bin = resize (n `div` 2) arbitrary
-            in case n of
-                    0 -> genIng
-                    1 -> oneof
-                        [genIng, genUnRec un]
-                    _ -> oneof
-                        [genIng, genUnRec un, genBinRec bin bin]
+        let un = resize (n-1) arbitrary
+            bin = resize (n `div` 2) arbitrary
+        in case n of
+                0 -> genIng
+                1 -> oneof
+                    [genIng, genUnRec un]
+                _ -> oneof
+                    [genIng, genUnRec un, genBinRec bin bin]
 
 genIng :: Gen Recipe
 genIng = liftM (ingredient . show) (choose (1, 100) :: Gen Int)
@@ -90,9 +92,7 @@ instance Observe [Obs] Bool Condition where
 -------------------------------------
 
 qsRecipe = quickSpec
-    [ withMaxTestSize 4
-    
-    , con "ingredient" (ingredient :: String -> Recipe)
+    [ con "ingredient" (ingredient :: String -> Recipe)
     , con "heat" (heat :: Recipe -> Recipe)
     , con "heatAt" (heatAt :: Int -> Recipe -> Recipe)
     , con "wait" (wait :: Recipe -> Recipe)
@@ -118,24 +118,58 @@ qsRecipe = quickSpec
 -- QuickCheck Tests
 -------------------------------------
 
-prop_and_id x =
-    x .&& x == x
+mkProp :: Condition -> Condition -> [Obs] -> Bool
+mkProp lhs rhs obs =
+    evalCond lhs obs == evalCond rhs obs
 
-prop_or_id x =
-    x .|| x == x
+-- conditions
+prop_and_comm x y obs =
+    mkProp (x .&& y) (y .&& x) obs
 
-prop_and_comm x y =
-    x .&& y == y .&& x
+prop_and_id x obs =
+    mkProp (x .&& x) x obs
 
-prop_or_comm x y =
-    x .|| y == y .|| x
+prop_or_comm x y obs =
+    mkProp (x .|| y) (y .|| x) obs
 
+prop_or_id x obs =
+    mkProp (x .|| x) x obs
+
+prop_and_assoc x y z obs =
+    mkProp ((x .&& y) .&& z) (x .&& (y .&& z)) obs
+
+prop_and_or_id x y obs =
+    mkProp (x .&& (x .|| y)) x obs
+
+prop_or_and_id x y obs =
+    mkProp (x .|| (x .&& y)) x obs
+
+prop_or_assoc x y z obs =
+    mkProp ((x .|| y) .|| z) (x .|| (y .|| z)) obs
+
+prop_quickspec_law_11 x y z obs =
+    mkProp (x .&& (y .|| (x .&& z))) (x .&& (y .|| z)) obs
+
+prop_and_distr_and x y z obs =
+    mkProp ((x .&& y) .&& (x .&& z)) (x .&& (y .&& z)) obs
+
+prop_and_distr_or x y z obs =
+    mkProp ((x .&& y) .|| (x .&& z)) (x .&& (y .|| z)) obs
+
+prop_or_distr_or x y z obs =
+    mkProp ((x .|| y) .|| (x .|| z)) (x .|| (y .|| z)) obs
+
+prop_or_distr_and x y z obs =
+    mkProp ((x .|| y) .&& (x .|| z)) (x .|| (y .&& z)) obs
+
+-- minutes and hours
 prop_min_hours x =
     minutes (hours x) == hours (minutes x)
 
 prop_min_min x =
     hours x == minutes (minutes x)
 
+-- combine
 prop_combine_comm s r1 r2 =
     combine s r1 r2 == combine s r2 r1
 

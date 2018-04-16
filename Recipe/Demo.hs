@@ -6,10 +6,8 @@ import Recipe.Kitchen
 import Recipe.Scheduler
 import Data.Tree
 import Recipe.Properties
-import Recipe.QS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.IORef
 import Data.Time.Clock
 import Data.Monoid
 
@@ -157,28 +155,6 @@ boilInWaterForM t r = forTime (minutes t)
 -------------------------------------
 -- TEST STATIONS
 -------------------------------------
-
-test :: IO ()
-test = do
-    c <- newClock
-    getTime' c >>= print
-    tick c
-    getTime' c >>= print
-    tick c
-    getTime' c >>= print
-
-tick :: Clock -> IO ()
-tick c = modifyIORef' c (+1)
-
-newClock :: IO Clock
-newClock = newIORef 0
-
-type Clock = IORef Int
-
-getTime' :: Clock -> IO Obs
-getTime' c = do
-    i <- readIORef c
-    (return . ObsTime . Time) i
 
 getTime :: IO Obs
 getTime = do

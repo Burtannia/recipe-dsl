@@ -5,8 +5,6 @@ module Recipe.Recipe where
 
 import           Control.Monad.Trans.State
 import           Data.Tree hiding (foldTree)
-import QuickSpec
-import Test.QuickCheck
 import Data.List (sort)
 
 -------------------------

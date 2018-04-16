@@ -34,7 +34,7 @@ data Obs = ObsTemp Int -- ^ Observable temperature.
 evalCond :: Condition -> [Obs] -> Bool
 evalCond (CondTime t) os = case [o | o@(ObsTime _) <- os] of
     [] -> False
-    (ObsTime t' : _) -> t == t'
+    (ObsTime t' : _) -> t >= t'
 evalCond (CondTemp t) os = case [o | o@(ObsTemp _) <- os] of
     [] -> False
     (ObsTemp t' : _) -> t == t'
@@ -42,6 +42,13 @@ evalCond (CondOpt s) os = case [o | o@(ObsOpt s' _) <- os, s == s'] of
     [] -> False
     (ObsOpt _ b : _) -> b
 evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
+
+-- |Takes a condition of time and the observable representing
+-- the global time at which the action wrapped by the condition was started
+-- and adjusts the condition to absolute time rather than relative time.
+adjustTime :: Condition -> Obs -> Condition
+adjustTime (CondTime t) (ObsTime t') = CondTime (t + t')
+adjustTime c _ = c
 
 type ConstraintF = Recipe -> Maybe [Process]
 
