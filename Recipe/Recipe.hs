@@ -63,13 +63,13 @@ data Condition = CondTime Time -- ^ Until the given time has elapsed.
                | CondOpt String -- ^ Optional step, labelled for identification. See observables (Obs).
                | Condition `AND` Condition -- ^ Logical "and" of two conditions.
                | Condition `OR` Condition -- ^ Logical "or" of two conditions.
-    deriving (Show, Eq, Ord)
+               deriving (Show, Eq, Ord)
 
 -- |Represents a measurement of something.
 data Measurement = Count Int -- ^ Number of something e.g. 1 apple.
                  | Grams Int -- ^ Number of grams.
                  | Milliletres Int -- ^ Number of milliletres.
-    deriving (Eq)
+                 deriving (Eq)
 
 -- |Returns the magnitude of a 'Measurement'.
 getMeasure :: Measurement -> Int
@@ -259,7 +259,7 @@ topologicals r = topologicals' (labelRecipeA r)
         topologicals' :: Tree (Label, Action) -> [[Action]]
         topologicals' (Node (l,a) []) = [[a]]
         topologicals' t = concat
-            [map (a:) (topologicals' $ removeFrom t lb) | (lb,a) <- leaves t]                
+            [map (a:) (topologicals' $ removeFrom t lb) | (lb,a) <- leaves t]             
 
 -- |Returns True if the given node is a leaf i.e. has no child nodes.
 isLeaf :: Tree (Label, Action) -> Bool
@@ -267,7 +267,7 @@ isLeaf (Node _ []) = True
 isLeaf _           = False
 
 -- |List of all leaves in the recipe.
-leaves :: Tree (Label, Action) -> [(Label, Action)]
+leaves :: Tree a -> [a]
 leaves (Node a []) = [a]
 leaves (Node a ts) = concatMap leaves ts
 

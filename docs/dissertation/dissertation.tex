@@ -1,5 +1,7 @@
 \documentclass[11pt]{article}
 
+\usepackage[margin=1.5in]{geometry}
+
 \usepackage[hyphens]{url}
 
 \usepackage[document]{ragged2e}
@@ -389,23 +391,19 @@ the other functions mentioned throughout this report.
 
 This leads us into the final definitions of our fundamental combinators.
 
+\begin{figure}[h]
 \begin{lstlisting}
     ingredient :: String -> Recipe
-
     heat :: Recipe -> Recipe
-
     heatAt :: Int -> Recipe -> Recipe
-
     wait :: Recipe -> Recipe
-
     combine :: String -> Recipe -> Recipe -> Recipe
-
     addCondition :: Condition -> Recipe -> Recipe
-
     transaction :: Recipe -> Recipe
-
     measure :: Measurement -> Recipe -> Recipe
 \end{lstlisting}
+\caption{Final set of recipe combinators.}
+\end{figure}
 
 The first six combinators have already been described. The \texttt{transaction} combinator
 shall be formally introduced in Section 4.5 and \texttt{measure} in Section 5.3 so we shall
@@ -650,12 +648,12 @@ of all topological sorts of that recipe.
 
 \begin{lstlisting}
     topologicals :: Recipe -> [[Action]]
-    topologicals (Node a []) = [[a]]
-    topologicals t = concat
-        [map (a:) (topologicals' l) | l@(Node a _) <- ls]
+    topologicals r = topologicals' (labelRecipeA r)
         where
-            topologicals' l = topologicals $ removeFrom t l
-            ls = leaves t
+            topologicals' :: Tree (Label, Action) -> [[Action]]
+            topologicals' (Node (l,a) []) = [[a]]
+            topologicals' t = concat
+                [map (a:) (topologicals' $ removeFrom t lb) | (lb,a) <- leaves t]
 \end{lstlisting}
 
 This is similar to the operational semantics given by unfolding a
@@ -1324,7 +1322,7 @@ an instance of the \texttt{Arbitrary} typeclass.
     instance {-# OVERLAPPING #-} Arbitrary Recipe where
         arbitrary = sized $ \n ->
             let un = resize (n-1) arbitrary
-                bin = resize (n `div` 2) arbitrary
+                bin = genUnRec genIng
             in case n of
                     0 -> genIng
                     1 -> oneof
@@ -1358,8 +1356,14 @@ valid binary recipe we have is combine, the rest are all unary as they only appl
 one sub-recipe. Instances of \texttt{Arbitrary} are also required for all the other types
 needed to make recipes such as \texttt{Time} and \texttt{Measurement}. In the interest
 of space I shalln't go into them here, they are relatively straightforward compared to
-the above. We also limit the size to a maximum of 5 due to how computationally expensive
-it is to compare larger recipes.
+the above. You may also be wondering why, when we generate a \texttt{combine}, we limit
+it's children to a unary recipe followed by an ingredient or just an ingredient. This
+is due to the computationally expensive nature of recipe equality. If we combine large
+recipes, or even worse, nested combinations, then sorting the lists of topological sorts
+for each recipe and then comparing takes too long. Limiting the generated recipes in this
+way does slightly reduce the thoroughness of our testing (Section 6.2.1) however, we still
+generate a wide enough variety of recipes to be reasonably confident that our code behaves
+in an expected manner.
 
 \medbreak
 
@@ -1384,9 +1388,9 @@ if for many random values of type test, observe test x == observe test y} \cite{
 Below we are generating random lists of our \texttt{Obs} type and evaluating our
 condition against them (Section 4.1). Now that we have all of our instances,
 we can pass our recipe functions to QuickSpec and see what laws it finds.
-For conciesness I shalln't list all the laws regarding conditions, they are
-the expected associativity, commutativity and distributivity of conjuction
-and disjunction.
+For conciesness I shalln't list all the laws regarding conditions, it suffices
+to say that the expected laws regarding the associativity, commutativity and
+distributivity of \texttt{(.\&\&)} and \texttt{(.||)} were found.
 
 \begin{lstlisting}
     5. minutes (hours x) = hours (minutes x)
@@ -1400,11 +1404,8 @@ and disjunction.
         = combine xs (wait (ingredient zs)) (ingredient ys)
 \end{lstlisting}
 
-
-As you can see, QuickSpec discovered the expected properties regarding
-\texttt{minutes} and \texttt{hours}. The interesting
-laws are the final three. Quickspec is hinting at the commutativity of
-\texttt{combine}. With our current implementation, this makes sense,
+The interesting laws are the final three. Quickspec is hinting at the
+commutativity of \texttt{combine}. With our current implementation, this makes sense,
 as with our two different cup of tea recipes, it doesn't matter whether
 we get the milk first or make the tea first. I'm unsure as to why QuickSpec
 didn't find the general case of \texttt{combine s r1 r2 = combine s r2 r1}.
@@ -1623,11 +1624,13 @@ QuickCheck \cite{quickcheck} is a library for the automated testing of Haskell
 programs. The programmer specifies laws that must hold about their program
 and QuickCheck generates random test cases to check whether or not the
 law holds. A simple example would be to check that reversing a list
-twice gives you the same list you started with.
+twice gives you the same list you started with. For conciseness I shalln't
+describe every property used to test our recipes but I shall attempt
+to give a range of examples.
 
 \medbreak
 
-For our recipes, we already have various laws that were discovered by QuickSpec
+We already have various laws that were discovered by QuickSpec
 (Section 5.4). We can get QuickCheck to test these and thus detect any changes
 that break these properties in the future. This helps us to reason about what our code
 is actually doing and thus have confidence of its correctness.
@@ -1662,6 +1665,20 @@ of \texttt{(.\&\&)}.
 
 The \texttt{mkProp} function simply abstracts the evaluation and comparison of the two
 sides of the equation thus making the actual property definitions more concise.
+
+\medbreak
+
+Now let's consider some properties about our \texttt{topologicals} function. Each
+topological sort should contain all the actions from the recipe otherwise it wouldn't
+be a complete path of execution. We can express this as a QuickCheck property as follows.
+
+\begin{lstlisting}
+    prop_topologicals_all_actions r =
+        let ts = topologicals r
+            ts' = map (\xs -> sort xs) ts
+            as = sort $ flatten r
+         in all (== True) (map (\xs -> as == xs) ts')
+\end{lstlisting}
 
 \subsubsection{Test Recipes}
 

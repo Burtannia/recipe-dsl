@@ -8,7 +8,7 @@ import Test.QuickCheck
 import Recipe.Printer
 
 main :: IO ()
-main = quickCheck prop_combine_comm
+main = runTests >> return ()
 --main = scheduleAndPrint cupOfTea env
 --main = qsRecipe
 --main = quickCheck (\s r1 r2 -> combine s r1 r2 == combine s r2 r1)

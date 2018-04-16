@@ -25,8 +25,8 @@ import Recipe.Demo
 instance {-# OVERLAPPING #-} Arbitrary Recipe where
     arbitrary = sized $ \n ->
         let un = resize (n-1) arbitrary
-            bin = resize (n `div` 2) arbitrary
-        in case n of
+            bin = oneof [genIng, genUnRec genIng]
+         in case n of
                 0 -> genIng
                 1 -> oneof
                     [genIng, genUnRec un]
@@ -88,7 +88,7 @@ instance Observe [Obs] Bool Condition where
     observe obs c = evalCond c obs
 
 -------------------------------------
--- QuickSpec Stuff
+-- QuickSpec
 -------------------------------------
 
 qsRecipe = quickSpec
@@ -123,6 +123,7 @@ mkProp lhs rhs obs =
     evalCond lhs obs == evalCond rhs obs
 
 -- conditions
+
 prop_and_comm x y obs =
     mkProp (x .&& y) (y .&& x) obs
 
@@ -163,19 +164,48 @@ prop_or_distr_and x y z obs =
     mkProp ((x .|| y) .&& (x .|| z)) (x .|| (y .&& z)) obs
 
 -- minutes and hours
+
 prop_min_hours x =
     minutes (hours x) == hours (minutes x)
 
 prop_min_min x =
     hours x == minutes (minutes x)
 
--- combine
+-- combinators
+
 prop_combine_comm s r1 r2 =
     combine s r1 r2 == combine s r2 r1
 
 -- topologicals
--- contain all action
--- sort each sort and they should all be the same
+
+-- all topological sorts should contain all
+-- the actions from the recipe
+prop_topologicals_all_actions r =
+    let ts = topologicals r
+        ts' = map (\xs -> sort xs) ts
+        as = sort $ flatten r
+     in all (== True) (map (\xs -> as == xs) ts')
+
+-- labelling
+
+prop_labelR_root r =
+    let lTree = labelRecipeR r
+        root = snd $ rootLabel lTree
+     in root == r
+
+prop_labelA_unlabel r =
+    let lTree = labelRecipeA r
+     in r == fmap snd lTree
+
+-- fold
+
+prop_fold_time r =
+    let t = foldRecipe timeAction r
+        tTree = fmap timeAction r
+        t' = sum $ flatten tTree
+     in t == t'
+
+
 
 return []
 runTests = $quickCheckAll
