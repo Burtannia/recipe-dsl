@@ -18,10 +18,6 @@ import Recipe.Demo
 -- Arbitrary Instances
 -------------------------------------
 
--- For some reason, to get QuickSpec to work,
--- you need to set the base case to 1 and then
--- you can comment out the current case for 1.
--- To use QuickCheck a base case of 0 is needed.
 instance {-# OVERLAPPING #-} Arbitrary Recipe where
     arbitrary = sized $ \n ->
         let un = resize (n-1) arbitrary
@@ -38,11 +34,12 @@ genIng = liftM (ingredient . show) (choose (1, 100) :: Gen Int)
 
 genUnRec :: Gen Recipe -> Gen Recipe
 genUnRec un = oneof
-    [ liftM heat un
+    [ liftM2 addCondition arbitrary (liftM heat un)
     , liftM2 heatAt genTemp un
-    , liftM wait un
-    , liftM2 addCondition arbitrary un
-    , liftM transaction un
+    , liftM2 heatFor arbitrary un
+    , liftM2 addCondition arbitrary (liftM wait un)
+    , liftM2 addCondition arbitrary (genUnRec un)
+    , liftM transaction (genUnRec un)
     , liftM2 measure arbitrary un ]
 
 genBinRec :: Gen Recipe -> Gen Recipe -> Gen Recipe
@@ -93,9 +90,9 @@ instance Observe [Obs] Bool Condition where
 
 qsRecipe = quickSpec
     [ con "ingredient" (ingredient :: String -> Recipe)
-    , con "heat" (heat :: Recipe -> Recipe)
+    , con "heatTo" (heatTo :: Int -> Recipe -> Recipe)
     , con "heatAt" (heatAt :: Int -> Recipe -> Recipe)
-    , con "wait" (wait :: Recipe -> Recipe)
+    , con "waitFor" (waitFor :: Time -> Recipe -> Recipe)
     , con "combine" (combine :: String -> Recipe -> Recipe -> Recipe)
     , con "addCondition" (addCondition :: Condition -> Recipe -> Recipe)
     , con ".&&" ((.&&) :: Condition -> Condition -> Condition)
@@ -204,8 +201,6 @@ prop_fold_time r =
         tTree = fmap timeAction r
         t' = sum $ flatten tTree
      in t == t'
-
-
 
 return []
 runTests = $quickCheckAll

@@ -31,8 +31,8 @@ data Action = GetIngredient String
 -- |Ordering finds the list of topological sorts for each
 -- recipe, sorts the lists then compares them.
 instance Ord Recipe where
-    compare t1 t2 = let xs = sort $ topologicals t1
-                        ys = sort $ topologicals t2
+    compare r1 r2 = let xs = deps r1
+                        ys = deps r2
                      in compare xs ys
 
 -- |Two recipes are equal if their lists of topological sorts
@@ -251,6 +251,18 @@ timeAction (Conditional a c) = t' + foldCond f c
         f (CondOpt s) = 0
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 10
+
+deps :: Recipe -> [(Action, [Action])]
+deps (Node a []) = [(a,[])]
+deps (Node a ts) =
+    let as = sort [x | (Node x _) <- ts]
+     in (a,as) : (sort $ concatMap deps ts)
+
+    -- let as = concatMap flatten ts
+    --  in [(a,a') | a' <- as] ++ concatMap deps ts
+
+-- [(a,a') | (Node a' _) <- ts]
+--     ++ concatMap deps ts
 
 -- |Returns a list of all the possible topological sorts of a recipe.
 topologicals :: Recipe -> [[Action]]

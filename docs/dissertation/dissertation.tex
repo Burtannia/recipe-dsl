@@ -49,23 +49,23 @@
 \lhead{ID: 4251529}
 \fancyfoot[C]{\thepage}
 
-\usepackage{titling}
-\title
-{ 
-    \vspace{10em}
-    G53IDS - Final Report \\
-    \hfill \break
-    \large Embedded Domain Specific Language for \\
-    Describing Recipes in Haskell
-}
+% \usepackage{titling}
+% \title
+% { 
+%     \vspace{10em}
+%     G53IDS - Final Report \\
+%     \hfill \break
+%     \large Embedded Domain Specific Language for \\
+%     Describing Recipes in Haskell
+% }
 
-\setlength{\droptitle}{-10em}
+% \setlength{\droptitle}{-10em}
 
-\author{James Burton - 4251529 - psyjb6}
+% \author{James Burton - 4251529 - psyjb6}
 
 \begin{document}
-\maketitle
-\newpage
+%\maketitle
+%\newpage
 
 \begin{footnotesize}
 \begin{center}
@@ -87,8 +87,8 @@ to model and manipulate recipes.
 \medbreak
 I would like to extend my gratitude to my supervisor,
 Prof. Graham Hutton, for his continued support throughout
-the project, Nick Smallbone, for his assistance with QuickSpec
-and QuickCheck and Dr. Jason Atkin and Martin Handley, for
+the project, to Nick Smallbone, for his assistance with QuickSpec
+and QuickCheck and to Dr. Jason Atkin and Martin Handley, for
 their assistance with linear programming. I would also
 like to thank the authors of all referenced works, in
 particular Simon Peyton Jones who also gave a fantastic
@@ -513,7 +513,11 @@ the actions at each node of the tree into a step and then prints them out as fol
     7) Mix (milk) and (6) (optional)
 \end{lstlisting}
 
-We refer to previous steps via their label
+If we are performing an action on an ingredient then the name of the ingredient is
+displayed, if we're performing an action on the result of another action then the
+step number of the previous action is displayed.
+
+\medbreak
 
 Finally \texttt{Data.Tree} provides a pretty printing function that allows us
 to output an ASCII drawing of the tree. The tree for our cup of tea recipe is
