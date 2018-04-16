@@ -173,5 +173,9 @@ prop_min_min x =
 prop_combine_comm s r1 r2 =
     combine s r1 r2 == combine s r2 r1
 
+-- topologicals
+-- contain all action
+-- sort each sort and they should all be the same
+
 return []
 runTests = $quickCheckAll

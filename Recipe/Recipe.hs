@@ -254,34 +254,27 @@ timeAction (Measure m) = 10
 
 -- |Returns a list of all the possible topological sorts of a recipe.
 topologicals :: Recipe -> [[Action]]
-topologicals (Node a []) = [[a]]
-topologicals t = concat
-    [map (a:) (topologicals' l) | l@(Node a _) <- ls]
+topologicals r = topologicals' (labelRecipeA r)
     where
-        topologicals' l = topologicals $ removeFrom t l
-        ls = leaves t
+        topologicals' :: Tree (Label, Action) -> [[Action]]
+        topologicals' (Node (l,a) []) = [[a]]
+        topologicals' t = concat
+            [map (a:) (topologicals' $ removeFrom t lb) | (lb,a) <- leaves t]                
 
 -- |Returns True if the given node is a leaf i.e. has no child nodes.
-isLeaf :: Recipe -> Bool
+isLeaf :: Tree (Label, Action) -> Bool
 isLeaf (Node _ []) = True
 isLeaf _           = False
 
 -- |List of all leaves in the recipe.
-leaves :: Recipe -> [Recipe]
-leaves (Node a []) = [Node a []]
+leaves :: Tree (Label, Action) -> [(Label, Action)]
+leaves (Node a []) = [a]
 leaves (Node a ts) = concatMap leaves ts
 
--- |Removes all occurences of a sub recipe from the given recipe.
--- Removing a recipe from itself does nothing.
-removeFrom :: Recipe -> Recipe -> Recipe
-removeFrom t@(Node a ts) toRem = Node a ts''
+-- |Removes all occurences of a label from the given tree.
+-- Removing the label of the root node does nothing.
+removeFrom :: Tree (Label, Action) -> Label -> Tree (Label, Action)
+removeFrom (Node (l,a) ts) toRem = Node (l,a) ts''
     where
-        ts'  = deleteAll toRem ts
+        ts' = filter (\(Node (l,a) ts) -> not $ l == toRem) ts
         ts'' = map (\t -> removeFrom t toRem) ts'
-
--- |Removes all occurences of a given recipe in a list of recipes.
-deleteAll :: Recipe -> [Recipe] -> [Recipe]
-deleteAll _ [] = []
-deleteAll x (y:ys)
-    | x == y = deleteAll x ys
-    | otherwise = y : deleteAll x ys
