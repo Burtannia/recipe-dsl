@@ -28,15 +28,17 @@ data Action = GetIngredient String
             | Measure Measurement
             deriving (Show, Eq, Ord)
 
--- |Ordering finds the list of topological sorts for each
--- recipe, sorts the lists then compares them.
+-- |Ordering compares the result of 'deps' for
+-- each recipe i.e. the pairs of dependencies
+-- for each recipe.
 instance Ord Recipe where
-    compare r1 r2 = let xs = deps r1
-                        ys = deps r2
+    compare r1 r2 = let xs = sort $ deps r1
+                        ys = sort $ deps r2
                      in compare xs ys
 
--- |Two recipes are equal if their lists of topological sorts
--- are equal.
+-- |Two recipes are equal if they contain the same 'Action's
+-- and those 'Action's have the same dependencies i.e. the same
+-- sequencing.
 instance {-# OVERLAPPING #-} Eq Recipe where
     (==) r1 r2 = compare r1 r2 == EQ
 
@@ -252,17 +254,14 @@ timeAction (Conditional a c) = t' + foldCond f c
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 10
 
+-- |Generates a list pairing each 'Action' in a 'Recipe'
+-- with its dependencies i.e. the list of 'Action's within
+-- its immediate child nodes.
 deps :: Recipe -> [(Action, [Action])]
 deps (Node a []) = [(a,[])]
 deps (Node a ts) =
     let as = sort [x | (Node x _) <- ts]
-     in (a,as) : (sort $ concatMap deps ts)
-
-    -- let as = concatMap flatten ts
-    --  in [(a,a') | a' <- as] ++ concatMap deps ts
-
--- [(a,a') | (Node a' _) <- ts]
---     ++ concatMap deps ts
+     in sort $ (a,as) : concatMap deps ts
 
 -- |Returns a list of all the possible topological sorts of a recipe.
 topologicals :: Recipe -> [[Action]]

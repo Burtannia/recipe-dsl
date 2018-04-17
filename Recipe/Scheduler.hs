@@ -367,3 +367,5 @@ leaves (Node l ts) rMap = case Map.lookup l rMap of
             else let csOfDeps = concatMap subForest ts
                   in concatMap (\t -> leaves t rMap) csOfDeps
     _ -> concatMap (\t -> leaves t rMap) ts
+
+-- might just refactor this passing around Tree (Label, Recipe) rather than maps everywhere

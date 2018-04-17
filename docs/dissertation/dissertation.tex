@@ -724,6 +724,15 @@ Because \texttt{Recipe = Tree Action} it naturally uses the equality instance fo
 That's what the "overlapping" annotation is for. Using the above definition, the expression
 \texttt{cupOfTea == cupOfTea'} evaluates to \texttt{True} showing that, as desired, our two recipes are equal.
 
+\medbreak
+
+Unfortunately this is a very expensive computation, the number of topological sorts increases exponentially
+and as such this is impractical for larger recipes like our chicken jalfrezi (Section 2.6). This problem
+became particularly apparent at the end of the project when using QuickSpec (Section 5.4) and QuickCheck (Section 6.2.1).
+We refined our definition of equality to be more efficient however, as this was at the end of the project
+the majority of this report shall be using topological sorting when referring to equality. I shall introduce
+the alternate method in Section 5.4.2.
+
 \section{Scheduling Recipes}
 
 Now that we have a solid representation of our recipes in Haskell we can think about how
@@ -1317,6 +1326,8 @@ Returning to our quantified cup of tea, we get the following.
 
 \subsection{QuickSpec}
 
+\subsubsection{Arbitrary}
+
 QuickSpec \cite{quickspec, quickspec2} is a Haskell library for automatically generating
 laws about your program. In order to do this, QuickSpec requires a way of generating
 random values of the relevant type. We can provide this by making our recipe type
@@ -1326,7 +1337,7 @@ an instance of the \texttt{Arbitrary} typeclass.
     instance {-# OVERLAPPING #-} Arbitrary Recipe where
         arbitrary = sized $ \n ->
             let un = resize (n-1) arbitrary
-                bin = genUnRec genIng
+                bin = resize (n `div` 2) arbitrary
             in case n of
                     0 -> genIng
                     1 -> oneof
@@ -1342,9 +1353,10 @@ an instance of the \texttt{Arbitrary} typeclass.
     genUnRec un = oneof
         [ liftM heat un
         , liftM2 heatAt genTemp un
+        , liftM2 heatFor arbitrary un
         , liftM wait un
-        , liftM2 addCondition arbitrary un
-        , liftM transaction un
+        , liftM2 addCondition arbitrary (genUnRec un)
+        , liftM transaction (genUnRec un)
         , liftM2 measure arbitrary un ]
 
     genBinRec :: Gen Recipe -> Gen Recipe -> Gen Recipe
@@ -1354,20 +1366,14 @@ an instance of the \texttt{Arbitrary} typeclass.
 The first point of note is that our recipes are generated as sized values meaning
 that they have a number of sub-recipes. If a recipe is size 0 then we should generate
 an ingredient. Random ingredients are just provided as a random number between 1 and 100.
-If the size of the recipe is greater than 0 then we can either generate a unary recipe
-or a binary recipe. This refers to how many children the recipe should have. The only
+If the size of the recipe is 1 then we can generate an ingredient or a unary recipe,
+if it's greater than 1 then we also have the option of generating a binary recipe.
+Unary and binray refers to how many children the recipe should have. The only
 valid binary recipe we have is combine, the rest are all unary as they only apply to
 one sub-recipe. Instances of \texttt{Arbitrary} are also required for all the other types
 needed to make recipes such as \texttt{Time} and \texttt{Measurement}. In the interest
 of space I shalln't go into them here, they are relatively straightforward compared to
-the above. You may also be wondering why, when we generate a \texttt{combine}, we limit
-it's children to a unary recipe followed by an ingredient or just an ingredient. This
-is due to the computationally expensive nature of recipe equality. If we combine large
-recipes, or even worse, nested combinations, then sorting the lists of topological sorts
-for each recipe and then comparing takes too long. Limiting the generated recipes in this
-way does slightly reduce the thoroughness of our testing (Section 6.2.1) however, we still
-generate a wide enough variety of recipes to be reasonably confident that our code behaves
-in an expected manner.
+the above.
 
 \medbreak
 
@@ -1389,31 +1395,76 @@ if for many random values of type test, observe test x == observe test y} \cite{
         observe obs c = evalCond c obs
 \end{lstlisting}
 
-Below we are generating random lists of our \texttt{Obs} type and evaluating our
-condition against them (Section 4.1). Now that we have all of our instances,
-we can pass our recipe functions to QuickSpec and see what laws it finds.
-For conciesness I shalln't list all the laws regarding conditions, it suffices
-to say that the expected laws regarding the associativity, commutativity and
-distributivity of \texttt{(.\&\&)} and \texttt{(.||)} were found.
+What we're doing here is generating random lists of our \texttt{Obs} type
+and evaluating a condition against them (Section 4.1). Now that we have
+all of our instances, we can pass our recipe functions to QuickSpec and
+see what laws it finds. This brought about a bit of a problem, as mentioned
+previously, enumerating all topological sorts is very expensive and as such
+QuickSpec had a tendency to hang unless the arbitrary instance was restricted
+significantly.
+
+\subsubsection{More Efficient Equality}
+
+While discussing the issue of QuickSpec hanging with Nick Smallbone (creator of
+QuickSpec) he mentioned that the issue seemed to be rooted in the topological sorting.
+Nick suggested that a definition using pairs of actions "x" and "y" such that "x"
+must come before "y" might be more appropriate. This is similar to how we enumerated
+dependencies while experimenting with linear programming (Section 4.2.1).
+
+\medbreak
+
+Pairs of actions don't work on their own. The issue is the case for \texttt{GetIngredient},
+this has no dependencies and thus appears nowhere in the list of pairs resulting in
+QuickSpec finding some strange laws such as \texttt{ingredient xs = ingredient ys}.
+If we tweak the definition slightly to instead pair recipes with a list of their dependencies
+then we can then pair \texttt{GetIngredient} with the empty list, \texttt{[]}.
+This gives us a new definition as follows.
+
+\begin{lstlisting}
+    deps :: Recipe -> [(Action, [Action])]
+    deps (Node a []) = [(a,[])]
+    deps (Node a ts) =
+        let as = sort [x | (Node x _) <- ts]
+         in (a,as) : concatMap deps ts
+
+    instance Ord Recipe where
+        compare r1 r2 = let xs = sort $ deps r1
+                            ys = sort $ deps r2
+                         in compare xs ys
+\end{lstlisting}
+
+The reason that we sort the dependencies is so that we can use Haskell's \texttt{Eq} instance
+for lists to compare the lists of dependencies. We want to check whether the elements of
+the lists of are the same, to do this without a consistent ordering would require iterating
+over the elements of one list and searching for that element in the other list.
+
+\medbreak
+
+When we enumerated all the topological sorts we were calculating the operational semantics
+by enumerating all valid paths through the recipe. What we are effectively doing with our
+dependency pairs above is specifying the constraints that determine whether a path is valid
+along with the actions that can be found on those paths. In other words, we've specified a
+sort of test to determine whether one recipe is a valid path through another. As an abstract
+example, this could be thought of as defining even integers as those for which \texttt{i `mod` 2 = 0}
+versus enumerating all the even integers and checking if the integer is in that enumeration.
+
+\subsubsection{Recipe Laws}
+
+Now that we have a more efficient definition for \texttt{Eq} we can go ahead and
+try running QuickSpec again. For conciesness I shalln't list all the laws regarding
+conditions, it suffices to say that the expected laws regarding the associativity,
+commutativity and distributivity of \texttt{(.\&\&)} and \texttt{(.||)} were found.
 
 \begin{lstlisting}
     5. minutes (hours x) = hours (minutes x)
     6. hours x = minutes (minutes x)
-
-    13. combine xs (heat (ingredient ys)) (ingredient zs)
-        = combine xs (ingredient zs) (heat (ingredient ys))
-    14. combine xs (ingredient ys) (transaction (ingredient zs))
-        = combine xs (transaction (ingredient zs)) (ingredient ys)
-    15. combine xs (ingredient ys) (wait (ingredient zs))
-        = combine xs (wait (ingredient zs)) (ingredient ys)
+    7. combine xs x y = combine xs y x
 \end{lstlisting}
 
-The interesting laws are the final three. Quickspec is hinting at the
-commutativity of \texttt{combine}. With our current implementation, this makes sense,
-as with our two different cup of tea recipes, it doesn't matter whether
-we get the milk first or make the tea first. I'm unsure as to why QuickSpec
-didn't find the general case of \texttt{combine s r1 r2 = combine s r2 r1}.
-This property does in fact hold when tested with QuickCheck (Section 6.2.1).
+Laws 5 and 6 are relatively self explanatory, law 7 is a bit more interesting.
+Quickspec has found the commutativity of \texttt{combine}. With our current implementation,
+this makes sense, as with our two different cup of tea recipes, it doesn't matter whether
+we get the milk first or make the tea first. 
 
 \medbreak
 
@@ -1425,6 +1476,14 @@ This detail seems like something that should be captured by the method itself,
 possibly as an extra part to the method string for example "spread | a b" would
 be rigid in that "a" must be "spread" on "b" and not the other way round.
 It could also be that a dedicated method data type would be suitable.
+
+\medbreak
+
+The fact that QuickSpec didn't find many laws might seem disappointing but it
+actually says something about the nature of our combinators. There is very
+little, if any, ambiguity. Each action has a specific purpose and captures
+it without providing much additional meaning. This is good because it prevents
+a situation where there are many wildly different definitions for the same recipe.
 
 \subsection{Generating Recipes}
 
@@ -1642,8 +1701,8 @@ is actually doing and thus have confidence of its correctness.
 \medbreak
 
 It's trivial to convert our QuickSpec laws into QuickCheck properties that
-we can use to test our code. The following is an example of the general
-case of the \texttt{combine} laws that were mentioned previously.
+we can use to test our code. The following is the law regarding the commutativity
+of \texttt{combine} represented as a QuickCheck property.
 
 \begin{lstlisting}
     prop_combine_comm s r1 r2 =
@@ -1672,42 +1731,59 @@ sides of the equation thus making the actual property definitions more concise.
 
 \medbreak
 
-Now let's consider some properties about our \texttt{topologicals} function. Each
-topological sort should contain all the actions from the recipe otherwise it wouldn't
-be a complete path of execution. We can express this as a QuickCheck property as follows.
+Now let's consider how we should test our \texttt{foldRecipe} function. The nature
+of folding over trees is the application of some function to the contents of a node
+before appending that value to the result of folding over the rest of the tree.
+If our implementation is correct it should be no different from applying the function
+to the contents of all the nodes first and then concatenating the values afterwards.
+The ability to apply a function to all nodes of a tree while retaining the tree structure
+is provided by \texttt{fmap :: (a -> b) -> Tree a -> Tree b}. Rather than trying to
+generate functions to use we can use some functions that we already have such as
+calculating the time of an action. This gives the following properties.
 
 \begin{lstlisting}
-    prop_topologicals_all_actions r =
-        let ts = topologicals r
-            ts' = map (\xs -> sort xs) ts
-            as = sort $ flatten r
-         in all (== True) (map (\xs -> as == xs) ts')
+    prop_fold_time r =
+        let t = foldRecipe timeAction r
+            tTree = fmap timeAction r
+            t' = mconcat $ flatten tTree
+         in t == t'
+
+    prop_fold_ing r =
+        let is = sort $ ingredients r -- implemented with foldRecipe
+            iTree = fmap (\a -> case a of
+                                    GetIngredient s -> [s]
+                                    _ -> []) r
+            is' = (sort . mconcat . flatten) iTree
+         in is == is'
 \end{lstlisting}
 
-\subsubsection{Test Recipes}
+Various other properties were used to test functions such as the labelling of recipes
+but in the interest of space I won't discuss all of them here.
+
+\subsubsection{Demonstration Recipes}
 
 While QuickCheck is great for verifying the correctness of our code, it does
 not measure the conciseness or expressiveness of our combinators. To do this
-we have used various test recipes, as used throughout this report. Below
-is a table detailing what each test recipe was used for specifically,
-naturally all recipes test for conciseness.
+we have used various demonstration recipes, as used throughout this report. Below
+is a table detailing what each recipe was used for specifically, naturally all
+the recipes demonstrate conciseness.
 
 \begin{figure}[h]
 \begin{tabular}{ |p{35mm}|p{\textwidth - 40mm}| }
     \hline
-    \texttt{cupOfTea} & Basic recipe. \\
+    \texttt{cupOfTea} & Basic recipe example. \\
     \hline
-    \texttt{cupOfTea'} & Modified \texttt{cupOfTea}, used to test equality. \\
+    \texttt{cupOfTea'} & Modified \texttt{cupOfTea}, demonstrates equality. \\
     \hline
-    \texttt{cupOfTeaQ} & Quantified \texttt{cupOfTea}, used to test the \texttt{Measure} combinator. \\
+    \texttt{cupOfTeaQ} & Quantified \texttt{cupOfTea}, demonstrates the \texttt{Measure} combinator. \\
     \hline
-    \texttt{butteredToast} & Used to test the \texttt{Transaction} combinator. \\
+    \texttt{butteredToast} & Used to demonstrate the \texttt{Transaction} combinator. \\
     \hline
-    \texttt{jalfreziWithRice} & Much longer and more complex recipe, uses
-        all the combinators except \texttt{Measure} and \texttt{Transaction}. \\
+    \texttt{jalfreziWithRice} & Example of a much longer and more complex recipe, demonstrates
+        the use of custom combinators. \\
     \hline
 \end{tabular}
-\caption{Table of test recipes and their descriptions.}
+\caption{Table of demonstration recipes and their purposes.}
 \end{figure}
 
 \section{Summary}
@@ -1724,8 +1800,11 @@ currently exists. My contributions to filling this gap are the following:
 
     \item A concrete implementation in the form of stations in an environment (Section 4).
 
-    \item A demonstration of how operational semantics (topological sorting) can be used in
-    scheduling to optimise a recipe via parallelisation (Sections 3 \& 4).
+    \item Definition what it means for two recipes to be equal using their operational semantics:
+    topological sorting (Section 3) and dependency pairs (Section 5.4.2).
+
+    \item A demonstration of how these operational semantics can be used in scheduling to optimise
+    a recipe via parallelisation (Sections 4).
 
     \item Mapping of various properties to recipes potentially leading to the ability
     to suggest improvements (Sections 5.5 \& 5.6).

@@ -28,19 +28,19 @@ data Obs = ObsTemp Int -- ^ Observable temperature.
          | ObsTime Time -- ^ Observable time.
          | ObsOpt String Bool -- ^ Observable option, labelled to correspond with a 'CondOpt'
                               -- in a recipe. True would mean to include that optional part of the recipe.
-         deriving Show
+         deriving (Show, Eq, Ord)
 
 -- |Given a list of observables, returns whether the given condition is true.
 evalCond :: Condition -> [Obs] -> Bool
 evalCond (CondTime t) os = case [o | o@(ObsTime _) <- os] of
     [] -> False
-    (ObsTime t' : _) -> t >= t'
+    os' -> True `elem` (map (\(ObsTime t') -> t' >= t) os')
 evalCond (CondTemp t) os = case [o | o@(ObsTemp _) <- os] of
     [] -> False
-    (ObsTemp t' : _) -> t == t'
+    os' -> True `elem` (map (\(ObsTemp t') -> t == t') os')
 evalCond (CondOpt s) os = case [o | o@(ObsOpt s' _) <- os, s == s'] of
     [] -> False
-    (ObsOpt _ b : _) -> b
+    os' -> True `elem` (map (\(ObsOpt _ b) -> b) os')
 evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 
 -- |Takes a condition of time and the observable representing

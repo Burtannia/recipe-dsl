@@ -13,6 +13,7 @@ import Data.Tree
 import Recipe.Kitchen
 import Data.List (sort)
 import Recipe.Demo
+import Data.List
 
 -------------------------------------
 -- Arbitrary Instances
@@ -21,7 +22,7 @@ import Recipe.Demo
 instance {-# OVERLAPPING #-} Arbitrary Recipe where
     arbitrary = sized $ \n ->
         let un = resize (n-1) arbitrary
-            bin = oneof [genIng, genUnRec genIng]
+            bin = resize (n `div` 2) arbitrary
          in case n of
                 0 -> genIng
                 1 -> oneof
@@ -34,10 +35,10 @@ genIng = liftM (ingredient . show) (choose (1, 100) :: Gen Int)
 
 genUnRec :: Gen Recipe -> Gen Recipe
 genUnRec un = oneof
-    [ liftM2 addCondition arbitrary (liftM heat un)
+    [ liftM heat un
     , liftM2 heatAt genTemp un
     , liftM2 heatFor arbitrary un
-    , liftM2 addCondition arbitrary (liftM wait un)
+    , liftM wait un
     , liftM2 addCondition arbitrary (genUnRec un)
     , liftM transaction (genUnRec un)
     , liftM2 measure arbitrary un ]
@@ -55,10 +56,15 @@ genMethod = elements
     , "wrap" ]
 
 instance Arbitrary Condition where
-    arbitrary = oneof
-        [ singleCond
-        , liftM2 AND singleCond singleCond
-        , liftM2 OR singleCond singleCond ]
+    arbitrary = sized $ \n ->
+        let bin = resize (n `div` 2) arbitrary
+         in if n < 2 then
+                singleCond
+            else
+                oneof
+                [ singleCond
+                , liftM2 AND bin bin
+                , liftM2 OR bin bin ]
         
 singleCond :: Gen Condition
 singleCond = oneof
@@ -173,16 +179,6 @@ prop_min_min x =
 prop_combine_comm s r1 r2 =
     combine s r1 r2 == combine s r2 r1
 
--- topologicals
-
--- all topological sorts should contain all
--- the actions from the recipe
-prop_topologicals_all_actions r =
-    let ts = topologicals r
-        ts' = map (\xs -> sort xs) ts
-        as = sort $ flatten r
-     in all (== True) (map (\xs -> as == xs) ts')
-
 -- labelling
 
 prop_labelR_root r =
@@ -199,8 +195,54 @@ prop_labelA_unlabel r =
 prop_fold_time r =
     let t = foldRecipe timeAction r
         tTree = fmap timeAction r
-        t' = sum $ flatten tTree
+        t' = mconcat $ flatten tTree
      in t == t'
+
+prop_fold_ing r =
+    let is = sort $ ingredients r -- implemented with foldRecipe
+        iTree = fmap (\a -> case a of
+                                GetIngredient s -> [s]
+                                _ -> []) r
+        is' = (sort . mconcat . flatten) iTree
+     in is == is'
+
+-- evaluate conditions
+
+prop_eval_cond_false_empty c =
+    not $ evalCond c []
+
+prop_eval_cond_false c obs =
+    not $ evalCond c (failObs c obs)
+
+failObs :: Condition -> [Obs] -> [Obs]
+failObs c obs = filterTime t
+    (filter (\o -> not $ o `elem` os) obs)
+    where
+        ts = getTimes c
+        t = if ts == [] then
+                0
+            else
+                minimum ts
+        os = condToObs c
+        filterTime t = filter (\o ->
+            case o of
+                ObsTime t' -> t' < t
+                _ -> True)
+        getTimes (CondTime t) = [t]
+        getTimes (AND c1 c2) = getTimes c1 ++ getTimes c2
+        getTimes (OR c1 c2) = getTimes c1 ++ getTimes c2
+        getTimes _ = []            
+
+prop_eval_cond_true c obs =
+    let os = condToObs c
+     in evalCond c (obs ++ os)
+
+condToObs :: Condition -> [Obs]
+condToObs (CondTime t) = [ObsTime t]
+condToObs (CondTemp t) = [ObsTemp t]
+condToObs (CondOpt s) = [ObsOpt s True]
+condToObs (AND c1 c2) = condToObs c1 ++ condToObs c2
+condToObs (OR c1 c2) = condToObs c1 ++ condToObs c2
 
 return []
 runTests = $quickCheckAll

@@ -134,5 +134,3 @@ balance r ss =
      in case p of
             [(Salt, 0), (Sweet, 0), (Acid, 0)] -> map (\(s,_) -> (s,1)) p
             _ -> [(s, maxI - i) | (s,i) <- p]
-
-
