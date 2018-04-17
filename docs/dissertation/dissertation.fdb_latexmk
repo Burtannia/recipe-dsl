@@ -1,7 +1,7 @@
 # Fdb version 3
-["pdflatex"] 1523966757 "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" "dissertation.pdf" "dissertation" 1523966758
+["pdflatex"] 1523979992 "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" "dissertation.pdf" "dissertation" 1523979994
   "/etc/texmf/web2c/texmf.cnf" 1507416320 1101 af7716885e081ab43982cab7b4672c1a ""
-  "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" 1523966753 92965 867a165071f803aa5c303e6965899c30 ""
+  "/home/james/Dissertation/recipeDSL/docs/dissertation/dissertation.tex" 1523979989 93188 9e6962d8201b47983c77d42b745eb3c7 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1272929888 3287 e6b82fe08f5336d4d5ebc73fb1152e87 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -116,16 +116,16 @@
   "actionsOverTime.png" 1523489707 20508 8071dd74fac0f64d19ff62dfb2308564 ""
   "cupOfTea.png" 1523043093 12193 a9f5da11ba1f3807961ed52a299c4e8a ""
   "cupOfTea2.png" 1523043094 12213 71dccff8f74e8a65fd7e10b5c1a00387 ""
-  "dissertation.aux" 1523966758 7167 7a4c7ddb7f31a6c63a0a5f05f2a40e9e ""
-  "dissertation.out" 1523966758 2937 729a9069cf53ea6ef806b9deaf4f3918 ""
-  "dissertation.tex" 1523966753 92965 867a165071f803aa5c303e6965899c30 ""
-  "dissertation.toc" 1523966758 3716 7c7a3943bfced1bc16bfa5f4c2e9f05a ""
+  "dissertation.aux" 1523979994 7167 ea75df1a43953de00f2441a56a4a53da ""
+  "dissertation.out" 1523979994 2937 729a9069cf53ea6ef806b9deaf4f3918 ""
+  "dissertation.tex" 1523979989 93188 9e6962d8201b47983c77d42b745eb3c7 ""
+  "dissertation.toc" 1523979994 3716 6f01daaf727c3030905ad6979953254b ""
   "meatTwoVeg.png" 1523158309 17391 f415139465863e0c6f77e80f4a0fe2a0 ""
   "project.jpg" 1523476604 190884 55f46d1bed9b0defa4ede943560a7777 ""
   "stacks.png" 1522780892 27796 63a2e669871bc3e48bf854aa6b6b377d ""
   (generated)
+  "dissertation.out"
+  "dissertation.aux"
   "dissertation.log"
   "dissertation.pdf"
-  "dissertation.out"
   "dissertation.toc"
-  "dissertation.aux"

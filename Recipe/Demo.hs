@@ -164,7 +164,7 @@ getTime = do
     return obs
 
 env :: Env
-env = Env { eStations = [kettle, chef, toaster]
+env = Env { eStations = [kettle, chef, toaster, hob, chef2]
           , eObs = [ getTime
                    , return $ ObsOpt "milk" True ] }
 
@@ -234,6 +234,17 @@ hob =
             Transaction a -> hobConstr $ popT r
             _ -> Nothing
      in Station "hob" hobConstr []
+    
+hob2 :: Station
+hob2 =
+    let hobConstr r@(Node a ts) = case a of
+            Heat -> Just [Input, Output]
+            Wait -> Just [Input, DoNothing, Output]
+            Conditional _ c -> (hobConstr $ popCond r)
+                                >>= return . addEvalCond c
+            Transaction a -> hobConstr $ popT r
+            _ -> Nothing
+     in Station "hob2" hobConstr []
 
 fridge :: Station
 fridge =

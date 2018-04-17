@@ -20,7 +20,8 @@ module Recipe.Scheduler(
     mkLabelMap, lookupR, childLabels,
     lookupValSts, validStations,
     -- * Scheduling Functions
-    duration, scheduleRecipe, initSchedule ) where
+    duration, scheduleRecipe, initSchedule,
+    schLength ) where
 
 import           Control.Monad.Trans.State
 import           Data.Map.Strict           (Map)
@@ -91,7 +92,7 @@ schLength sch r =
 
 -- heuristic 1 (least demand):
 
--- |Duration that the root action of the recipe
+-- Duration that the root action of the recipe
 -- corresponding to the given label will take.
 -- Uses 'timeAction'.
 duration :: Label -> Map Label Recipe -> Time
@@ -99,16 +100,17 @@ duration l rMap = case Map.lookup l rMap of
     Nothing -> error "Recipe not found"
     Just (Node a ts) -> timeAction a
 
--- Same as removeFrom in Recipe.Recipe just
--- with labels.
+-- Removes all instances of a label from a tree
+-- of labels. If the label is in the root node,
+-- that node is not removed.
 removeFrom :: Tree Label -> Label -> Tree Label
 removeFrom t@(Node a ts) toRem = Node a ts''
     where
         ts'  = deleteAll toRem ts
         ts'' = map (\t -> removeFrom t toRem) ts'
 
--- Same as deleteAll in Recipe.Recipe just
--- with labels.
+-- Deletes all trees in a list whose root node contains
+-- the given label.
 deleteAll :: Label -> [Tree Label] -> [Tree Label]
 deleteAll _ [] = []
 deleteAll l (y@(Node l' _):ys)
@@ -232,7 +234,7 @@ chooseStackRec fullTree lTree' (l:ls) env rMap sch =
     let sch' = chooseStack fullTree lTree' l env rMap sch
      in chooseStackRec fullTree lTree' ls env rMap sch'
 
--- | Schedules a recipe in the given environment.
+-- |Schedules a recipe in the given environment.
 -- Will error if no schedule is available e.g. if there
 -- is no 'Station' capable of handling a certain 'Action'.
 -- See documentation at the top for heuristics used.
@@ -367,5 +369,3 @@ leaves (Node l ts) rMap = case Map.lookup l rMap of
             else let csOfDeps = concatMap subForest ts
                   in concatMap (\t -> leaves t rMap) csOfDeps
     _ -> concatMap (\t -> leaves t rMap) ts
-
--- might just refactor this passing around Tree (Label, Recipe) rather than maps everywhere

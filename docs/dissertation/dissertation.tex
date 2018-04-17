@@ -872,7 +872,7 @@ if we so desired.
 
 Now that we have a model of a cooking environment we need to choose a method for scheduling the recipes.
 Scheduling is in itself a complex problem and therefore the solution used for this project is by
-now means suggested as a well refined solution but merely a demonstration of using the recipe system
+no means suggested as a well refined solution but merely a demonstration of using the recipe system
 for a more concrete purpose.
 
 \subsubsection{Linear Programming}
@@ -1024,22 +1024,22 @@ However, below is some pseudo-code to demonstrate the general flow of the schedu
     type Schedule = Map StName Stack
 
     schedule :: Recipe -> Env -> Schedule
-    schedule r env = do
-        tree = labelRecipe r
-        schedule' env tree tree emptySch
+    schedule r env =
+        let tree = labelRecipe r
+         in schedule' env tree tree emptySch
         where
-            schedule' env fullTree tree sch = do
-                l = chooseLeaf tree
-                st = chooseStation fullTree l env sch
-                stack = lookup st sch
-                stack' = Active l : stack
-                newSch = insert st stack' sch
-                if l == root fullTree
-                    then
-                        newSch
-                    else
-                        tree' = removeFrom tree l
-                        schedule' env fullTree tree' newSch
+            schedule' env fullTree tree sch =
+                let l = chooseLeaf tree
+                    st = chooseStation fullTree l env sch
+                    stack = lookup st sch
+                    stack' = Active l : stack
+                    newSch = insert st stack' sch
+                 in if l == root fullTree
+                        then
+                            newSch
+                        else
+                            let tree' = removeFrom tree l
+                             in schedule' env fullTree tree' newSch
 \end{lstlisting}
 
 The main function \texttt{schedule} takes a recipe and an environment then returns a schedule.
@@ -1085,10 +1085,7 @@ kettle can start boiling it as soon as possible. After 10 seconds the kettle can
 boiling the water, meanwhile the chef acquires the other ingredients before becoming idle
 until the kettle has finished. Once the water is boiled the chef adds the teabag before
 waiting for 5 minutes. After that they optionally add milk. Meanwhile our uneeded toaster
-does nothing. While this scheduling function seems effective, it is also rather inefficient.
-When running it on larger recipes like our chicken jalfrezi, which contains over 30 steps,
-it runs for a long time before running out of memory. As mentioned before, the scheduling
-function isn't the focus of the project and as such not a lot of time was spent on it.
+does nothing.
 
 \subsection{Transactions}
 
@@ -1247,6 +1244,19 @@ this benefit would potentially be much larger for a recipe with a larger number 
     > time cupOfTea = 0h 9m 10s
 
     > schLength (scheduleRecipe cupOfTea env) cupOfTea = 0h 8m 50s
+\end{lstlisting}
+
+If we perform the same test using our chicken jalfrezi with rice then we save 5 minutes
+and 8 seconds. Perhaps more impressive is when we add an extra chef to the environment,
+our scheduling function saves us a huge 29 minutes and 38 seconds.
+
+\begin{lstlisting}
+    > time jalfreziWithRice = 1h 11m 38s
+
+    > schLength (scheduleRecipe jalfreziWithRice env) jalfreziWithRice = 1h 6m 30s
+    
+    -- with extra chef
+    > schLength (scheduleRecipe jalfreziWithRice env) jalfreziWithRice = 0h 42m 0s
 \end{lstlisting}
 
 \subsection{Price}

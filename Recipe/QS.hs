@@ -231,7 +231,7 @@ failObs c obs = filterTime t
         getTimes (CondTime t) = [t]
         getTimes (AND c1 c2) = getTimes c1 ++ getTimes c2
         getTimes (OR c1 c2) = getTimes c1 ++ getTimes c2
-        getTimes _ = []            
+        getTimes _ = []
 
 prop_eval_cond_true c obs =
     let os = condToObs c
