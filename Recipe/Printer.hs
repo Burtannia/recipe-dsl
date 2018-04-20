@@ -106,7 +106,7 @@ ppIngredientsQ = mapM_ ppQuantIng . ingredientsQ
 -- |Print the given schedule using the given maps.
 -- The first is a map of step numbers to their instructions,
 -- the second is a map of labels to their recipes from the labelled tree.
-printSchedule :: Schedule -> Map Label String -> Map Label Recipe -> IO ()
+printSchedule :: Schedule Label -> Map Label String -> Map Label Recipe -> IO ()
 printSchedule sch = printSchedule' (Map.toList sch)
     where
         printSchedule' [] _ _ = return ()
@@ -119,7 +119,7 @@ printSchedule sch = printSchedule' (Map.toList sch)
 -- |Print the given stack of actions.
 -- The first is a map of step numbers to their instructions,
 -- the second is a map of labels to their recipes from the labelled tree.
-printStack :: Stack -> Map Label String -> Map Label Recipe -> StateT Time IO ()
+printStack :: Stack Label -> Map Label String -> Map Label Recipe -> StateT Time IO ()
 printStack [] _ _ = return ()
 printStack (Active l : xs) sMap rMap = do
     printStack xs sMap rMap

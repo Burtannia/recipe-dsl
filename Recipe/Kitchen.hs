@@ -58,7 +58,7 @@ popCond :: Recipe -> Recipe
 popCond (Node (Conditional a c) ts) = Node a ts
 popCond r = r
 
--- |Adds the 'EvalCond' process after the 'Input' process.
+-- |Adds the 'EvalCond' process after the 'Input' and 'Preheat' processes.
 -- If 'Input' does not exist then 'EvalCond' is
 -- added to the start.
 addEvalCond :: Condition -> [Process] -> [Process]
@@ -68,7 +68,8 @@ addEvalCond c ps =
     else
         EvalCond c : ps
     where
-        addEvalCond' c (Input:ps) = Input : EvalCond c : ps
+        addEvalCond' c (Input : Preheat t : ps) = Input : Preheat t : EvalCond c : ps
+        addEvalCond' c (Input : ps) = Input : EvalCond c : ps
         addEvalCond' c (p:ps) = p : addEvalCond' c ps
 
 -- |Removes the 'Transaction' wrapper from the root action

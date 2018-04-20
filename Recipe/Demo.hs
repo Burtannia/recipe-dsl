@@ -8,8 +8,8 @@ import Data.Tree
 import Recipe.Properties
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Time.Clock
 import Data.Monoid
+import Recipe.Simulator
 
 -------------------------------------
 -- TEST RECIPES
@@ -156,16 +156,9 @@ boilInWaterForM t r = forTime (minutes t)
 -- TEST STATIONS
 -------------------------------------
 
-getTime :: IO Obs
-getTime = do
-    ut <- getCurrentTime
-    let t = floor $ utctDayTime ut
-    let obs = (ObsTime . Time) t
-    return obs
-
 env :: Env
 env = Env { eStations = [kettle, chef, toaster, hob, chef2]
-          , eObs = [ getTime
+          , eObs = [ return $ ObsTime 0
                    , return $ ObsOpt "milk" True ] }
 
 isBoilWater :: Recipe -> Bool
@@ -183,7 +176,7 @@ kettle = let kettleConstr r =
                         Just [Input, Output]
                     else
                         Nothing
-             kettleTemp = return $ ObsTemp 100
+             kettleTemp = return $ ObsTemp 0
           in Station "kettle" kettleConstr [kettleTemp]
 
 toastBread :: Recipe

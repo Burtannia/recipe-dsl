@@ -72,18 +72,18 @@ validStations env r = let xs = map (applyConstrF r) (eStations env)
 -----------------------------
 
 -- |Task performed by a 'Station'.
-data Task = Active Label -- ^ Active performing the action corresponding to the label.
-          | Idle Time -- ^ Idle for a time.
+data Task a = Active a -- ^ Active performing the action corresponding to the label.
+            | Idle Time -- ^ Idle for a time.
     deriving (Eq, Show)
 
-type Stack = [Task]
+type Stack a = [Task a]
 
 -- |Schedule is a map of station names to their 'Stack' of 'Task's
-type Schedule = Map StName Stack
+type Schedule a = Map StName (Stack a)
 
 -- |Time a schedule takes, must be given the recipe that
 -- the schedule is for.
-schLength :: Schedule -> Recipe -> Time
+schLength :: Schedule Label -> Recipe -> Time
 schLength sch r =
     let rMap = mkLabelMap $ labelRecipeR r
         stacks = Map.elems sch
@@ -144,7 +144,7 @@ demands unscheduleds env rMap =
 -- Must also be passed a list of all stacks in order to find dependency times.
 -- The tree passed must be the full tree of the labelled recipe without
 -- already scheduled leaves having been removed.
-idleTime :: Label -> [(StName, Stack)] -> [Stack] -> Tree Label -> Map Label Recipe -> [(StName, Time)]
+idleTime :: Label -> [(StName, Stack Label)] -> [Stack Label] -> Tree Label -> Map Label Recipe -> [(StName, Time)]
 idleTime l validSts allStacks fullTree rMap =
     let deps = childLabels l fullTree
         ends = map (\d -> endOfLabel d allStacks rMap) deps -- :: [Time]
@@ -157,7 +157,7 @@ idleTime l validSts allStacks fullTree rMap =
                                     else (n,t)) idles
 
 -- get end of time label in stacks
-endOfLabel :: Label -> [Stack] -> Map Label Recipe -> Time
+endOfLabel :: Label -> [Stack Label] -> Map Label Recipe -> Time
 endOfLabel _ [] _ = error "no stacks"
 endOfLabel l ss rMap = maximum $ map endOfLabel' ss
     where
@@ -166,7 +166,7 @@ endOfLabel l ss rMap = maximum $ map endOfLabel' ss
              in sumDurations stack' rMap
 
 -- Sum the durations of a list of stacks.
-sumDurations :: [Task] -> Map Label Recipe -> Time
+sumDurations :: [Task Label] -> Map Label Recipe -> Time
 sumDurations [] _ = Time 0
 sumDurations (Active l : ts) rMap = duration l rMap + sumDurations ts rMap
 sumDurations (Idle t : ts) rMap = t + sumDurations ts rMap
@@ -175,14 +175,14 @@ sumDurations (Idle t : ts) rMap = t + sumDurations ts rMap
 
 -- Given a list of station names and their stacks, return the pair
 -- with the most space.
-mostSpace :: [(StName, Stack)] -> Map Label Recipe -> (StName, Stack)
+mostSpace :: [(StName, Stack Label)] -> Map Label Recipe -> (StName, Stack Label)
 mostSpace [] _ = error "no stacks"
 mostSpace [x] _ = x
 mostSpace (x@(stName, stack) : y@(stName', stack') : xs) rMap
     | stackHeight stack rMap > stackHeight stack' rMap = mostSpace (y:xs) rMap
     | otherwise = mostSpace (x:xs) rMap
 
-stackHeight :: Stack -> Map Label Recipe -> Time
+stackHeight :: Stack Label -> Map Label Recipe -> Time
 stackHeight = sumDurations
 
 -- Is the root action of the recipe corresponding
@@ -196,7 +196,8 @@ isTransaction l rMap = case Map.lookup l rMap of
 -- heuristic 1 + heuristic 2
 -- tie breaker is heuristic 3
 -- passed fullTree and tree with label removed
-chooseStack :: Tree Label -> Tree Label -> Label -> Env -> Map Label Recipe -> Schedule -> Schedule
+chooseStack :: Tree Label -> Tree Label -> Label -> Env
+    -> Map Label Recipe -> Schedule Label -> Schedule Label
 chooseStack fullTree unscheduleds l env rMap sch =
     let vs = lookupValSts env l rMap
         validSch = Map.filterWithKey (\st _ -> st `elem` vs) sch -- schedule containing only stations valid for l
@@ -228,7 +229,8 @@ chooseStack fullTree unscheduleds l env rMap sch =
 -- Recursive version of chooseStack to work on a list of labels.
 -- Used to schedule all children of a transaction without other recipes
 -- being scheduled in between.
-chooseStackRec :: Tree Label -> Tree Label -> [Label] -> Env -> Map Label Recipe -> Schedule -> Schedule
+chooseStackRec :: Tree Label -> Tree Label -> [Label] -> Env
+    -> Map Label Recipe -> Schedule Label -> Schedule Label
 chooseStackRec fullTree lTree' [] env rMap sch = sch
 chooseStackRec fullTree lTree' (l:ls) env rMap sch = 
     let sch' = chooseStack fullTree lTree' l env rMap sch
@@ -238,13 +240,14 @@ chooseStackRec fullTree lTree' (l:ls) env rMap sch =
 -- Will error if no schedule is available e.g. if there
 -- is no 'Station' capable of handling a certain 'Action'.
 -- See documentation at the top for heuristics used.
-scheduleRecipe :: Recipe -> Env -> Schedule
+scheduleRecipe :: Recipe -> Env -> Schedule Label
 scheduleRecipe r env = 
     let lTree = labelRecipe r
         rMap = mkLabelMap $ labelRecipeR r
      in scheduleRecipe' lTree lTree rMap (initSchedule env)
     where
-        scheduleRecipe' :: Tree Label -> Tree Label -> Map Label Recipe -> Schedule -> Schedule
+        scheduleRecipe' :: Tree Label -> Tree Label
+            -> Map Label Recipe -> Schedule Label -> Schedule Label
         scheduleRecipe' fullTree lTree rMap sch =
             let ls = leaves lTree rMap
                 shortL = chooseLeaf ls fullTree rMap
@@ -264,7 +267,7 @@ scheduleRecipe r env =
 -- Given a schedule containing the labels passed as the second
 -- argument, add idle time before them so that they all finish
 -- at the same time.
-adjustSch :: Schedule -> [Label] -> Map Label Recipe -> Schedule
+adjustSch :: Schedule Label -> [Label] -> Map Label Recipe -> Schedule Label
 adjustSch sch ls rMap =
     let stacks = Map.elems sch
         ends = map (\l -> (l, endOfLabel l stacks rMap)) ls
@@ -276,7 +279,7 @@ adjustSch sch ls rMap =
 -- Helper function used by 'adjustSch', applied the idle
 -- time paired with each label by adding it before
 -- any occurences of that label in the stacks.
-adjustStacks :: Schedule -> [(Label, Time)] -> Schedule
+adjustStacks :: Schedule Label -> [(Label, Time)] -> Schedule Label
 adjustStacks sch [] = sch
 adjustStacks sch ((l,t):ls) =
     let filteredSch = Map.filter (\s -> Active l `elem` s) sch
@@ -287,7 +290,7 @@ adjustStacks sch ((l,t):ls) =
 
 -- Add the given idle time after the given label
 -- in the stack.
-addIdleTime :: Label -> Time -> Stack -> Stack
+addIdleTime :: Label -> Time -> Stack Label -> Stack Label
 addIdleTime l t stack =
     let (xs,ys) = splitAtEq (Active l) stack
         ys' = case ys of
@@ -307,7 +310,7 @@ splitAtEq a ys@(x:xs)
 
 -- Merge schedule 1 into schedule 2
 -- sch1 values kept on collision as per Map.insert
-mergeInto :: Schedule -> Schedule -> Schedule
+mergeInto :: Schedule Label -> Schedule Label -> Schedule Label
 mergeInto sch1 sch2 = recInsert (Map.toList sch1) sch2
     where
         recInsert [] sch = sch
@@ -317,7 +320,7 @@ mergeInto sch1 sch2 = recInsert (Map.toList sch1) sch2
 
 -- |Creates a schedule where each 'Station' in
 -- the given environment has an empty 'Stack'.
-initSchedule :: Env -> Schedule
+initSchedule :: Env -> Schedule Label
 initSchedule env = Map.fromList
     [(st,[]) | st <- map stName (eStations env)]
 
