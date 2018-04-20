@@ -929,6 +929,8 @@ respective stacks.
 
 \medbreak
 
+\newpage % to get figure correct
+
 As an abstract example, imagine a recipe, r1, which has sub-recipes: r2, r3 and r4. All the
 recipes must be scheduled on station 2, except r3 which must be scheduled on station 1.
 Below is a diagram showing r1 and a potential stack setup.
@@ -1555,7 +1557,7 @@ concept we will use the very simple and traditional "meat and two veg".
             vegs = filter (\(_,p) -> fst p == Veg) ps
             parts = map (\(_,p) -> snd p)
                     $ head meats : take 2 vegs
-        in foldr1 (combine "next to") parts
+         in foldr1 (combine "next to") parts
 \end{lstlisting}
 
 Here we are simply seleting a meat and two vegetables, taking their

@@ -182,7 +182,7 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
     where
         runProcesses' :: [Obs] -> [Obs] -> [(ProcessStatus, Process)] -> IO ([Obs], [(ProcessStatus, Process)], Result)
         runProcesses' _ locals [] = return (locals, [], Terminate)
-        runProcesses' globals locals ((status, p) : ps) =
+        runProcesses' globals locals ((status, p) : ps) = do
             case status of
 
                 PCompleted -> do
