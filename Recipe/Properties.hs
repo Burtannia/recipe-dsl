@@ -1,15 +1,14 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE RecordWildCards            #-}
 
 module Recipe.Properties where
 
+import           Data.List       (maximumBy)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import           Data.Tree
+import           Data.Maybe      (catMaybes, fromJust)
 import           Recipe.Recipe
-import Data.Maybe (fromJust, catMaybes)
-import Data.List (maximumBy)
 
 -- |List of String keys and properties
 -- of a given type.
@@ -20,7 +19,7 @@ type PropertyList v = [(String, v)]
 lookupProp :: Monoid v => PropertyList v -> String -> v
 lookupProp ps s = case lookup s ps of
     Nothing -> mempty
-    Just v -> v
+    Just v  -> v
 
 -- |Cumulatively, evaluates the properties of every ingredient in the
 -- given recipe.
@@ -28,7 +27,7 @@ evalProps :: Monoid v => PropertyList v -> Recipe -> v
 evalProps ps = foldRecipe f
     where
         f (GetIngredient s) = lookupProp ps s
-        f _ = mempty        
+        f _                 = mempty
 
 -- |The same as 'evalProps' but considers the quantity of an ingredient used
 -- and calculates the ratio accordingly.
@@ -36,7 +35,7 @@ evalPropsQ :: (Integral v, Monoid v) => PropertyList (v, Measurement) -> [(Strin
 evalPropsQ ps xs = mconcat $ map evalPropsQ' xs
     where
         evalPropsQ' (s,m) = case lookup s ps of
-            Nothing -> mempty
+            Nothing     -> mempty
             Just (v,m') -> applyQuant m (v,m')
 
 -- |Apply the given measurement to the given quantified property.
@@ -51,10 +50,10 @@ applyQuant m (v,m') =
 
 -- |The ratio of two measurements.
 ratio :: Measurement -> Measurement -> Float
-ratio (Count i) (Count i') = ratio' i i'
-ratio (Grams i) (Grams i') = ratio' i i'
+ratio (Count i) (Count i')             = ratio' i i'
+ratio (Grams i) (Grams i')             = ratio' i i'
 ratio (Milliletres i) (Milliletres i') = ratio' i i'
-ratio _ _ = 0.0
+ratio _ _                              = 0.0
 
 -- |Helper function to avoid "divide by zero" in 'ratio'.
 ratio' :: Int -> Int -> Float
@@ -79,7 +78,7 @@ instance Show Price where
                 | p < 10 = '0' : show p
                 | otherwise = show p
          in '£' : show pounds ++ '.' : showPence pence'
-        
+
 instance Monoid Price where
     mempty = Price 0
     mappend = (+)

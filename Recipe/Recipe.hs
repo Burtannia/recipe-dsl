@@ -1,11 +1,11 @@
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Recipe.Recipe where
 
 import           Control.Monad.Trans.State
-import           Data.Tree hiding (foldTree)
-import Data.List (sort)
+import           Data.List                 (sort)
+import           Data.Tree                 hiding (foldTree)
 
 -------------------------
 -- Defining Recipes
@@ -75,8 +75,8 @@ data Measurement = Count Int -- ^ Number of something e.g. 1 apple.
 
 -- |Returns the magnitude of a 'Measurement'.
 getMeasure :: Measurement -> Int
-getMeasure (Count i) = i
-getMeasure (Grams i) = i
+getMeasure (Count i)       = i
+getMeasure (Grams i)       = i
 getMeasure (Milliletres i) = i
 
 -- |Ordering uses the magnitude only.
@@ -87,8 +87,8 @@ instance Ord Measurement where
 -- > show ('Grams' 100) = 100g
 -- > show ('Milliletres' 200) = 200ml
 instance Show Measurement where
-    show (Count i) = show i
-    show (Grams i) = show i ++ "g"
+    show (Count i)       = show i
+    show (Grams i)       = show i ++ "g"
     show (Milliletres i) = show i ++ "ml"
 
 -------------------------
@@ -192,14 +192,14 @@ ingredients :: Recipe -> [String]
 ingredients = foldRecipe f
     where
         f (GetIngredient s) = [s]
-        f _ = []
+        f _                 = []
 
 -- |List of ingredients paired with their measurements.
 -- If no measurement is present for an ingredient, it is paired with "'Count' 0".
 ingredientsQ :: Recipe -> [(String, Measurement)]
 ingredientsQ (Node (Measure m) ts) = case ts of
     [Node (GetIngredient s) _] -> [(s,m)]
-    _ -> concatMap ingredientsQ ts
+    _                          -> concatMap ingredientsQ ts
 ingredientsQ (Node (GetIngredient s) _) = [(s, Count 0)]
 ingredientsQ (Node _ ts) = concatMap ingredientsQ ts
 
@@ -250,7 +250,7 @@ timeAction (Conditional a c) = t' + foldCond f c
         t' = timeAction a
         f (CondTime t) = t
         f (CondTemp t) = tempToTime t
-        f (CondOpt s) = 0
+        f (CondOpt s)  = 0
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 10
 
@@ -270,7 +270,7 @@ topologicals r = topologicals' (labelRecipeA r)
         topologicals' :: Tree (Label, Action) -> [[Action]]
         topologicals' (Node (l,a) []) = [[a]]
         topologicals' t = concat
-            [map (a:) (topologicals' $ removeFrom t lb) | (lb,a) <- leaves t]             
+            [map (a:) (topologicals' $ removeFrom t lb) | (lb,a) <- leaves t]
 
 -- |Returns True if the given node is a leaf i.e. has no child nodes.
 isLeaf :: Tree (Label, Action) -> Bool

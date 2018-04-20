@@ -2,21 +2,21 @@
 
 module Recipe.Kitchen where
 
-import Recipe.Recipe
-import Data.Tree
-import Data.Monoid
+import           Data.Monoid
+import           Data.Tree
+import           Recipe.Recipe
 
 -- |Representation of a station in a cooking environment, for example
 -- an oven.
 data Station = Station
-    { stName     :: StName -- ^ Name of the station, should be unique.
-    , stConstrF  :: ConstraintF -- ^ Constraint function (Recipe -> Maybe Process),
+    { stName    :: StName -- ^ Name of the station, should be unique.
+    , stConstrF :: ConstraintF -- ^ Constraint function (Recipe -> Maybe Process),
                                 -- given a recipe, if this station can perform
                                 -- the root action of the recipe then return Just a list of processes
                                 -- necessary to perform that action else return Nothing.
-    , stObs      :: [IO Obs] -- ^ Local observables for example temperature of an oven.
+    , stObs     :: [IO Obs] -- ^ Local observables for example temperature of an oven.
     }
-    
+
 -- |Stations just displayed as their name.
 instance Show Station where
     show Station {..} = stName
@@ -33,13 +33,13 @@ data Obs = ObsTemp Int -- ^ Observable temperature.
 -- |Given a list of observables, returns whether the given condition is true.
 evalCond :: Condition -> [Obs] -> Bool
 evalCond (CondTime t) os = case [o | o@(ObsTime _) <- os] of
-    [] -> False
+    []  -> False
     os' -> True `elem` (map (\(ObsTime t') -> t' >= t) os')
 evalCond (CondTemp t) os = case [o | o@(ObsTemp _) <- os] of
-    [] -> False
+    []  -> False
     os' -> True `elem` (map (\(ObsTemp t') -> t == t') os')
 evalCond (CondOpt s) os = case [o | o@(ObsOpt s' _) <- os, s == s'] of
-    [] -> False
+    []  -> False
     os' -> True `elem` (map (\(ObsOpt _ b) -> b) os')
 evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 
@@ -48,7 +48,7 @@ evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 -- and adjusts the condition to absolute time rather than relative time.
 adjustTime :: Condition -> Obs -> Condition
 adjustTime (CondTime t) (ObsTime t') = CondTime (t + t')
-adjustTime c _ = c
+adjustTime c _                       = c
 
 type ConstraintF = Recipe -> Maybe [Process]
 
@@ -56,7 +56,7 @@ type ConstraintF = Recipe -> Maybe [Process]
 -- Does nothing if there is no condition.
 popCond :: Recipe -> Recipe
 popCond (Node (Conditional a c) ts) = Node a ts
-popCond r = r
+popCond r                           = r
 
 -- |Adds the 'EvalCond' process after the 'Input' and 'Preheat' processes.
 -- If 'Input' does not exist then 'EvalCond' is
@@ -77,7 +77,7 @@ addEvalCond c ps =
 -- transaction wrapper.
 popT :: Recipe -> Recipe
 popT (Node (Transaction a) ts) = Node a ts
-popT r = r
+popT r                         = r
 
 -- |A process that a station goes through, intended to
 -- be interfaced with device specific instructions.

@@ -1,19 +1,19 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Recipe.QS where
 
-import Recipe.Recipe
-import QuickSpec
-import Test.QuickCheck
-import Control.Monad (liftM, liftM2, liftM3)
-import Data.Tree
-import Recipe.Kitchen
-import Data.List (sort)
-import Recipe.Demo
-import Data.List
+import           Control.Monad   (liftM, liftM2, liftM3)
+import           Data.List       (sort)
+import           Data.List
+import           Data.Tree
+import           QuickSpec
+import           Recipe.Demo
+import           Recipe.Kitchen
+import           Recipe.Recipe
+import           Test.QuickCheck
 
 -------------------------------------
 -- Arbitrary Instances
@@ -65,7 +65,7 @@ instance Arbitrary Condition where
                 [ singleCond
                 , liftM2 AND bin bin
                 , liftM2 OR bin bin ]
-        
+
 singleCond :: Gen Condition
 singleCond = oneof
     [ liftM (CondOpt . show) (choose (1, 10) :: Gen Int)
@@ -202,7 +202,7 @@ prop_fold_ing r =
     let is = sort $ ingredients r -- implemented with foldRecipe
         iTree = fmap (\a -> case a of
                                 GetIngredient s -> [s]
-                                _ -> []) r
+                                _               -> []) r
         is' = (sort . mconcat . flatten) iTree
      in is == is'
 
@@ -227,11 +227,11 @@ failObs c obs = filterTime t
         filterTime t = filter (\o ->
             case o of
                 ObsTime t' -> t' < t
-                _ -> True)
+                _          -> True)
         getTimes (CondTime t) = [t]
-        getTimes (AND c1 c2) = getTimes c1 ++ getTimes c2
-        getTimes (OR c1 c2) = getTimes c1 ++ getTimes c2
-        getTimes _ = []
+        getTimes (AND c1 c2)  = getTimes c1 ++ getTimes c2
+        getTimes (OR c1 c2)   = getTimes c1 ++ getTimes c2
+        getTimes _            = []
 
 prop_eval_cond_true c obs =
     let os = condToObs c
@@ -240,9 +240,9 @@ prop_eval_cond_true c obs =
 condToObs :: Condition -> [Obs]
 condToObs (CondTime t) = [ObsTime t]
 condToObs (CondTemp t) = [ObsTemp t]
-condToObs (CondOpt s) = [ObsOpt s True]
-condToObs (AND c1 c2) = condToObs c1 ++ condToObs c2
-condToObs (OR c1 c2) = condToObs c1 ++ condToObs c2
+condToObs (CondOpt s)  = [ObsOpt s True]
+condToObs (AND c1 c2)  = condToObs c1 ++ condToObs c2
+condToObs (OR c1 c2)   = condToObs c1 ++ condToObs c2
 
 return []
 runTests = $quickCheckAll

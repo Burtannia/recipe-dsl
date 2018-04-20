@@ -1,15 +1,12 @@
 module Recipe.Demo where
 
-import Recipe.Recipe
-import Recipe.Printer
-import Recipe.Kitchen
-import Recipe.Scheduler
-import Data.Tree
-import Recipe.Properties
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Monoid
-import Recipe.Simulator
+import           Data.Tree
+import           Recipe.Kitchen
+import           Recipe.Printer
+import           Recipe.Properties
+import           Recipe.Recipe
+import           Recipe.Scheduler
+import           Recipe.Simulator
 
 -------------------------------------
 -- TEST RECIPES
@@ -32,7 +29,7 @@ cupOfTea = optional "milk"
 -- cupOfTea == cupOfTea'
 cupOfTea' :: Recipe
 cupOfTea' = optional "milk"
-    $ combine "mix" 
+    $ combine "mix"
     ( waitFor (minutes 5)
     $ combine "mix" teabag
     $ heatTo 100 water ) milk
@@ -148,7 +145,7 @@ preheatOil :: Recipe
 preheatOil = heatForM 2 oliveOil
 
 boilInWaterForM :: Time -> Recipe -> Recipe
-boilInWaterForM t r = forTime (minutes t) 
+boilInWaterForM t r = forTime (minutes t)
     $ combine "place in" r
     $ heatTo 100 water
 
@@ -164,9 +161,9 @@ env = Env { eStations = [kettle, chef, toaster, hob, chef2]
 isBoilWater :: Recipe -> Bool
 isBoilWater r@(Node a ts) = case a of
     Conditional Heat (CondTemp 100) -> case ts of
-        [Node (GetIngredient "water") []] -> True
+        [Node (GetIngredient "water") []]                    -> True
         [Node (Measure _) [Node (GetIngredient "water") []]] -> True
-        _ -> False
+        _                                                    -> False
     Transaction _ -> isBoilWater $ popT r
     _ -> False
 
@@ -227,7 +224,7 @@ hob =
             Transaction a -> hobConstr $ popT r
             _ -> Nothing
      in Station "hob" hobConstr []
-    
+
 hob2 :: Station
 hob2 =
     let hobConstr r@(Node a ts) = case a of
@@ -243,8 +240,8 @@ fridge :: Station
 fridge =
     let fridgeConstr r@(Node a ts) = case a of
             Conditional Heat (CondTemp 4) -> Just [Input, Output]
-            Transaction a -> fridgeConstr $ popT r
-            _ -> Nothing
+            Transaction a                 -> fridgeConstr $ popT r
+            _                             -> Nothing
      in Station "fridge" fridgeConstr []
 
 -------------------------------------

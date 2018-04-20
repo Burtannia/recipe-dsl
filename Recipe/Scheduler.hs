@@ -23,14 +23,13 @@ module Recipe.Scheduler(
     duration, scheduleRecipe, initSchedule,
     schLength ) where
 
-import           Control.Monad.Trans.State
-import           Data.Map.Strict           (Map)
-import qualified Data.Map.Strict           as Map
-import           Data.Maybe                (fromJust, isJust)
+import           Data.List       (groupBy, maximumBy, minimumBy, sortBy)
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import           Data.Maybe      (fromJust, isJust)
 import           Data.Tree
 import           Recipe.Kitchen
-import           Recipe.Recipe             hiding (removeFrom, deleteAll, leaves)
-import Data.List (groupBy, sortBy, maximumBy, minimumBy)
+import           Recipe.Recipe   hiding (leaves, removeFrom)
 
 -----------------------------
 -- Label Helper Functions
@@ -97,7 +96,7 @@ schLength sch r =
 -- Uses 'timeAction'.
 duration :: Label -> Map Label Recipe -> Time
 duration l rMap = case Map.lookup l rMap of
-    Nothing -> error "Recipe not found"
+    Nothing          -> error "Recipe not found"
     Just (Node a ts) -> timeAction a
 
 -- Removes all instances of a label from a tree
@@ -167,9 +166,9 @@ endOfLabel l ss rMap = maximum $ map endOfLabel' ss
 
 -- Sum the durations of a list of stacks.
 sumDurations :: [Task Label] -> Map Label Recipe -> Time
-sumDurations [] _ = Time 0
+sumDurations [] _                 = Time 0
 sumDurations (Active l : ts) rMap = duration l rMap + sumDurations ts rMap
-sumDurations (Idle t : ts) rMap = t + sumDurations ts rMap
+sumDurations (Idle t : ts) rMap   = t + sumDurations ts rMap
 
 -- heuristic 3 (most space):
 
@@ -190,7 +189,7 @@ stackHeight = sumDurations
 isTransaction :: Label -> Map Label Recipe -> Bool
 isTransaction l rMap = case Map.lookup l rMap of
     Just (Node (Transaction _) _) -> True
-    _ -> False
+    _                             -> False
 
 -- Choose the best stack for the given label.
 -- heuristic 1 + heuristic 2
@@ -208,7 +207,7 @@ chooseStack fullTree unscheduleds l env rMap sch =
         is = idleTime l (Map.toList validSch) (Map.elems sch) fullTree rMap -- :: [(StName, Time)]
         dPlusIs = map (\(st,demand) ->
             (st, demand + (fromJust $ lookup st is))) ds'
-            
+
         sts = sortBy (\(_,t) (_,t') -> compare t t') dPlusIs
         (st,min) = head sts
         mins = filter (\(st,t) -> t == min) sts
@@ -223,7 +222,7 @@ chooseStack fullTree unscheduleds l env rMap sch =
         iTime = fromJust $ lookup bestName is
         newStack = case iTime of
             Time 0 -> Active l : bestStack
-            _ -> Active l : Idle iTime : bestStack
+            _      -> Active l : Idle iTime : bestStack
      in Map.insert bestName newStack sch
 
 -- Recursive version of chooseStack to work on a list of labels.
@@ -232,7 +231,7 @@ chooseStack fullTree unscheduleds l env rMap sch =
 chooseStackRec :: Tree Label -> Tree Label -> [Label] -> Env
     -> Map Label Recipe -> Schedule Label -> Schedule Label
 chooseStackRec fullTree lTree' [] env rMap sch = sch
-chooseStackRec fullTree lTree' (l:ls) env rMap sch = 
+chooseStackRec fullTree lTree' (l:ls) env rMap sch =
     let sch' = chooseStack fullTree lTree' l env rMap sch
      in chooseStackRec fullTree lTree' ls env rMap sch'
 
@@ -241,7 +240,7 @@ chooseStackRec fullTree lTree' (l:ls) env rMap sch =
 -- is no 'Station' capable of handling a certain 'Action'.
 -- See documentation at the top for heuristics used.
 scheduleRecipe :: Recipe -> Env -> Schedule Label
-scheduleRecipe r env = 
+scheduleRecipe r env =
     let lTree = labelRecipe r
         rMap = mkLabelMap $ labelRecipeR r
      in scheduleRecipe' lTree lTree rMap (initSchedule env)
@@ -295,8 +294,8 @@ addIdleTime l t stack =
     let (xs,ys) = splitAtEq (Active l) stack
         ys' = case ys of
                 Active l : Idle t' : zs -> Active l : Idle (t + t') : zs
-                Active l : zs -> Active l : Idle t : zs
-                _ -> ys
+                Active l : zs           -> Active l : Idle t : zs
+                _                       -> ys
      in xs ++ ys'
 
 -- Splits a list at the given element.

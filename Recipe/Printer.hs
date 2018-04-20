@@ -1,21 +1,20 @@
+{-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies              #-}
 
 module Recipe.Printer where
 
-import Recipe.Recipe
-import Data.Tree
-import Data.Tree.Pretty
-import Control.Monad.Trans.State
-import Recipe.Scheduler
-import Recipe.Properties
-import Recipe.Kitchen
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Maybe (fromJust)
-import Control.Monad.IO.Class (liftIO)
-import Data.Char (toUpper)
+import           Control.Monad.IO.Class    (liftIO)
+import           Control.Monad.Trans.State
+import           Data.Char                 (toUpper)
+import           Data.Map.Strict           (Map)
+import qualified Data.Map.Strict           as Map
+import           Data.Maybe                (fromJust)
+import           Data.Tree
+import           Data.Tree.Pretty
+import           Recipe.Kitchen
+import           Recipe.Recipe
+import           Recipe.Scheduler
 
 -------------------------------------
 -- Steps
@@ -26,14 +25,14 @@ import Data.Char (toUpper)
 -- the ingredient name.
 extractLabel :: [Tree (Label, Action)] -> [String]
 extractLabel [t] = [extractLabel' t]
-extractLabel ts = map extractLabel' ts
+extractLabel ts  = map extractLabel' ts
 
 -- |Helper function for 'extractLabel'. If a node contains
 -- a label and ingredient, return the name of the ingredient,
 -- else return the label as a String.
 extractLabel' :: Tree (Label, Action) -> String
 extractLabel' (Node (_, GetIngredient s) _) = s
-extractLabel' (Node (l, _) _) = show l
+extractLabel' (Node (l, _) _)               = show l
 
 -- |Step is a pair of a label (step number) and the instructions for that step.
 type Step = (Label, String)
