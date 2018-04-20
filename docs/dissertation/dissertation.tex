@@ -141,7 +141,7 @@ of fundamental actions that one becomes able to perform when
 learning to cook. Recipes can then be performed using a sequence
 of these actions. Representing recipes like this would allow us
 to take a robot programmed to perform each of the fundamental
-actions and tell it how to cook literally anything. This is the
+actions and instruct it to cook anything we wanted. This is the
 same principle as taking code written in a high level language
 and compiling it down into a sequence of low level actions in
 assembly language.
@@ -186,7 +186,7 @@ is the popular database querying language, SQL.
 Embedded Domain Specific Languages (EDSLs) are DSLs that are embedded
 within another language, such as Haskell. This allows for
 fast development as you no longer need to write your parser
-or compiler; programs written in your EDSL can just be interpretted
+or compiler; programs written in your EDSL can just be interpreted
 as programs written using the language in which it is embedded.
 Secondly it allows programs written in your language to be
 manipulated using the full power of the host language. Taking
@@ -196,7 +196,7 @@ the DSL to handle scheduling or write something in another language
 to interpret the recipes so that they can be scheduled. In this
 case the recipe EDSL is in Haskell and as such a scheduler can
 just be written in Haskell as it would for any other purpose thus
-saving both time and unecessary extra code.
+saving both time and unnecessary extra code.
 
 \medbreak
 
@@ -295,7 +295,7 @@ of recipes. For example \texttt{heat 100 r} implicitly requires that \texttt{r} 
 before it can be heated. In the case of sequence, things get a little less clear. Consider
 the recipe \texttt{r1 >>> r2}, that is "r1 then r2". There is no need for \texttt{r1} to be
 performed first because \texttt{r2} doesn't make use of it. Let's say we then apply \texttt{heat}
-to this sequence, are we heating \texttt{r1}, \texttt{r2} or both? The reason for this problem
+to this sequence. Are we heating \texttt{r1}, \texttt{r2} or both? The reason for this problem
 is that we have added meaning that doesn't exist, we have forced sequencing in a scenario
 in which it does not naturally occur. Paul Hudak writes in his paper \cite{hudak} that a
 "a DSL should capture the semantics of the domain and nothing more". This was the issue
@@ -304,9 +304,9 @@ in the form of conditionals.
 
 \subsection{Conditionals}
 
-In recipes, one pattern that occures a lot is the notion of performing an action until
+In recipes, one pattern that occurs a lot is the notion of performing an action until
 a certain condition is met. For example in our cup of tea we need to boil water which is
-the heating of water until the water reaches 100 degrees. We capture this by adding a new
+the heating of water until the water reaches 100 degrees centigrade. We capture this by adding a new
 combinator as follows. Note that we also add some extra custom combinators to provide
 a more convenient means of adding each type of condition.
 
@@ -346,7 +346,7 @@ to other combinators.
 At a more complex level, conditionals could allow us to mix until "mixed".
 The concrete implementation in Section 4.1 can then be used to link this to a signal
 from a camera in the case of a robotic chef. The camera could monitor the mixture
-until it is somewhat of a uniform colour and then send the signal that mixing is complete.
+until it is a uniform colour and then send the signal that mixing is complete.
 
 \medbreak
 
@@ -455,7 +455,7 @@ condition is what decides the completion of "r" in the first place.
 
 \medbreak
 
-A further issue with out current representation is that labelling is a little inconvenient.
+A further issue with our current representation is that labelling is a little inconvenient.
 We could create a labelled recipe by putting a label and a recipe in a tuple as follows.
 
 \begin{lstlisting}
@@ -585,7 +585,7 @@ components of our chicken jalfrezi.
         $ preheatOil
 \end{lstlisting}
 
-Moving onto the rice, we can abstract the notion of boiling "something" in water as we may
+Moving on to the rice, we can abstract the notion of boiling "something" in water as we may
 want to reuse this in the future, for example when cooking vegetables.
 
 \begin{lstlisting}
@@ -672,7 +672,7 @@ consider this alternate definition for our cup of tea recipe.
         $ heatTo 100 water ) milk
 \end{lstlisting}
 
-In this version we combine our tea with milk rather than combing milk with our tea.
+In this version we combine our tea with milk rather than combining milk with our tea.
 Printing the tree for this recipe gives a different result from our original recipe.
 But fundamentally we know it to be a variation of the same recipe.
 
@@ -707,7 +707,7 @@ way of sorting the lists.
 \medbreak
 
 What this results in is recipes being equal if and only if their topological sorts are identical.
-Recipe a will be less than recipe b if the list of recipe a's topological sorts is shorter than recipe b's.
+Recipe "a" will be less than recipe "b" if the list of recipe a's topological sorts is shorter than recipe b's.
 Similarly the inverse is true of recipe a being greater than recipe b. Things become a little less
 clear when the two lists are the same length. Ordering is then deferred to which lists of actions
 consists of actions with lower ordering as defined by the derived ordering instance for actions.
@@ -836,37 +836,38 @@ we need a kettle and a chef. For conciseness I shall only discuss the kettle.
 
 \begin{lstlisting}
     kettle :: Station
-    kettle = let kettleConstr r@(Node a ts)
-                    | r == heatTo 100 (ingredient "water") = Just [Input, Output]
-                    | otherwise = case a of
-                        Transaction a -> kettleConstr $ popT r
-                        _ -> Nothing
-                 kettleTemp = return $ ObsTemp 100
+    kettle = let kettleConstr r =
+                        if isBoilWater r then
+                            Just [Input, Output]
+                        else
+                            Nothing
+                 kettleTemp = return $ ObsTemp 10
               in Station "kettle" kettleConstr [kettleTemp]
 \end{lstlisting}
 
 Here we're creating a station with a name of "kettle", creating the constraint function
 and also providing a temperature observable. We have no actual kettle to retrieve the temperature
-from so for now we are just providing a constant temperature of 100 degrees. The constraint function
-simply checks if the recipe passed is "boiling water" or "boiling water" wrapped in a transaction (Section 4.5),
-returning Nothing if it's not.
+from so for now we are just providing a constant initial temperature of 10 degrees for the water
+that will be added. The constraint function simply checks if the recipe passed is "boiling water"
+or "boiling water" wrapped in a transaction (Section 4.5), returning Nothing if it's not.
 
 \medbreak
 
-We can now speicfy our environment as follows. I have added an extra uneeded station, a toaster,
+We can now specify our environment as follows. I have added an extra unneeded station, a toaster,
 to demonstrate that it remains unused when scheduling making a cup of tea.
 
 \begin{lstlisting}
     env :: Env
-    env = Env { eStations = [kettle, chef, toaster]
-              , eObs = [ getTime
+    env = Env { eStations = [kettle, chef, toaster, hob, chef2]
+              , eObs = [ return $ ObsTime 0
                        , return $ ObsOpt "milk" True ] }
 \end{lstlisting}
 
-The function \texttt{getTime} simply returns the UTC time converted to \texttt{ObsTime}.
-We then need to provide a value for our optional "add milk" step. The observables are
-wrapped in IO meaning they can come from external sources for example, the command line
-if we so desired.
+Once again we're not connecting this example to any physical system and as such we will just provide
+an initial time of 0 that could then be incremented by a simulator if this example was run.
+We also need to provide a boolean value for our optional "add milk" step. The observables are
+wrapped in IO meaning that they can come from external sources for example, the command line
+or a clock.
 
 \subsection{Scheduling Methods}
 
@@ -906,13 +907,13 @@ as follows.
 The issue with the above is that it involves the multiplication of two variables. As such this
 is no longer a linear constraint. A long time was spent considering whether or not our recipes
 could in fact be expressed as linear systems. After reformulating the problem several times
-and not finding a solution I decided to move on from linear programming and find something else.
+and not finding a solution, the decision was made to find an alternate scheduling method.
 
 \subsubsection{Bin Packing}
 
 Bin packing is a much more general optimisation problem. It is the problem of packing a number
 of objects with fixed dimensions into a number of bins of fixed dimensions such that the number
-of bins is minimised. This problem as it is doesn't bare much resemblance to our recipes however,
+of bins is minimised. This problem as it is doesn't bear much resemblance to our recipes however,
 adjusting the problem as follows provides something more useful.
 
 \medbreak
@@ -954,7 +955,7 @@ when planning a journey; they have a higher speed limit and traffic capacity thu
 them a faster route in the general case. There are two decisions we can apply heuristics to
 when scheduling recipes. The first is which leaf of the recipe tree to schedule first.
 Referring back to the section on topological sorting (Section 3), the leaves of the tree at a given time
-are comprise the set of actions we can choose to perform next. The second decision is which
+comprise the set of actions we can choose to perform next. The second decision is which
 of the available stations to schedule this action on.
 
 \subsubsection{Leaf Choice Heuristics}
@@ -1013,7 +1014,7 @@ above, then placing an action on an emptier stack should result in a shorter ove
 
 \subsection{Implementation}
 
-In the interest of space, I shalln't go into the details of the code here as there is quite a lot of it
+In the interest of space, I shall omit the details of the code here as there is quite a lot of it
 However, below is some pseudo-code to demonstrate the general flow of the scheduling functions.
 
 \begin{lstlisting}
@@ -1051,7 +1052,7 @@ node we are scheduling even after those child nodes have been scheduled and remo
 tree. The functions \texttt{chooseLeaf} and \texttt{chooseStation} apply the various heuristics
 and return the best leaf and best station respectively. Next we add the leaf to the stack of
 the chosen station and update the schedule. We then check to see if the node we just
-scheduled is the root of the tree, if it is, then we have finished and can return our new schedule
+scheduled is the root of the tree. If it is, then we have finished and can return our new schedule
 otherwise we pass our new schedule and updated tree to the next iteration of \texttt{schedule'}.
 
 \medbreak
@@ -1084,7 +1085,7 @@ As you can see the scheduling function tells the chef to get the water first so 
 kettle can start boiling it as soon as possible. After 10 seconds the kettle can start
 boiling the water, meanwhile the chef acquires the other ingredients before becoming idle
 until the kettle has finished. Once the water is boiled the chef adds the teabag before
-waiting for 5 minutes. After that they optionally add milk. Meanwhile our uneeded toaster
+waiting for 5 minutes. After that they optionally add milk. Meanwhile our unneeded toaster
 does nothing.
 
 \subsection{Transactions}
@@ -1197,9 +1198,9 @@ conditions to a more general case as follows.
     foldCond f c            = f c
 \end{lstlisting}
 
-If the condition we are handling is logical and over two conditions then we can simply apply our function
+If the condition we are handling is the conjunction of two conditions then we can simply apply our function
 to each of the sub-conditions and join the results, hence the requirement that the value we're
-creating have a monoid instance. In the that event we're dealing with the logical or of two conditions then
+creating be a monoid. In the event that we're dealing with the disjunction of two conditions then
 we apply our function to each of the sub-conditions as before, except this time we take the largest value.
 This provides us with a "worst case scenario" as it would take whichever condition would take the longest
 duration to be met. This works in other semantic domains too. Imagine we added a condition of mass and thus
@@ -1237,7 +1238,7 @@ effect has caused it to be different.
 \medbreak
 
 If we run the above functions on our cup of tea then we see that our scheduling has
-saved us 20 seconds off the estimated time by parallelising certain steps. Naturally
+saved us 20 seconds off the estimated time by executing certain steps in parallel. Naturally
 this benefit would potentially be much larger for a recipe with a larger number of steps.
 
 \begin{lstlisting}
@@ -1382,7 +1383,7 @@ Unary and binray refers to how many children the recipe should have. The only
 valid binary recipe we have is combine, the rest are all unary as they only apply to
 one sub-recipe. Instances of \texttt{Arbitrary} are also required for all the other types
 needed to make recipes such as \texttt{Time} and \texttt{Measurement}. In the interest
-of space I shalln't go into them here, they are relatively straightforward compared to
+of space I shall omit the details here, they are relatively straightforward compared to
 the above.
 
 \medbreak
@@ -1461,7 +1462,7 @@ versus enumerating all the even integers and checking if the integer is in that 
 \subsubsection{Recipe Laws}
 
 Now that we have a more efficient definition for \texttt{Eq} we can go ahead and
-try running QuickSpec again. For conciesness I shalln't list all the laws regarding
+try running QuickSpec again. For conciseness I shall omit the laws regarding
 conditions, it suffices to say that the expected laws regarding the associativity,
 commutativity and distributivity of \texttt{(.\&\&)} and \texttt{(.||)} were found.
 
@@ -1697,9 +1698,9 @@ QuickCheck \cite{quickcheck} is a library for the automated testing of Haskell
 programs. The programmer specifies laws that must hold about their program
 and QuickCheck generates random test cases to check whether or not the
 law holds. A simple example would be to check that reversing a list
-twice gives you the same list you started with. For conciseness I shalln't
-describe every property used to test our recipes but I shall attempt
-to give a range of examples.
+twice gives you the same list you started with. There are quite a few properties
+used to test or recipes. For conciseness I shall provide a range of examples
+rather than discussing them all.
 
 \medbreak
 
@@ -1838,7 +1839,7 @@ three levels of the graph below.
 \subsection{Future Work}
 
 As mentioned above, there does not currently exist much, if any, work in the area of
-a recipe DSL and as such there is huge scope for future work. More work is needed
+recipe DSLs and as such there is huge scope for future developments. More work is needed
 to perfect and further refine the combinators. There is currently no way to
 "remove" a recipe from another recipe for example removing the teabag from our cup of tea.
 An unsafe version of this may just presume that way was added can in fact be removed
@@ -2021,7 +2022,7 @@ This demonstrates the extensibility of such DSLs and how complex entities
 can be described as a construction of primitives. One might also consider
 how this DSL could be expanded to support regions that move over time.
 It makes sense that such a feature would be useful to the Navy as one
-would hope that their ships are not static. We could add this feature
+would hope that its ships are not static. We could add this feature
 as follows.
 
 \begin{lstlisting}

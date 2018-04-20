@@ -176,7 +176,7 @@ kettle = let kettleConstr r =
                         Just [Input, Output]
                     else
                         Nothing
-             kettleTemp = return $ ObsTemp 0
+             kettleTemp = return $ ObsTemp 10
           in Station "kettle" kettleConstr [kettleTemp]
 
 toastBread :: Recipe
@@ -195,7 +195,7 @@ toaster = let toasterConstr r@(Node a ts)
 
 chef :: Station
 chef = let chefConstr r@(Node a ts) = case a of
-                GetIngredient _ -> Just [Input]
+                GetIngredient _ -> Just [Input, Output]
                 Combine s       -> Just [Input, PCombine s, Output]
                 Wait            -> Just [Input, DoNothing, Output]
                 Conditional _ c -> (chefConstr $ popCond r)
@@ -207,7 +207,7 @@ chef = let chefConstr r@(Node a ts) = case a of
 
 chef2 :: Station
 chef2 = let chefConstr r@(Node a ts) = case a of
-                GetIngredient _ -> Just [Input]
+                GetIngredient _ -> Just [Input, Output]
                 Combine s       -> Just [Input, PCombine s, Output]
                 Wait            -> Just [Input, DoNothing, Output]
                 Conditional _ c -> (chefConstr $ popCond r)
