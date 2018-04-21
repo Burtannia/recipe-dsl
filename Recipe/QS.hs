@@ -6,13 +6,16 @@
 module Recipe.QS where
 
 import           Control.Monad   (liftM, liftM2, liftM3)
+import           Control.Monad.State
 import           Data.List       (sort)
 import           Data.List
+import qualified Data.Map.Strict as Map (elems)
 import           Data.Tree
 import           QuickSpec
 import           Recipe.Demo
 import           Recipe.Kitchen
 import           Recipe.Recipe
+import           Recipe.Scheduler
 import           Test.QuickCheck
 
 -------------------------------------
@@ -89,6 +92,59 @@ instance Arbitrary Obs where
 
 instance Observe [Obs] Bool Condition where
     observe obs c = evalCond c obs
+
+mkUsefulEnv :: Env
+mkUsefulEnv = evalState mkUsefulEnv' 0
+    where
+        mkUsefulEnv' :: State Int Env
+        mkUsefulEnv' = do
+            sts <- genSts 4
+            let obs = [timeZero]
+            return $ Env sts obs
+        genSts :: Int -> State Int [Station]
+        genSts 0 = return []
+        genSts 2 = do
+            i <- get
+            let st = mkStationUseless (mkStName i)
+            put (i + 1)
+            sts <- genSts 1
+            return (st : sts)
+        genSts n = do
+            i <- get
+            let st = mkStationUseful (mkStName i)
+            put (i + 1)
+            sts <- genSts (n-1)
+            return (st : sts)
+
+mkUselessEnv :: Env
+mkUselessEnv =
+    let sts = [ mkStationUseless (mkStName 0)
+              , mkStationUseless (mkStName 1) ]
+        obs = [timeZero]
+     in Env sts obs
+
+timeZero :: IO Obs
+timeZero = return $ ObsTime 0
+
+mkStName :: Int -> StName
+mkStName i = "Station_" ++ show i
+
+mkStationUseful :: StName -> Station
+mkStationUseful stNm =
+    let constr r@(Node a ts) = case a of
+            GetIngredient _ -> Just [Input, Output]
+            Heat            -> Just [Input, Output]
+            HeatAt t        -> Just [Input, Preheat t, Output]
+            Combine s       -> Just [Input, PCombine s, Output]
+            Wait            -> Just [Input, DoNothing, Output]
+            Conditional _ c -> (constr $ popCond r)
+                                >>= return . addEvalCond c
+            Measure m       -> Just [Input, MeasureOut m, Output]
+            Transaction a   -> constr $ popT r
+     in Station stNm constr [return $ ObsTemp 20]
+
+mkStationUseless :: StName -> Station
+mkStationUseless stNm = Station stNm (const Nothing) []
 
 -------------------------------------
 -- QuickSpec
@@ -243,6 +299,30 @@ condToObs (CondTemp t) = [ObsTemp t]
 condToObs (CondOpt s)  = [ObsOpt s True]
 condToObs (AND c1 c2)  = condToObs c1 ++ condToObs c2
 condToObs (OR c1 c2)   = condToObs c1 ++ condToObs c2
+
+-- Scheduling
+
+prop_scheduling_succeed r =
+    let lTree = labelRecipe r
+        sch = scheduleRecipe r mkUsefulEnv
+     in sort (getAllLabels sch) == sort (flatten lTree)
+
+prop_scheduling_fail r =
+    let lTree = labelRecipe r
+        sch = scheduleRecipe r mkUselessEnv
+     in expectFailure $
+        sort (getAllLabels sch) == sort (flatten lTree)
+
+getAllLabels :: Schedule Label -> [Label]
+getAllLabels sch = concatMap getAllLabels' ts
+    where
+        ts = Map.elems sch
+        getAllLabels' [] = []
+        getAllLabels' (t:ts) =
+            case t of
+                Active l -> l : getAllLabels' ts
+                _ -> getAllLabels' ts 
+
 
 return []
 runTests = $quickCheckAll
