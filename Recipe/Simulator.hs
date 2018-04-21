@@ -73,6 +73,10 @@ tasksEmpty :: Simulator -> Bool
 tasksEmpty Simulator{..} =
     sSchedule == []
 
+-- Clears stdout
+clearStdout :: IO ()
+clearStdout = putStr "\ESC[2J"
+
 -- Runs one pass of the simulator (1 second adjusted depending
 -- on the speed passed to 'simulate'). Prunes completed
 -- tasks and stations and repeats until all are completed.
@@ -85,12 +89,22 @@ runSimulator s = do
         runSimulator s'
     where
         runSimulator' Simulator{..} = do
+            --clearStdout
             (env, compls, sch) <- runSchedule sEnv sLRecipe sCompletes sSchedule
             let obs = incTime (eObs env)
             let env' = Env (eStations env) obs
             let uSeconds = (1 / sSpeed) * 1000000
             delay (floor uSeconds)
             return $ Simulator compls sLRecipe env' sSpeed sch
+
+-- Print a list of IO observables
+-- used for debugging
+printObs :: [IO Obs] -> IO ()
+printObs [] = return ()
+printObs (x:xs) = do
+    y <- x
+    print y
+    printObs xs
 
 incTime :: [IO Obs] -> [IO Obs]
 incTime = map incTime'
@@ -102,7 +116,7 @@ incTime' o = do
     obs <- o
     case obs of
         ObsTime t -> return $ ObsTime (t+1)
-        _ -> o
+        _ -> return obs
 
 -- Runs a single pass over a schedule, runs the first incomplete task of every station.
 runSchedule :: Env -> Tree (Label, Recipe) -> [Label] -> SchList -> IO (Env, [Label], SchList)
@@ -158,9 +172,7 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
         putStrLn $ "Waiting for dependencies: " ++ show incompDeps
         return (env, compls, lp)
     else do
-        putStrLn "eval globals"
         globals <- sequence $ eObs env
-        putStrLn "eval locals"
         locals <- sequence stObs
         (locals', ps', result) <- runProcesses' globals locals ps
         let newSt = Station stName stConstrF (map return locals')
@@ -169,15 +181,19 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
         case result of
             Continue -> return (env', compls, lp')
             End -> case getCond ps of
-                     Nothing -> return (env', l : compls, lp')
+                     Nothing -> do
+                        putStrLn $ "Output: " ++ show l
+                        return (env', l : compls, lp')
                      Just c ->
-                        if evalCond c (globals ++ locals) then
+                        if evalCond c (globals ++ locals) then do
+                            putStrLn $ "Output: " ++ show l
                             return (env', l : compls, lp')
                         else
-                            if isOpt c then
+                            if isOpt c then do
+                                putStrLn $ "Output: " ++ show l
                                 return (env', l : compls, lp')
                             else
-                                return (env', compls, (l, deps, setupRerun ps'))
+                                runProcesses stNm env' compls (l, deps, setupRerun ps')
             Terminate -> return (env', l : compls, lp')
     where
         runProcesses' :: [Obs] -> [Obs] -> [(ProcessStatus, Process)] -> IO ([Obs], [(ProcessStatus, Process)], Result)
@@ -195,8 +211,7 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                         return (locals, (PCompleted, p) : ps, Continue)
 
                     Output -> do
-                        putStrLn $ "Output: " ++ show l
-                        return (locals, (PCompleted, p) : ps, End)
+                        return (locals, (PCompleted, p) : ps, End) -- output printed after conditions evaluated
 
                     Preheat t -> do
                         let currTemp = getTemp locals
@@ -261,13 +276,6 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                     let ps' = map (\(_,p) -> (PCompleted,p)) ps
                     return (locals, (PCompleted, p) : ps', Terminate)
                 continuePs = return (locals, (PCompleted, p) : ps, Continue)
-
-printObs :: [IO Obs] -> IO ()
-printObs [] = return ()
-printObs (x:xs) = do
-    y <- x
-    print y
-    printObs xs
 
 -- Gets the first process matching 'EvalCond', returns
 -- Nothing if there are none.
