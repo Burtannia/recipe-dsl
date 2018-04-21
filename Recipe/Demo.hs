@@ -170,7 +170,7 @@ isBoilWater r@(Node a ts) = case a of
 kettle :: Station
 kettle = let kettleConstr r =
                     if isBoilWater r then
-                        Just [Input, Output]
+                        Just [Input, EvalCond (CondTemp 100), Output]
                     else
                         Nothing
              kettleTemp = return $ ObsTemp 10
@@ -223,7 +223,7 @@ hob =
                                 >>= return . addEvalCond c
             Transaction a -> hobConstr $ popT r
             _ -> Nothing
-     in Station "hob" hobConstr []
+     in Station "hob" hobConstr [return $ ObsTemp 10]
 
 hob2 :: Station
 hob2 =

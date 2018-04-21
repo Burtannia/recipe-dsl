@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Recipe.Simulator where
+module Recipe.Simulator (simulate) where
 
 import Recipe.Recipe
 import Recipe.Kitchen
@@ -18,6 +18,7 @@ data Simulator = Simulator
                 , sLRecipe :: Tree (Label, Recipe)
                 , sEnv :: Env
                 , sSpeed :: Float
+                , sClr :: Bool -- should clear stdout after each round of steps?
                 , sSchedule :: SchList }
 
 data ProcessStatus = PCompleted | PIncomplete
@@ -28,15 +29,17 @@ data TaskStatus = TCompleted
                 | TInProgress LProcess
                 deriving (Show, Eq)
 
--- |Label of action, Input labels, processes to perform.
+-- Label of action, Input labels, processes to perform.
 type LProcess = (Label, [Label], [(ProcessStatus, Process)])
 
 type SchList = [(StName, [(TaskStatus, Task Label)])]
 
 -- |Schedule the given recipe in the given environment
 -- then simulate it with the given speed multiplier.
-simulate :: Recipe -> Env -> Float -> IO ()
-simulate r env spd =
+-- Also takes a Bool to determine whether to clear
+-- stdout after each round of tasks (True means clear).
+simulate :: Recipe -> Env -> Float -> Bool -> IO ()
+simulate r env spd clr =
     let lTree = labelRecipeR r
         sch = flipStacks $ scheduleRecipe r env
         schList = Map.toList sch
@@ -47,6 +50,7 @@ simulate r env spd =
                         , sLRecipe = lTree 
                         , sEnv = env
                         , sSpeed = spd
+                        , sClr = clr
                         , sSchedule = schWithStatus }
      in runSimulator sim
 
@@ -56,13 +60,13 @@ pruneCompleteT Simulator{..} =
     let sch = map (\(st, ts) -> (st, remComp ts)) sSchedule
         remComp ts = [(state, t) | (state, t) <- ts
                                  , not $ state == TCompleted]
-     in Simulator sCompletes sLRecipe sEnv sSpeed sch
+     in Simulator sCompletes sLRecipe sEnv sSpeed sClr sch
 
 -- Remove stations with no tasks left from the simulator.
 pruneCompleteSt :: Simulator -> Simulator
 pruneCompleteSt Simulator{..} =
     let sch = filter (\(st,ts) -> length ts > 0) sSchedule
-     in Simulator sCompletes sLRecipe sEnv sSpeed sch
+     in Simulator sCompletes sLRecipe sEnv sSpeed sClr sch
 
 pruneSch :: Simulator -> Simulator
 pruneSch = pruneCompleteSt . pruneCompleteT
@@ -89,13 +93,16 @@ runSimulator s = do
         runSimulator s'
     where
         runSimulator' Simulator{..} = do
-            --clearStdout
+            if sClr then
+                clearStdout
+            else
+                return ()
             (env, compls, sch) <- runSchedule sEnv sLRecipe sCompletes sSchedule
             let obs = incTime (eObs env)
             let env' = Env (eStations env) obs
             let uSeconds = (1 / sSpeed) * 1000000
             delay (floor uSeconds)
-            return $ Simulator compls sLRecipe env' sSpeed sch
+            return $ Simulator compls sLRecipe env' sSpeed sClr sch
 
 -- Print a list of IO observables
 -- used for debugging
@@ -135,31 +142,41 @@ runSchedule env lTree compls (s@(st,ts):ss) = runSchedule' ts
                     (env'', compls'', ss') <- runSchedule env' lTree compls' ss
                     return (env'', compls'', s' : ss')
 
+getGlobalTime :: [IO Obs] -> IO Obs
+getGlobalTime [] = error "No time observable"
+getGlobalTime (o:os) = do
+    obs <- o
+    case obs of
+        ObsTime t -> return obs
+        _ -> getGlobalTime os
+
 -- Runs the given task returning an updated environment, list of completed tasks and updated task.
 runTask :: Env -> StName -> Tree (Label, Recipe) -> [Label] -> (TaskStatus, Task Label) -> IO (Env, [Label], (TaskStatus, Task Label))
 runTask env stNm lTree compls (status, t) = do
+    tObs@(ObsTime gTime) <- getGlobalTime (eObs env)
     let Station{..} = findStation stNm (eStations env)
     case status of
         TCompleted -> return (env, compls, (status, t))
         TNotStarted -> case t of
             Active l -> do
-                let et = expandActive (fromJust . stConstrF) t lTree -- :: LProcess
-                runActive et
+                let et = expandActive (fromJust . stConstrF) t lTree tObs -- :: LProcess
+                runActive et gTime
             Idle time -> do
-                putStrLn $ stNm ++ ":"
+                printStName gTime
                 let t' = Idle (time - 1)
                 putStrLn $ "Idle - Time remaining: " ++ show time
                 if (time <= 1) then
                     return (env, compls, (TCompleted, t'))
                 else
                     return (env, compls, (TNotStarted, t')) -- idle doesn't have processes so no need to mark as InProgress
-        TInProgress et -> runActive et
+        TInProgress et -> runActive et gTime
     where
-        runActive et = do 
-            putStrLn $ stNm ++ ":"
+        runActive et gTime = do 
+            printStName gTime
             (env', compls', et') <- runProcesses stNm env compls et
             let status' = mkTaskStatus et'
             return (env', compls', (status', t))
+        printStName gTime = putStrLn $ (show gTime) ++ " - " ++ stNm ++ ":"
 
 data Result = Continue | End | Terminate
 
@@ -181,21 +198,18 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
         case result of
             Continue -> return (env', compls, lp')
             End -> case getCond ps of
-                     Nothing -> do
-                        putStrLn $ "Output: " ++ show l
-                        return (env', l : compls, lp')
-                     Just c ->
-                        if evalCond c (globals ++ locals) then do
-                            putStrLn $ "Output: " ++ show l
-                            return (env', l : compls, lp')
-                        else
-                            if isOpt c then do
-                                putStrLn $ "Output: " ++ show l
-                                return (env', l : compls, lp')
-                            else
-                                runProcesses stNm env' compls (l, deps, setupRerun ps')
-            Terminate -> return (env', l : compls, lp')
+                     Nothing -> output env' lp'
+                     Just c -> if isOpt c then
+                                   output env' lp'
+                               else
+                                   runProcesses stNm env' compls (l, deps, setupRerun ps')
+            Terminate -> do
+                let lp'' = markAllComplete lp'
+                output env' lp''
     where
+        output env' lp' = do
+            putStrLn $ "Output: " ++ show l
+            return (env', l : compls, lp')
         runProcesses' :: [Obs] -> [Obs] -> [(ProcessStatus, Process)] -> IO ([Obs], [(ProcessStatus, Process)], Result)
         runProcesses' _ locals [] = return (locals, [], Terminate)
         runProcesses' globals locals ((status, p) : ps) = do
@@ -211,7 +225,10 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                         return (locals, (PCompleted, p) : ps, Continue)
 
                     Output -> do
-                        return (locals, (PCompleted, p) : ps, End) -- output printed after conditions evaluated
+                        return (locals, (PCompleted, p) : ps, End)
+                        -- output printed after conditions evaluated
+                        -- once this function returns as the processes
+                        -- may need to be run again before output
 
                     Preheat t -> do
                         let currTemp = getTemp locals
@@ -236,10 +253,8 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                         return (locals, (PCompleted, p) : ps, Continue)
 
                     EvalCond c -> do
-                        putStrLn $ "Evaluating condition: " ++ show c
                         let obs = globals ++ locals
-                        let result = evalCond c obs
-                        putStrLn $ "Condition evaluated " ++ show result
+                        result <- evalCondPrint c obs
 
                         let opts = extractOpts c
                         let temps = extractTemps c
@@ -271,11 +286,22 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                         putStrLn $ "Measuring " ++ show m ++ "of inputs"
                         return (locals, (PCompleted, p) : ps, Continue)
             where
-                terminate = do
-                    putStrLn $ "Output: " ++ show l
-                    let ps' = map (\(_,p) -> (PCompleted,p)) ps
-                    return (locals, (PCompleted, p) : ps', Terminate)
+                terminate = return (locals, (PCompleted, p) : ps, Terminate)
                 continuePs = return (locals, (PCompleted, p) : ps, Continue)
+
+markAllComplete :: LProcess -> LProcess
+markAllComplete (l, deps, ps) =
+    let ps' = map (\(_,p) -> (PCompleted, p)) ps
+     in (l, deps, ps')
+
+-- Evaluate a condition given a list of observables
+-- returns IO result after printing result.
+evalCondPrint :: Condition -> [Obs] -> IO Bool
+evalCondPrint c obs = do
+    putStrLn $ "Evaluating condition: " ++ show c
+    let result = evalCond c obs
+    putStrLn $ "Condition evaluated " ++ show result
+    return result
 
 -- Gets the first process matching 'EvalCond', returns
 -- Nothing if there are none.
@@ -380,13 +406,21 @@ mkTaskStatus et@(_, _, ps) =
             TInProgress et
 
 -- Expands an active task into an 'LProcess'.
-expandActive :: (Recipe -> [Process]) -> Task Label -> Tree (Label, Recipe) -> LProcess
-expandActive f (Active l) lTree =
+-- Also changes an CondTime conditions into relative time therefore
+-- 'expandActive' must be passed the global time observable.
+expandActive :: (Recipe -> [Process]) -> Task Label -> Tree (Label, Recipe) -> Obs -> LProcess
+expandActive f (Active l) lTree o =
     let r = fromJust $ lookup l (flatten lTree)
         is = childLabels l (fmap fst lTree)
-        ps = f r
+        ps = condsToAbsolute (f r) o
         ps' = map (\p -> (PIncomplete, p)) ps
      in (l, is, ps')
+
+condsToAbsolute :: [Process] -> Obs -> [Process]
+condsToAbsolute [] _ = []
+condsToAbsolute (p@(EvalCond c) : ps) o =
+    EvalCond (adjustTime c o) : (condsToAbsolute ps o)
+condsToAbsolute (p:ps) o = p : condsToAbsolute ps o
 
 -- Given a list of dependencies and a list of completed
 -- task labels, return a list of all dependencies

@@ -46,6 +46,8 @@ evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 -- |Takes a condition of time and the observable representing
 -- the global time at which the action wrapped by the condition was started
 -- and adjusts the condition to absolute time rather than relative time.
+-- Does nothing if the condition is not CondTIme or the observable
+-- is not ObsTime.
 adjustTime :: Condition -> Obs -> Condition
 adjustTime (CondTime t) (ObsTime t') = CondTime (t + t')
 adjustTime c _                       = c
