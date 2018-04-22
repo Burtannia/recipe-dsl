@@ -1402,7 +1402,6 @@ an instance of the \texttt{Arbitrary} typeclass.
     genUnRec un = oneof
         [ liftM heat un
         , liftM2 heatAt genTemp un
-        , liftM2 heatFor arbitrary un
         , liftM wait un
         , liftM2 addCondition arbitrary (genUnRec un)
         , liftM transaction (genUnRec un)

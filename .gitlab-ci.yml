@@ -8,4 +8,5 @@ build:
       && cabal install pretty-tree
       && cabal install quickspec
       && cabal install concurrent-extra
-      && ghc -O2 Recipe.Demo
+      && ghc -O2 Recipe/Main.hs
+      && ./Recipe/Main
