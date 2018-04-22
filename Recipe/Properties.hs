@@ -2,6 +2,11 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE RecordWildCards            #-}
 
+{-|
+This module contains functions for the assignment
+and manipulation of recipe properties.
+-}
+
 module Recipe.Properties where
 
 import           Data.List       (maximumBy)

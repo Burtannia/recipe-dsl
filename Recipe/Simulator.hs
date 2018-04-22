@@ -1,5 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 
+{-|
+Allows the simulation of a recipe in the given environment,
+printing progress to sdout.
+-}
+
 module Recipe.Simulator (simulate) where
 
 import Recipe.Recipe

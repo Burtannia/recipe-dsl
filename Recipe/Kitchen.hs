@@ -1,5 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
 
+{-|
+This module contains the definitions
+for the modelling of a cooking environment.
+There are also various utility functions.
+-}
+
 module Recipe.Kitchen where
 
 import           Data.Monoid

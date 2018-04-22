@@ -2,6 +2,11 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TypeFamilies              #-}
 
+{-|
+This module contains functions for the printing
+of recipes and recipe schedules.
+-}
+
 module Recipe.Printer where
 
 import           Control.Monad.IO.Class    (liftIO)

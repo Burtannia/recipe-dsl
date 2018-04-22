@@ -3,6 +3,11 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 
+{-|
+Contains QuickCheck properties for testing
+and code necessary to run QuickSpec on recipes.
+-}
+
 module Recipe.QS where
 
 import           Control.Monad   (liftM, liftM2, liftM3)
@@ -33,9 +38,11 @@ instance {-# OVERLAPPING #-} Arbitrary Recipe where
                 _ -> oneof
                     [genIng, genUnRec un, genBinRec bin bin]
 
+-- |Generate an ingredient. Name is random between "1" and "100".
 genIng :: Gen Recipe
 genIng = liftM (ingredient . show) (choose (1, 100) :: Gen Int)
 
+-- |Generate a unary recipe.
 genUnRec :: Gen Recipe -> Gen Recipe
 genUnRec un = oneof
     [ liftM heat un
@@ -46,12 +53,15 @@ genUnRec un = oneof
     , liftM transaction (genUnRec un)
     , liftM2 measure arbitrary un ]
 
+-- |Generate a binary recipe.
 genBinRec :: Gen Recipe -> Gen Recipe -> Gen Recipe
 genBinRec r1 r2 = liftM3 combine genMethod r1 r2
 
+-- |Generate a temperature between 100 and 240.
 genTemp :: Gen Int
 genTemp = choose (100, 240)
 
+-- |Generate a combine method: "mix", "spread", "wrap".
 genMethod :: Gen String
 genMethod = elements
     [ "mix"
@@ -69,6 +79,7 @@ instance Arbitrary Condition where
                 , liftM2 AND bin bin
                 , liftM2 OR bin bin ]
 
+-- |Generate a single condition (not AND or OR).
 singleCond :: Gen Condition
 singleCond = oneof
     [ liftM (CondOpt . show) (choose (1, 10) :: Gen Int)
@@ -93,6 +104,8 @@ instance Arbitrary Obs where
 instance Observe [Obs] Bool Condition where
     observe obs c = evalCond c obs
 
+-- |Make an environment containing 3 useful stations
+-- and 1 useless station.
 mkUsefulEnv :: Env
 mkUsefulEnv = evalState mkUsefulEnv' 0
     where
@@ -116,6 +129,7 @@ mkUsefulEnv = evalState mkUsefulEnv' 0
             sts <- genSts (n-1)
             return (st : sts)
 
+-- |Make an environement containing 2 useless stations.
 mkUselessEnv :: Env
 mkUselessEnv =
     let sts = [ mkStationUseless (mkStName 0)
@@ -123,12 +137,15 @@ mkUselessEnv =
         obs = [timeZero]
      in Env sts obs
 
+-- |ObsTime 0
 timeZero :: IO Obs
 timeZero = return $ ObsTime 0
 
+-- |'mkStName' 1 = "Station_1"
 mkStName :: Int -> StName
 mkStName i = "Station_" ++ show i
 
+-- |Make a station with the given name that can do everything.
 mkStationUseful :: StName -> Station
 mkStationUseful stNm =
     let constr r@(Node a ts) = case a of
@@ -143,6 +160,7 @@ mkStationUseful stNm =
             Transaction a   -> constr $ popT r
      in Station stNm constr [return $ ObsTemp 20]
 
+-- |Make a station with the given name that can't do anything.
 mkStationUseless :: StName -> Station
 mkStationUseless stNm = Station stNm (const Nothing) []
 
@@ -177,6 +195,9 @@ qsRecipe = quickSpec
 -- QuickCheck Tests
 -------------------------------------
 
+-- |Takes two conditions and compares the result
+-- of running 'evalCond' on each of them with
+-- the given observables.
 mkProp :: Condition -> Condition -> [Obs] -> Bool
 mkProp lhs rhs obs =
     evalCond lhs obs == evalCond rhs obs
@@ -270,6 +291,7 @@ prop_eval_cond_false_empty c =
 prop_eval_cond_false c obs =
     not $ evalCond c (failObs c obs)
 
+-- |Generate observables for which a condition will fail.
 failObs :: Condition -> [Obs] -> [Obs]
 failObs c obs = filterTime t
     (filter (\o -> not $ o `elem` os) obs)
@@ -293,6 +315,7 @@ prop_eval_cond_true c obs =
     let os = condToObs c
      in evalCond c (obs ++ os)
 
+-- |Generate observables for a condition to 'evalCond' to True.
 condToObs :: Condition -> [Obs]
 condToObs (CondTime t) = [ObsTime t]
 condToObs (CondTemp t) = [ObsTemp t]
@@ -322,7 +345,6 @@ getAllLabels sch = concatMap getAllLabels' ts
             case t of
                 Active l -> l : getAllLabels' ts
                 _ -> getAllLabels' ts 
-
 
 return []
 runTests = $quickCheckAll

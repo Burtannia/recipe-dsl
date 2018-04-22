@@ -1,17 +1,18 @@
--- | The scheduling function implemented here is mainly for demonstration purposes.
--- It is rather inefficient and runs for a very long time thus it is not suitable
--- for scheduling recipes with more than a small number of 'Action's.
---
--- == Leaf Selection Heuristics
--- 1. Shortest task.
--- 2. Longest branch.
---
--- == Stack Selection Heuristics
--- 1. Least in-demand first. Calculates an expected time that will be added
--- to the stack by all the unscheduled tasks.
--- 2. Least idle time required i.e. the stack which has a height closest
--- to the minimum start time of the action being scheduled.
--- 3. Smallest stack.
+{-|The scheduling function implemented here is mainly for demonstration purposes.
+   It is rather inefficient and runs for a very long time thus it is not suitable
+   for scheduling recipes with more than a small number of 'Action's.
+
+   == Leaf Selection Heuristics
+   1. Shortest task.
+   2. Longest branch.
+
+   == Stack Selection Heuristics
+   1. Least in-demand first. Calculates an expected time that will be added
+   to the stack by all the unscheduled tasks.
+   2. Least idle time required i.e. the stack which has a height closest
+   to the minimum start time of the action being scheduled.
+   3. Smallest stack.
+-}
 
 module Recipe.Scheduler(
     -- * Types

@@ -1,6 +1,12 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{-|
+This module contains the Recipe combinator
+definitions and types along with various
+utility and convenience functions.
+-}
+
 module Recipe.Recipe where
 
 import           Control.Monad.Trans.State

@@ -1,3 +1,8 @@
+{-|
+This module contains various examples used in the
+report and for the demo day.
+-}
+
 module Recipe.Demo where
 
 import           Data.Tree
