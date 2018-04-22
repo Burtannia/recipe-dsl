@@ -10,11 +10,11 @@ and code necessary to run QuickSpec on recipes.
 
 module Recipe.QS where
 
-import           Control.Monad   (liftM, liftM2, liftM3)
+import           Control.Monad       (liftM, liftM2, liftM3)
 import           Control.Monad.State
-import           Data.List       (sort)
+import           Data.List           (sort)
 import           Data.List
-import qualified Data.Map.Strict as Map (elems)
+import qualified Data.Map.Strict     as Map (elems)
 import           Data.Tree
 import           QuickSpec
 import           Recipe.Demo
@@ -47,7 +47,6 @@ genUnRec :: Gen Recipe -> Gen Recipe
 genUnRec un = oneof
     [ liftM heat un
     , liftM2 heatAt genTemp un
-    , liftM2 heatFor arbitrary un
     , liftM wait un
     , liftM2 addCondition arbitrary (genUnRec un)
     , liftM transaction (genUnRec un)
@@ -344,7 +343,7 @@ getAllLabels sch = concatMap getAllLabels' ts
         getAllLabels' (t:ts) =
             case t of
                 Active l -> l : getAllLabels' ts
-                _ -> getAllLabels' ts 
+                _        -> getAllLabels' ts
 
 return []
 runTests = $quickCheckAll

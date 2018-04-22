@@ -56,9 +56,9 @@ evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 -- is not ObsTime.
 adjustTime :: Condition -> Obs -> Condition
 adjustTime (CondTime t) (ObsTime t') = CondTime (t + t')
-adjustTime (AND c1 c2) t = AND (adjustTime c1 t) (adjustTime c2 t)
-adjustTime (OR c1 c2) t = OR (adjustTime c1 t) (adjustTime c2 t)
-adjustTime c _ = c
+adjustTime (AND c1 c2) t             = AND (adjustTime c1 t) (adjustTime c2 t)
+adjustTime (OR c1 c2) t              = OR (adjustTime c1 t) (adjustTime c2 t)
+adjustTime c _                       = c
 
 type ConstraintF = Recipe -> Maybe [Process]
 
@@ -132,22 +132,22 @@ condsToAbsolute (p:ps) o = p : condsToAbsolute ps o
 extractOpts :: Condition -> [Condition]
 extractOpts (CondOpt s) = [CondOpt s]
 extractOpts (AND c1 c2) = extractOpts c1 ++ extractOpts c2
-extractOpts (OR c1 c2) = extractOpts c1 ++ extractOpts c2
-extractOpts _ = []
+extractOpts (OR c1 c2)  = extractOpts c1 ++ extractOpts c2
+extractOpts _           = []
 
 -- |Returns True if a condition contains a 'CondOpt'.
 isOpt :: Condition -> Bool
 isOpt (CondOpt _) = True
 isOpt (AND c1 c2) = isOpt c1 || isOpt c2
-isOpt (OR c1 c2) = isOpt c1 || isOpt c2
-isOpt _ = False
+isOpt (OR c1 c2)  = isOpt c1 || isOpt c2
+isOpt _           = False
 
 -- |Extracts all temperatures from 'CondTemp's found within a condition.
 extractTemps :: Condition -> [Int]
 extractTemps (CondTemp t) = [t]
-extractTemps (AND c1 c2) = extractTemps c1 ++ extractTemps c2
-extractTemps (OR c1 c2) = extractTemps c1 ++ extractTemps c2
-extractTemps _ = []
+extractTemps (AND c1 c2)  = extractTemps c1 ++ extractTemps c2
+extractTemps (OR c1 c2)   = extractTemps c1 ++ extractTemps c2
+extractTemps _            = []
 
 -- |If a condition contains temperatures, checks that they
 -- meet the constraint passed e.g. > 50.

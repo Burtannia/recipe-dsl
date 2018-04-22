@@ -1,4 +1,4 @@
-image: haskell:8.2.1
+image: haskell:8.0.2
 
 build:
   stage: build
@@ -7,5 +7,5 @@ build:
       && cabal install mtl-2.2.1
       && cabal install pretty-tree
       && cabal install quickspec
-      && cabal install concurrency-extra
+      && cabal install concurrent-extra
       && ghc -O2 Recipe.Demo

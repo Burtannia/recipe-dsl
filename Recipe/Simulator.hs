@@ -7,25 +7,23 @@ printing progress to sdout.
 
 module Recipe.Simulator (simulate) where
 
-import Recipe.Recipe
-import Recipe.Kitchen
-import Recipe.Scheduler
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Maybe (fromJust, listToMaybe)
-import Data.Tree
-import Control.Monad (liftM)
-import Data.Monoid
-import Control.Concurrent.Thread.Delay (delay)
-import System.Random
+import           Control.Concurrent.Thread.Delay (delay)
+import           Control.Monad                   (liftM)
+import qualified Data.Map.Strict                 as Map
+import           Data.Maybe                      (fromJust, listToMaybe)
+import           Data.Tree
+import           Recipe.Kitchen
+import           Recipe.Recipe
+import           Recipe.Scheduler
+import           System.Random
 
 data Simulator = Simulator
                 { sCompletes :: [Label]
-                , sLRecipe :: Tree (Label, Recipe)
-                , sEnv :: Env
-                , sSpeed :: Float
-                , sClr :: Bool -- should clear stdout after each round of steps?
-                , sSchedule :: SchList }
+                , sLRecipe   :: Tree (Label, Recipe)
+                , sEnv       :: Env
+                , sSpeed     :: Float
+                , sClr       :: Bool -- should clear stdout after each round of steps?
+                , sSchedule  :: SchList }
 
 data ProcessStatus = PCompleted | PIncomplete
     deriving (Show, Eq)
@@ -53,7 +51,7 @@ simulate r env spd clr =
             (st, map (\t ->
                 (TNotStarted, t)) ts)) schList
         sim = Simulator { sCompletes = []
-                        , sLRecipe = lTree 
+                        , sLRecipe = lTree
                         , sEnv = env
                         , sSpeed = spd
                         , sClr = clr
@@ -79,7 +77,7 @@ pruneSch = pruneCompleteSt . pruneCompleteT
 
 -- Check if all stations have run out of tasks
 -- in the simulator.
-tasksEmpty :: Simulator -> Bool    
+tasksEmpty :: Simulator -> Bool
 tasksEmpty Simulator{..} =
     sSchedule == []
 
@@ -131,7 +129,7 @@ incTime' o = do
     obs <- o
     case obs of
         ObsTime t -> return $ ObsTime (t+1)
-        _ -> return obs
+        _         -> return obs
 
 -- Runs a single pass over a schedule, runs the first incomplete task of every station.
 runSchedule :: Env -> Tree (Label, Recipe) -> [Label] -> SchList -> IO (Env, [Label], SchList)
@@ -159,7 +157,7 @@ getGlobalTime (o:os) = do
     obs <- o
     case obs of
         ObsTime t -> return obs
-        _ -> getGlobalTime os
+        _         -> getGlobalTime os
 
 -- Runs the given task returning an updated environment, list of completed tasks and updated task.
 runTask :: Env -> StName -> Tree (Label, Recipe) -> [Label] -> (TaskStatus, Task Label) -> IO (Env, [Label], (TaskStatus, Task Label))
@@ -182,7 +180,7 @@ runTask env stNm lTree compls (status, t) = do
                     return (env, compls, (TNotStarted, t')) -- idle doesn't have processes so no need to mark as InProgress
         TInProgress et -> runActive et gTime
     where
-        runActive et gTime = do 
+        runActive et gTime = do
             printStName gTime
             (env', compls', et') <- runProcesses stNm env compls et
             let status' = mkTaskStatus et'
@@ -358,9 +356,9 @@ setupRerun :: [(ProcessStatus, Process)] -> [(ProcessStatus, Process)]
 setupRerun [] = []
 setupRerun ((stat, p) : ps) =
     case p of
-        Input -> (stat, p) : setupRerun ps
+        Input     -> (stat, p) : setupRerun ps
         Preheat t -> (stat, p) : setupRerun ps
-        _ -> (PIncomplete, p) : setupRerun ps
+        _         -> (PIncomplete, p) : setupRerun ps
 
 -- Replaces the corresponding station in the environment
 -- with the given station.
@@ -373,16 +371,16 @@ updateStation st Env{..} =
 -- Increments all 'ObsTemp's in a list of observables.
 -- Does nothing to other observables.
 incTemp :: [Obs] -> [Obs]
-incTemp [] = []
+incTemp []                 = []
 incTemp ((ObsTemp t) : os) = ObsTemp (t+1) : incTemp os
-incTemp (o:os) = o : incTemp os
+incTemp (o:os)             = o : incTemp os
 
 -- Decrements all 'ObsTemp's in a list of observables.
 -- Does nothing to other observables.
 decTemp :: [Obs] -> [Obs]
-decTemp [] = []
+decTemp []                 = []
 decTemp ((ObsTemp t) : os) = ObsTemp (t-1) : decTemp os
-decTemp (o:os) = o : decTemp os
+decTemp (o:os)             = o : decTemp os
 
 -- Returns a list of all 'EvalCond' processes
 -- in a list of processes.
