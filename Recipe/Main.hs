@@ -1,8 +1,13 @@
-import Recipe.Demo
-import Recipe.Simulator
-import Recipe.QS
+import          Recipe.Demo
+import          Recipe.Simulator
+import          Recipe.QS
 
--- Throws an error if tests fail in order
+{-|
+Simple test for CI purposes, runs QuickCheck
+tests and then an example simulation.
+-}
+
+-- |Throws an error if tests fail in order
 -- to cause a CI build to fail.
 main :: IO ()
 main = do
