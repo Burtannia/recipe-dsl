@@ -1,6 +1,6 @@
 \documentclass[11pt]{article}
 
-\usepackage[margin=1.5in]{geometry}
+\usepackage[margin=1.25in]{geometry}
 
 \usepackage[hyphens]{url}
 
@@ -203,9 +203,9 @@ saving both time and unnecessary extra code.
 
 Haskell is a very popular language for writing EDSLs, examples
 range from pretty printing \cite{pretty} to financial contracts \cite{contracts}.
-Reasons for this include that the type checker catches many mistakes
-and that Haskell has very lightweight function application syntax
-allowing us to omit symbols such as brackets in many cases \cite{snoyman}.
+Reasons for this include that the "type checker catches many mistakes"
+and that "Haskell has very lightweight function application syntax
+allowing us to omit symbols such as brackets in many cases" \cite{snoyman}.
 
 \subsection{Deep and Shallow Embedding}
 When writing an EDSL one must choose between deep and shallow embedding \cite{embedding}.
@@ -525,7 +525,7 @@ to output an ASCII drawing of the tree. The tree for our cup of tea recipe is
 as follows.
 
 \begin{figure}[h]
-\includegraphics[width=\textwidth, keepaspectratio]{cupOfTea.png}
+\includegraphics[width=10cm, keepaspectratio]{cupOfTea.png}
 \centering
 \caption{Cup of tea recipe printed as a tree.}
 \end{figure}
@@ -678,7 +678,7 @@ Printing the tree for this recipe gives a different result from our original rec
 But fundamentally we know it to be a variation of the same recipe.
 
 \begin{figure}[h]
-\includegraphics[width=\textwidth, keepaspectratio]{cupOfTea2.png}
+\includegraphics[width=10cm, keepaspectratio]{cupOfTea2.png}
 \centering
 \caption{Alternate cup of tea recipe printed as a tree.}
 \end{figure}
@@ -845,8 +845,8 @@ we need a kettle and a chef. For conciseness I shall only discuss the kettle.
                             Just [Input, EvalCond (CondTemp 100), Output]
                         else
                             Nothing
-                kettleTemp = return $ ObsTemp 10
-            in Station "kettle" kettleConstr [kettleTemp]
+                 kettleTemp = return $ ObsTemp 10
+              in Station "kettle" kettleConstr [kettleTemp]
 \end{lstlisting}
 
 Here we're creating a station with a name of "kettle", creating the constraint function
@@ -933,14 +933,12 @@ respective stacks.
 
 \medbreak
 
-%\newpage % to get figure correct
-
 As an abstract example, imagine a recipe, r1, which has sub-recipes: r2, r3 and r4. All the
 recipes must be scheduled on station 2, except r3 which must be scheduled on station 1.
 Below is a diagram showing r1 and a potential stack setup.
 
 \begin{figure}[h]
-\includegraphics[width=10cm, keepaspectratio]{stacks.png}
+\includegraphics[width=8cm, keepaspectratio]{stacks.png}
 \centering
 \caption{Recipe tree and stack schedule for r1.}
 \end{figure}
@@ -1142,23 +1140,30 @@ to loop over each station in the environment allowing it to perform one process 
 Below is a small snippet of simulating our cup of tea.
 
 \begin{lstlisting}
-    0h 0m 10s - kettle:
+    0h 0m 13s - chef:
+    Fetching water
+    0h 0m 13s - kettle:
+    Waiting for dependencies: [3]
+
+    0h 0m 14s - chef:
+    Output: 3
+    0h 0m 14s - kettle:
     Receiving Inputs: [3]
 
-    0h 0m 11s - chef:
-    Idle - Time remaining: 0h 1m 18s
-    0h 0m 11s - kettle:
-    Evaluating condition: CondTemp 100
-    Condition evaluated False
-
-    0h 0m 12s - chef:
-    Idle - Time remaining: 0h 1m 17s
-    0h 0m 12s - kettle:
+    0h 0m 15s - chef:
+    Fetching milk
+    0h 0m 15s - kettle:
     Evaluating condition: CondTemp 100
     Condition evaluated False
 \end{lstlisting}
 
-Here you can see that the 
+Here you can see that the chef is fetching some water, meanwhile the kettle is waiting
+for that water. The "3" corresponds to the step label of "Get water" if one were to
+run \texttt{ppSteps} on the recipe. Once the chef "outputs" the water, the kettle
+receives it as input. The chef then proceeds to fetch some milk while the kettle
+is heating the water. Every cycle, the kettle evaluates the temperature of the water
+to check whether it has reached 100 degrees centigrade. Once the condition evaluates to true,
+the kettle will "output" the boiling water.
 
 \section{Recipe Properties}
 
@@ -1170,7 +1175,7 @@ help us to create new recipes.
 One function that is particularly useful in exploring semantics is \texttt{fold}.
 Folding is the process of taking some whole made up of parts and creating a single
 value from it. For example folding \texttt{(+)} over a list of numbers \texttt{[1,2,3]}
-returns 6. We can use folding to create denotational semantics for our recipes \cite{hutton}.
+returns 6. We can use folding to create denotational semantics \cite{hutton} for our recipes.
 Denotational semantics involves terms being evaluated via a mapping to a value in a certain
 semantic domain. There are multiple semantic domains of interest in recipes hence the choice
 of a deep embedding (Section 1.3). Abstracting the traversal of the recipe from the
@@ -1424,8 +1429,8 @@ the above.
 The other interesting definition is that for \texttt{Condition} as conditions don't
 have a natural ordering instance. Instead, QuickSpec allows us to test for observational
 equality. That is we must specify a function \texttt{observe test a} for which the
-following property holds: \textit{two values x and y are considered equal,
-if for many random values of type test, observe test x == observe test y} \cite{quickspec-docs}.
+following property holds: \textit{"two values x and y are considered equal,
+if for many random values of type test, observe test x == observe test y"} \cite{quickspec-docs}.
 
 \begin{lstlisting}
     instance Arbitrary Obs where
@@ -1593,7 +1598,9 @@ concept we will use the very simple and traditional "meat and two veg".
 
 Here we are simply seleting a meat and two vegetables, taking their
 recipes from the list and then combining them in an appropriate way.
-Running this example we get the following recipe tree.
+Figure 6 shows the recipe tree from running our example.
+
+\newpage % to position figure
 
 \begin{figure}[h]
 \includegraphics[width=\textwidth, keepaspectratio]{meatTwoVeg.png}
@@ -1728,7 +1735,7 @@ added which will be discussed in Section 7.2.
 
 \subsubsection{QuickCheck}
 
-QuickCheck \cite{quickcheck} is a library for the automated testing of Haskell
+QuickCheck \cite{quickcheck} is a library for testing properties of Haskell
 programs. The programmer specifies laws that must hold about their program
 and QuickCheck generates random test cases to check whether or not the
 law holds. A simple example would be to check that reversing a list
@@ -1868,7 +1875,7 @@ before finally exploring applications for these semantics. This is illustrated b
 three levels of the graph below.
 
 \begin{figure}[h]
-\includegraphics[width=\textwidth, keepaspectratio]{project.jpg}
+\includegraphics[width=10cm, keepaspectratio]{project.jpg}
 \centering
 \caption{Diagram displaying overall project structure.}
 \end{figure}
@@ -1995,7 +2002,7 @@ In his paper \textit{Domain Specific Languages} \cite{hudak}, Hudak covers DSLs
 in a wider context. He mentions commonly used DSLs such as SQL, for accessing
 databases and HTML for laying out web pages. What has been of particular importance
 throughout this project is his work on "The DSL Software Development Method" which
-is outlined as follows.
+is outlined in his paper as follows.
 
 \begin{itemize}
     \item Define your domain.
@@ -2005,7 +2012,7 @@ is outlined as follows.
     infrastructure.
 \end{itemize}
 
-We defined our domain as that of describing recipes. We then designed our
+For this project, we defined our domain as that of describing recipes. We then designed our
 combinators in such a way that we captured the semantics of recipes. We could then
 build tools to support the DSL for example our model of a cooking environment
 and our scheduling function. The next step might be to develop some more
@@ -2020,9 +2027,7 @@ the syntax. The only significant change that was made regarding syntax was
 to ensure that, for combinators that are passed a recipe, the recipe is the
 final argument thus allowing convenient use of Haskell's \texttt{(\$)} operator.
 Hudak then goes on to make note of the advantages of embedded DSLs. We discuss
-the choice to embed our recipe DSL in Haskell in Section 1.2. Michael Snoyman,
-creator of Yesod, a Haskell web development framework, made a webcast in which
-he discusses DSLs in Haskell \cite{snoyman}.
+the choice to embed our recipe DSL in Haskell in Section 1.2.
 
 \subsection{Regions}
 

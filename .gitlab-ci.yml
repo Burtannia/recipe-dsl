@@ -6,6 +6,6 @@ build:
     - cabal update
       && cabal install mtl-2.2.1
       && cabal install pretty-tree
-      && cabal install quickcheck-2.9.2
       && cabal install quickspec
+      && cabal install concurrency-extra
       && ghc -O2 Recipe.Demo

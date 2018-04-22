@@ -12,6 +12,7 @@ import Data.Tree
 import Control.Monad (liftM)
 import Data.Monoid
 import Control.Concurrent.Thread.Delay (delay)
+import System.Random
 
 data Simulator = Simulator
                 { sCompletes :: [Label]
@@ -183,7 +184,12 @@ runTask env stNm lTree compls (status, t) = do
             return (env', compls', (status', t))
         printStName gTime = putStrLn $ (show gTime) ++ " - " ++ stNm ++ ":"
 
-data Result = Continue | End | Terminate
+-- End: Output reached, check for conditions to
+-- either loop or terminate.
+-- Terminate: End task and mark all processes completed.
+-- Continue: Run as usual on next cycle.
+-- Next: Run the next process immediately.
+data Result = Continue | End | Terminate | Next
 
 -- Runs an 'LProcess' for the given 'Station'. Takes a list
 -- of completed labels and returns an updated environment,
@@ -210,6 +216,7 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
         let env' = updateStation newSt env
         let lp' = (l, deps, ps')
         case result of
+            Next -> runProcesses stNm env' compls lp'
             Continue -> return (env', compls, lp')
             End -> case getCond ps of
                      Nothing -> output env' lp'
@@ -224,6 +231,7 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
         output env' lp' = do
             putStrLn $ "Output: " ++ show l
             return (env', l : compls, lp')
+
         runProcesses' :: [Obs] -> [Obs] -> [(ProcessStatus, Process)] -> IO ([Obs], [(ProcessStatus, Process)], Result)
         runProcesses' _ locals [] = return (locals, [], Terminate)
         runProcesses' globals locals ((status, p) : ps) = do
@@ -234,9 +242,12 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                     return (locals', (status, p) : ps', r)
 
                 PIncomplete -> case p of
-                    Input -> do
-                        putStrLn $ "Receiving Inputs: " ++ show deps
-                        return (locals, (PCompleted, p) : ps, Continue)
+                    Input ->
+                        if length deps > 0 then do
+                            putStrLn $ "Receiving Inputs: " ++ show deps
+                            return (locals, (PCompleted, p) : ps, Continue)
+                        else
+                            return (locals, (PCompleted, p) : ps, Next)
 
                     Output ->
                         return (locals, (PCompleted, p) : ps, End)
@@ -246,7 +257,11 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
 
                     Fetch s -> do
                         putStrLn $ "Fetching " ++ s
-                        return (locals, (PCompleted, p) : ps, Continue)
+                        i <- randomRIO (1,7) :: IO Int
+                        if i == 7 then -- fetching an ingredient takes, on average, 7 cycles (seconds)
+                            return (locals, (PCompleted, p) : ps, Continue)
+                        else
+                            return (locals, (status, p) : ps, Continue)
 
                     Preheat t -> do
                         let currTemp = getTemp locals
