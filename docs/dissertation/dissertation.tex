@@ -786,6 +786,8 @@ condition is true given a list of observables.
 
     adjustTime :: Condition -> Obs -> Condition
     adjustTime (CondTime t) (ObsTime t') = CondTime (t + t')
+    adjustTime (AND c1 c2) t = AND (adjustTime c1 t) (adjustTime c2 t)
+    adjustTime (OR c1 c2) t = OR (adjustTime c1 t) (adjustTime c2 t)
     adjustTime c _ = c
 \end{lstlisting}
 
@@ -805,6 +807,7 @@ developer of a robot chef might write.
     data Process =
         Input
         | Output
+        | Fetch String
         | Preheat Int
         | DoNothing
         | PCombine String
@@ -813,17 +816,17 @@ developer of a robot chef might write.
 \end{lstlisting}
 
 Most of these are self explanatory, \texttt{PCombine} and \texttt{MeasureOut} are just renamings of
-the actions \texttt{Combine} and \texttt{Measure}. \texttt{EvalCond} is inserted after \texttt{Input}
-which when interpreted will check the condition, if true then skip to \texttt{Output} else it will
-run all processes up until \texttt{Output} before jumping back to the condition again. As an example,
-here is part of our cup of tea recipe translated into a list of processes.
+the actions \texttt{Combine} and \texttt{Measure}, \texttt{Fetch} is equivalent to \texttt{GetIngredient}.
+\texttt{EvalCond} is inserted after \texttt{Input} which when interpreted will check the condition,
+if true then skip to \texttt{Output} else it will run all processes up until \texttt{Output} before
+jumping back to the condition again. As an example, here is the boiling water action in our cup of tea
+recipe translated into a list of processes.
 
 \begin{lstlisting}
-    Conditional (CondTemp 100) Heat ->
-        [Input, EvalCond (CondTemp 100), Output]
+    [Input, EvalCond (CondTemp 100), Output]
 \end{lstlisting}
 
-The water is put into the kettle which then heats it until the temperature is 100 degrees
+The water is put into the kettle which then heats it until the temperature is 100 degrees centigrade
 before the water is taken out. You might be wondering why there is no "heat" process.
 That's because something is heated as a side effect of being placed in a device which becomes hot
 rather than as an explicit action of that device. Device specific details such as the kettle turning
@@ -839,11 +842,11 @@ we need a kettle and a chef. For conciseness I shall only discuss the kettle.
     kettle :: Station
     kettle = let kettleConstr r =
                         if isBoilWater r then
-                            Just [Input, Output]
+                            Just [Input, EvalCond (CondTemp 100), Output]
                         else
                             Nothing
-                 kettleTemp = return $ ObsTemp 10
-              in Station "kettle" kettleConstr [kettleTemp]
+                kettleTemp = return $ ObsTemp 10
+            in Station "kettle" kettleConstr [kettleTemp]
 \end{lstlisting}
 
 Here we're creating a station with a name of "kettle", creating the constraint function
@@ -859,7 +862,7 @@ to demonstrate that it remains unused when scheduling making a cup of tea.
 
 \begin{lstlisting}
     env :: Env
-    env = Env { eStations = [kettle, chef, toaster, hob, chef2]
+    env = Env { eStations = [kettle, chef, toaster]
               , eObs = [ return $ ObsTime 0
                        , return $ ObsOpt "milk" True ] }
 \end{lstlisting}
@@ -930,7 +933,7 @@ respective stacks.
 
 \medbreak
 
-\newpage % to get figure correct
+%\newpage % to get figure correct
 
 As an abstract example, imagine a recipe, r1, which has sub-recipes: r2, r3 and r4. All the
 recipes must be scheduled on station 2, except r3 which must be scheduled on station 1.
@@ -1129,6 +1132,33 @@ as follows.
         $ combine "spread" butter
         $ heatFor (minutes 3) bread
 \end{lstlisting}
+
+\subsection{Simulator}
+
+Now that we have a way to schedule our recipes in a given environment we can consider actually
+executing them. In order to do this we created a basic simulator which will schedule a recipe
+in the given environment, as above, then translate each task into processes. It then proceeds
+to loop over each station in the environment allowing it to perform one process each cycle.
+Below is a small snippet of simulating our cup of tea.
+
+\begin{lstlisting}
+    0h 0m 10s - kettle:
+    Receiving Inputs: [3]
+
+    0h 0m 11s - chef:
+    Idle - Time remaining: 0h 1m 18s
+    0h 0m 11s - kettle:
+    Evaluating condition: CondTemp 100
+    Condition evaluated False
+
+    0h 0m 12s - chef:
+    Idle - Time remaining: 0h 1m 17s
+    0h 0m 12s - kettle:
+    Evaluating condition: CondTemp 100
+    Condition evaluated False
+\end{lstlisting}
+
+Here you can see that the 
 
 \section{Recipe Properties}
 
@@ -1679,7 +1709,8 @@ considering various semantics for recipes before other parts of the language
 were started. In the second part of the project a lot of time was spent
 with scheduling recipes. Trying to express the constraints in linear form
 was a huge challenge and in the end it seems as though it wasn't actually possible
-hence the move to bin packing.
+hence the move to bin packing. With hindsight it would have been better to
+move on from linear programming sooner given the limited time available.
 
 \medbreak
 
@@ -1820,6 +1851,9 @@ currently exists. My contributions to filling this gap are the following:
     \item A demonstration of how these operational semantics can be used in scheduling to optimise
     a recipe via parallelisation (Sections 4).
 
+    \item Example of using the processes interface and scheduling functions (Section 4) to
+    simulate the execution of a recipe in an environment.
+
     \item Mapping of various properties to recipes potentially leading to the ability
     to suggest improvements (Sections 5.5 \& 5.6).
 
@@ -1886,11 +1920,20 @@ an action on it regardless of whether a chef is available to take it out of the 
 
 \medbreak
 
+Writing recipes with the combinators is rather intuitive however, the constraint functions
+are very easy to get wrong, indeed this happened many times during the project. Subtle
+errors in the constraint functions can result in rather significant issues when scheduling
+and simulating a recipe. Given that there is no nice interface for writing these functions
+such subtle errors occur very easily. It therefore goes without saying that there is room
+for future work on this part of the project.
+
+\medbreak
+
 There is also the task of translating our processes to actual instructions specific to a certain
-robot. We provided an interface for this in the form of processes (Section 4.1) however, it has not
-been tried in practice. It would be interesting to see what sort of issues would arise from this
-as they could then be used to direct attention to which areas of the project are most in need of
-further development.
+robot. We provided an interface for this in the form of processes (Section 4.1). Despite us using
+this interface for the simulator, it has not been tried in practice. It would be interesting to
+see what sort of issues would arise from this as they could then be used to direct attention to
+which areas of the project are most in need of further development.
 
 \subsection{Reflections}
 

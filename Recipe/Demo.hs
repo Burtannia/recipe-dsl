@@ -154,7 +154,7 @@ boilInWaterForM t r = forTime (minutes t)
 -------------------------------------
 
 env :: Env
-env = Env { eStations = [kettle, chef, toaster, hob, chef2]
+env = Env { eStations = [kettle, chef, toaster, chef2, hob, fridge]
           , eObs = [ return $ ObsTime 0
                    , return $ ObsOpt "milk" True ] }
 
@@ -192,7 +192,7 @@ toaster = let toasterConstr r@(Node a ts)
 
 chef :: Station
 chef = let chefConstr r@(Node a ts) = case a of
-                GetIngredient _ -> Just [Input, Output]
+                GetIngredient s -> Just [Input, Fetch s, Output]
                 Combine s       -> Just [Input, PCombine s, Output]
                 Wait            -> Just [Input, DoNothing, Output]
                 Conditional _ c -> (chefConstr $ popCond r)
@@ -204,7 +204,7 @@ chef = let chefConstr r@(Node a ts) = case a of
 
 chef2 :: Station
 chef2 = let chefConstr r@(Node a ts) = case a of
-                GetIngredient _ -> Just [Input, Output]
+                GetIngredient s -> Just [Input, Fetch s, Output]
                 Combine s       -> Just [Input, PCombine s, Output]
                 Wait            -> Just [Input, DoNothing, Output]
                 Conditional _ c -> (chefConstr $ popCond r)
@@ -219,30 +219,30 @@ hob =
     let hobConstr r@(Node a ts) = case a of
             Heat -> Just [Input, Output]
             Wait -> Just [Input, DoNothing, Output]
-            Conditional _ c -> (hobConstr $ popCond r)
-                                >>= return . addEvalCond c
+            Conditional _ c ->
+                if valTemp c (> 50) then -- prevents hob being used to cool something
+                    (hobConstr $ popCond r)
+                        >>= return . addEvalCond c
+                else
+                    Nothing
             Transaction a -> hobConstr $ popT r
             _ -> Nothing
      in Station "hob" hobConstr [return $ ObsTemp 10]
 
-hob2 :: Station
-hob2 =
-    let hobConstr r@(Node a ts) = case a of
-            Heat -> Just [Input, Output]
-            Wait -> Just [Input, DoNothing, Output]
-            Conditional _ c -> (hobConstr $ popCond r)
-                                >>= return . addEvalCond c
-            Transaction a -> hobConstr $ popT r
-            _ -> Nothing
-     in Station "hob2" hobConstr []
-
 fridge :: Station
 fridge =
     let fridgeConstr r@(Node a ts) = case a of
-            Conditional Heat (CondTemp 4) -> Just [Input, Output]
-            Transaction a                 -> fridgeConstr $ popT r
-            _                             -> Nothing
-     in Station "fridge" fridgeConstr []
+            Heat -> Just [Input, Output]
+            Conditional _ c ->
+                if length (extractTemps c) > 0
+                    && valTemp c (== 4) then -- Must be a temperature and it must be 4
+                    (fridgeConstr $ popCond r)
+                        >>= return . addEvalCond c
+                else
+                    Nothing
+            Transaction a -> fridgeConstr $ popT r
+            _ -> Nothing
+     in Station "fridge" fridgeConstr [return $ ObsTemp 4]
 
 -------------------------------------
 -- TEST PROPERTIES

@@ -96,7 +96,7 @@ runSimulator s = do
             if sClr then
                 clearStdout
             else
-                return ()
+                putStrLn ""
             (env, compls, sch) <- runSchedule sEnv sLRecipe sCompletes sSchedule
             let obs = incTime (eObs env)
             let env' = Env (eStations env) obs
@@ -113,6 +113,8 @@ printObs (x:xs) = do
     print y
     printObs xs
 
+-- Applies 'incTime'' to all observables
+-- in a list.
 incTime :: [IO Obs] -> [IO Obs]
 incTime = map incTime'
 
@@ -142,6 +144,9 @@ runSchedule env lTree compls (s@(st,ts):ss) = runSchedule' ts
                     (env'', compls'', ss') <- runSchedule env' lTree compls' ss
                     return (env'', compls'', s' : ss')
 
+-- Given a list of the global observables,
+-- return the observable over time ('ObsTime').
+-- Throws an error if it doesn't exist.
 getGlobalTime :: [IO Obs] -> IO Obs
 getGlobalTime [] = error "No time observable"
 getGlobalTime (o:os) = do
@@ -180,6 +185,11 @@ runTask env stNm lTree compls (status, t) = do
 
 data Result = Continue | End | Terminate
 
+-- Runs an 'LProcess' for the given 'Station'. Takes a list
+-- of completed labels and returns an updated environment,
+-- updated list of completed labels and an updated 'LProcess'.
+-- If dependencies are not avialable, will print out a message
+-- and return.
 runProcesses :: StName -> Env -> [Label] -> LProcess -> IO (Env, [Label], LProcess)
 runProcesses stNm env compls lp@(l, deps, []) = return (env, compls, lp)
 runProcesses stNm env compls lp@(l, deps, ps) = do
@@ -187,7 +197,11 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
     let incompDeps = depsIncomplete deps compls
     if length incompDeps > 0 then do
         putStrLn $ "Waiting for dependencies: " ++ show incompDeps
-        return (env, compls, lp)
+        let stats = map fst ps
+        let procs = map snd ps
+        let procs' = incTimeConds procs -- delay conditions for a second
+        let ps' = zip stats procs'
+        return (env, compls, (l, deps, ps'))
     else do
         globals <- sequence $ eObs env
         locals <- sequence stObs
@@ -224,11 +238,15 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                         putStrLn $ "Receiving Inputs: " ++ show deps
                         return (locals, (PCompleted, p) : ps, Continue)
 
-                    Output -> do
+                    Output ->
                         return (locals, (PCompleted, p) : ps, End)
                         -- output printed after conditions evaluated
                         -- once this function returns as the processes
                         -- may need to be run again before output
+
+                    Fetch s -> do
+                        putStrLn $ "Fetching " ++ s
+                        return (locals, (PCompleted, p) : ps, Continue)
 
                     Preheat t -> do
                         let currTemp = getTemp locals
@@ -271,7 +289,7 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                                 if length temps > 0 then
                                     if True `elem` map (\c -> evalCond c obs) opts then
                                         continuePs
-                                    else case extractTemp temps of
+                                    else case listToMaybe temps of
                                         Nothing -> error "No Temperatures"
                                         Just x -> do
                                             let locals' = if currTemp < x then
@@ -289,6 +307,8 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                 terminate = return (locals, (PCompleted, p) : ps, Terminate)
                 continuePs = return (locals, (PCompleted, p) : ps, Continue)
 
+-- Marks all 'Process'es within an 'LProcess'
+-- as 'PCompleted'.
 markAllComplete :: LProcess -> LProcess
 markAllComplete (l, deps, ps) =
     let ps' = map (\(_,p) -> (PCompleted, p)) ps
@@ -322,58 +342,13 @@ setupRerun ((stat, p) : ps) =
         Preheat t -> (stat, p) : setupRerun ps
         _ -> (PIncomplete, p) : setupRerun ps
 
--- Returns True if a condition contains a 'CondOpt'.
-isOpt :: Condition -> Bool
-isOpt (CondOpt _) = True
-isOpt (AND c1 c2) = isOpt c1 || isOpt c2
-isOpt (OR c1 c2) = isOpt c1 || isOpt c2
-isOpt _ = False
-
 -- Replaces the corresponding station in the environment
 -- with the given station.
 updateStation :: Station -> Env -> Env
 updateStation st Env{..} =
-    let eSts = filter (\st' -> not $ stName st == stName st') eStations
+    let eSts = filter (\st' ->
+            not $ stName st == stName st') eStations
      in Env (st : eSts) eObs
-
--- Extracts the temperature from a list of conditions.
--- Returns the first temperature it finds else Nothing.
-extractTemp :: [Condition] -> Maybe Int
-extractTemp [] = Nothing
-extractTemp (c:cs) = case extractTemp' c of
-    Nothing -> extractTemp cs
-    x -> x
-    where
-        extractTemp' (CondTemp t) = Just t
-        extractTemp' (AND c1 c2) = extractAndOr c1 c2
-        extractTemp' (OR c1 c2) = extractAndOr c1 c2
-        extractTemp' _ = Nothing
-        extractAndOr c1 c2 = case extractTemp' c1 of
-            Nothing -> extractTemp' c2
-            x -> x
-
--- Extracts all 'CondTemp's from a given condition.
-extractTemps :: Condition -> [Condition]
-extractTemps (CondTemp t) = [CondTemp t]
-extractTemps (AND c1 c2) = extractTemps c1 ++ extractTemps c2
-extractTemps (OR c1 c2) = extractTemps c1 ++ extractTemps c2
-extractTemps _ = []
-
--- Extracts all 'CondOpt's from a given condition.
-extractOpts :: Condition -> [Condition]
-extractOpts (CondOpt s) = [CondOpt s]
-extractOpts (AND c1 c2) = extractOpts c1 ++ extractOpts c2
-extractOpts (OR c1 c2) = extractOpts c1 ++ extractOpts c2
-extractOpts _ = []
-
--- Gets the temperature from a list of observables.
--- Throws error if there are no 'ObsTemp's.
-getTemp :: [Obs] -> Int
-getTemp os = let ts = [t | ObsTemp t <- os]
-              in if ts == [] then
-                    error "No Observable Temperature"
-                 else
-                    head ts
 
 -- Increments all 'ObsTemp's in a list of observables.
 -- Does nothing to other observables.
@@ -416,12 +391,6 @@ expandActive f (Active l) lTree o =
         ps' = map (\p -> (PIncomplete, p)) ps
      in (l, is, ps')
 
-condsToAbsolute :: [Process] -> Obs -> [Process]
-condsToAbsolute [] _ = []
-condsToAbsolute (p@(EvalCond c) : ps) o =
-    EvalCond (adjustTime c o) : (condsToAbsolute ps o)
-condsToAbsolute (p:ps) o = p : condsToAbsolute ps o
-
 -- Given a list of dependencies and a list of completed
 -- task labels, return a list of all dependencies
 -- not completed.
@@ -435,5 +404,5 @@ findStation :: StName -> [Station] -> Station
 findStation stNm = head . filter (\Station{..} -> stName == stNm)
 
 -- Reverse the order of the stacks in the schedule.
-flipStacks :: Schedule Label -> Schedule Label
+flipStacks :: Schedule a -> Schedule a
 flipStacks = Map.map reverse

@@ -50,7 +50,9 @@ evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 -- is not ObsTime.
 adjustTime :: Condition -> Obs -> Condition
 adjustTime (CondTime t) (ObsTime t') = CondTime (t + t')
-adjustTime c _                       = c
+adjustTime (AND c1 c2) t = AND (adjustTime c1 t) (adjustTime c2 t)
+adjustTime (OR c1 c2) t = OR (adjustTime c1 t) (adjustTime c2 t)
+adjustTime c _ = c
 
 type ConstraintF = Recipe -> Maybe [Process]
 
@@ -86,6 +88,7 @@ popT r                         = r
 data Process =
     Input -- ^ Receive input.
     | Output -- ^ Output contents.
+    | Fetch String -- ^ Fetch an ingredient.
     | Preheat Int -- ^ Preheat to the given temperature.
     | DoNothing -- ^ Do nothing.
     | PCombine String -- ^ Combine contents with the given method.
@@ -98,3 +101,58 @@ data Env = Env
     { eStations :: [Station] -- ^ List of stations present in the environment.
     , eObs      :: [IO Obs] -- ^ Global observables for example time.
     }
+
+------------------------
+-- Utility Functions
+------------------------
+
+-- |Increments all the 'EvalCond's that contain
+-- a condition of time 'CondTime' in a list of processes.
+incTimeConds :: [Process] -> [Process]
+incTimeConds [] = []
+incTimeConds (p@(EvalCond c) : ps) =
+    EvalCond (adjustTime c (ObsTime 1)) : (incTimeConds ps)
+incTimeConds (p:ps) = p : incTimeConds ps
+
+-- |Applied 'adjustTime' to all 'EvalCond' in a list of
+-- processes. Passed global time observable.
+condsToAbsolute :: [Process] -> Obs -> [Process]
+condsToAbsolute [] _ = []
+condsToAbsolute (p@(EvalCond c) : ps) o =
+    EvalCond (adjustTime c o) : (condsToAbsolute ps o)
+condsToAbsolute (p:ps) o = p : condsToAbsolute ps o
+
+-- |Extracts all 'CondOpt's found within a condition.
+extractOpts :: Condition -> [Condition]
+extractOpts (CondOpt s) = [CondOpt s]
+extractOpts (AND c1 c2) = extractOpts c1 ++ extractOpts c2
+extractOpts (OR c1 c2) = extractOpts c1 ++ extractOpts c2
+extractOpts _ = []
+
+-- |Returns True if a condition contains a 'CondOpt'.
+isOpt :: Condition -> Bool
+isOpt (CondOpt _) = True
+isOpt (AND c1 c2) = isOpt c1 || isOpt c2
+isOpt (OR c1 c2) = isOpt c1 || isOpt c2
+isOpt _ = False
+
+-- |Extracts all temperatures from 'CondTemp's found within a condition.
+extractTemps :: Condition -> [Int]
+extractTemps (CondTemp t) = [t]
+extractTemps (AND c1 c2) = extractTemps c1 ++ extractTemps c2
+extractTemps (OR c1 c2) = extractTemps c1 ++ extractTemps c2
+extractTemps _ = []
+
+-- |If a condition contains temperatures, checks that they
+-- meet the constraint passed e.g. > 50.
+valTemp :: Condition -> (Int -> Bool) -> Bool
+valTemp c f = all (== True) $ map f (extractTemps c)
+
+-- |Gets the temperature from a list of observables.
+-- Throws error if there are no 'ObsTemp's.
+getTemp :: [Obs] -> Int
+getTemp os = let ts = [t | ObsTemp t <- os]
+              in if ts == [] then
+                    error "No Observable Temperature"
+                 else
+                    head ts
