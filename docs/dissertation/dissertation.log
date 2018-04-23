@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  22 APR 2018 16:57
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.7)  22 APR 2018 18:38
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -946,11 +946,11 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[9] <cupOfTea.png, id=434, 473.51906pt x 166.37157pt>
+[9] <cupOfTea.png, id=434, 475.7775pt x 164.86594pt>
 File: cupOfTea.png Graphic file (type png)
  <use cupOfTea.png>
 Package pdftex.def Info: cupOfTea.png used on input line 528.
-(pdftex.def)             Requested size: 284.52756pt x 99.97093pt.
+(pdftex.def)             Requested size: 284.52756pt x 98.5983pt.
 
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -978,12 +978,12 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[12 <./actionsOverTime.png>]
-<cupOfTea2.png, id=524, 473.51906pt x 167.12437pt>
+[12 <./actionsOverTime.png>] <cupOfTea2.png, id=524, 469.00218pt x 163.3603pt>
 File: cupOfTea2.png Graphic file (type png)
- <use cupOfTea2.png>
+
+<use cupOfTea2.png>
 Package pdftex.def Info: cupOfTea2.png used on input line 681.
-(pdftex.def)             Requested size: 284.52756pt x 100.4233pt.
+(pdftex.def)             Requested size: 284.52756pt x 99.10373pt.
 
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -1148,11 +1148,11 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
  We now make it that large for the rest of the document.
  This may cause the page layout to be inconsistent, however.
 
-[29] <meatTwoVeg.png, id=947, 979.40906pt x 188.20313pt>
+[29] <meatTwoVeg.png, id=947, 980.91469pt x 190.46156pt>
 File: meatTwoVeg.png Graphic file (type png)
  <use meatTwoVeg.png>
 Package pdftex.def Info: meatTwoVeg.png used on input line 1605.
-(pdftex.def)             Requested size: 433.62001pt x 83.32365pt.
+(pdftex.def)             Requested size: 433.62001pt x 84.19276pt.
 
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -1298,7 +1298,7 @@ nts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
 mr9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pf
 b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on dissertation.pdf (39 pages, 547619 bytes).
+Output written on dissertation.pdf (39 pages, 547166 bytes).
 PDF statistics:
  1285 PDF objects out of 1440 (max. 8388607)
  1206 compressed objects within 13 object streams
