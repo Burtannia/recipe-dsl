@@ -92,7 +92,7 @@ schLength sch r =
 
 -- heuristic 1 (least demand):
 
--- Duration that the root action of the recipe
+-- |Duration that the root action of the recipe
 -- corresponding to the given label will take.
 -- Uses 'timeAction'.
 duration :: Label -> Map Label Recipe -> Time
