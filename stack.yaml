@@ -1,0 +1,8 @@
+flags: {}
+packages:
+- .
+extra-deps:
+- pretty-tree-0.1.0.0
+- quickspec-2.1
+- twee-lib-2.1.5
+resolver: lts-11.14
