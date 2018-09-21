@@ -63,12 +63,21 @@ steps = steps' . labelRecipeA
                         l'' = extractLabel ts !! 1
                 toString (Conditional a c) = toString a ++ condToString c
                     where
-                        condToString (CondOpt _) = " (optional)"
                         condToString (CondTemp t) = " until temperature " ++ show t
                         condToString (CondTime t) = " for " ++ show t
                 toString (Transaction a) = "Immediately " ++ toString a
                 toString (Measure m) = "Measure " ++ show m ++ " of " ++ l'
                     where l' = head $ extractLabel ts
+                toString (Optional _ a) = toString a ++ " (optional)"
+                toString (Using a sts) = toString a ++ ppUsing sts
+
+ppUsing :: [String] -> String
+ppUsing [] = ""
+ppUsing sts = " using " ++ ppSts sts
+    where
+        ppSts [] = ""
+        ppSts [x] = x
+        ppSts (x:xs) = x ++ " or " ++ ppSts xs
 
 -- |Prints one step per line in the following style.
 -- 1) ...

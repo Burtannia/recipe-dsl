@@ -32,6 +32,8 @@ data Action = GetIngredient String
             | Conditional Action Condition
             | Transaction Action
             | Measure Measurement
+            | Optional String Action
+            | Using Action [String]
             deriving (Show, Eq, Ord)
 
 -- |Ordering compares the result of 'deps' for
@@ -61,6 +63,9 @@ instance Show Time where
                     ++ show m ++ "m "
                     ++ show s ++ "s"
 
+-- instance Semigroup Time where
+--     (<>) = (+)
+
 instance Monoid Time where
     mempty = 0
     mappend = (+)
@@ -68,14 +73,9 @@ instance Monoid Time where
 -- |Conditions represent an event which you perform a recipe "until".
 data Condition = CondTime Time -- ^ Until the given time has elapsed.
                | CondTemp Int -- ^ Until the temperature has been reached.
-               | CondOpt String -- ^ Optional step, labelled for identification. See observables (Obs).
-               | Condition `AND` Condition -- ^ Logical "and" of two conditions.
-               | Condition `OR` Condition -- ^ Logical "or" of two conditions.
+               | Condition `AND` Condition -- ^ Conjunction of two conditions.
+               | Condition `OR` Condition -- ^ Disjunction of two conditions.
                deriving (Show, Eq, Ord)
-
--- Does it make sense for optional to be a condition?
--- Conditions mean "do until"
--- Whereas optional means "only do if"
 
 -- |Represents a measurement of something.
 data Measurement = Count Int -- ^ Number of something e.g. 1 apple.
@@ -149,11 +149,17 @@ transaction (Node a ts) = Node (Transaction a) ts
 measure :: Measurement -> Recipe -> Recipe
 measure m r = Node (Measure m) [r]
 
--- Nicer Conditions and Time
-
--- |Applies 'addCondition' 'CondOpt' with the given label.
+-- |Makes the root action of the given recipe optional.
+-- The option is identified with the given label.
 optional :: String -> Recipe -> Recipe
-optional s = addCondition (CondOpt s)
+optional s (Node a ts) = Node (Optional s a) ts
+
+-- |Specifies that the root action of the given recipe
+-- should be performed using one of the given stations.
+using :: Recipe -> [String] -> Recipe
+using (Node a ts) sts = Node (Using a sts) ts
+
+-- Nicer Conditions and Time
 
 -- |Applies 'addCondition' 'CondTemp' with the given temperature.
 toTemp :: Int -> Recipe -> Recipe
@@ -183,6 +189,20 @@ minutes = round . realToFrac . (*) 60
 -- Utility Functions
 -------------------------
 
+-- |Applies `popWrapperA` to the root node of the given recipe.
+popWrapper :: Recipe -> Recipe
+popWrapper (Node a ts) = Node (popWrapperA a) ts
+
+-- |Removes the first wrapper action e.g. `Transaction` or
+-- `Conditional` from the given action.
+-- If there is no wrapper action then the action is unchanged.
+popWrapperA :: Action -> Action
+popWrapperA (Transaction a) = a
+popWrapperA (Using a _) = a
+popWrapperA (Conditional a _) = a
+popWrapperA (Optional _ a) = a
+popWrapperA a = a
+
 -- |Folds a function over a condition. AND will mappend the
 -- values from folding over the two conditions whereas OR
 -- takes the max.
@@ -211,7 +231,10 @@ ingredientsQ (Node (Measure m) ts) = case ts of
     [Node (GetIngredient s) _] -> [(s,m)]
     _                          -> concatMap ingredientsQ ts
 ingredientsQ (Node (GetIngredient s) _) = [(s, Count 0)]
-ingredientsQ (Node _ ts) = concatMap ingredientsQ ts
+ingredientsQ r@(Node _ ts) = let r' = popWrapper r in
+    if r == r'
+        then concatMap ingredientsQ ts
+        else ingredientsQ r'
 
 type Label = Int
 
@@ -260,9 +283,10 @@ timeAction (Conditional a c) = t' + foldCond f c
         t' = timeAction a
         f (CondTime t) = t
         f (CondTemp t) = tempToTime t
-        f (CondOpt s)  = 0
 timeAction (Transaction a) = timeAction a
 timeAction (Measure m) = 10
+timeAction (Optional s a) = timeAction a
+timeAction (Using a _) = timeAction a
 
 -- |Generates a list pairing each 'Action' in a 'Recipe'
 -- with its dependencies i.e. the list of 'Action's within

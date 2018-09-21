@@ -24,10 +24,10 @@ module Recipe.Scheduler(
     duration, scheduleRecipe, initSchedule,
     schLength ) where
 
-import           Data.List       (groupBy, maximumBy, minimumBy, sortBy)
+import           Data.List       (groupBy, maximumBy, minimumBy, sortBy, intersperse)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe      (fromJust, isJust)
+import           Data.Maybe      (fromJust, isJust, catMaybes)
 import           Data.Tree
 import           Recipe.Kitchen
 import           Recipe.Recipe   hiding (leaves, removeFrom)
@@ -56,8 +56,11 @@ childLabels l (Node l' ts)
 -- |Lookup the stations capable of handling the action
 -- at the root node of the recipe corresponding the to given label.
 lookupValSts :: Env -> Label -> Map Label Recipe -> [StName]
-lookupValSts env l rMap = let r = lookupR l rMap
-                           in validStations env r
+lookupValSts env l rMap =
+    let r@(Node a _) = lookupR l rMap
+     in case getUsings a of
+            Just sts -> sts
+            Nothing -> validStations env r
 
 -- |Lookup the stations capable of handling the action
 -- at the root node of the given recipe.
@@ -70,6 +73,84 @@ validStations env r = let xs = map (applyConstrF r) (eStations env)
 -----------------------------
 -- Scheduler
 -----------------------------
+
+findStByName :: StName -> [Station] -> Maybe Station
+findStByName stNm [] = Nothing
+findStByName stNm (st:sts)
+    | stNm == stName st = Just st
+    | otherwise = findStByName stNm sts
+
+parseUsings :: Recipe -> [Station] -> Maybe String
+parseUsings r sts = parseUsings' r
+    where
+        parseUsings' (Node (Using a stNs) ts) =
+            let ms = map (\stNm -> findStByName stNm sts) stNs
+            in if hasNothing ms then
+                    Just $
+                    "Invalid \"Using\" Constraint:\n"
+                    ++ show (Using a stNs)
+                else
+                    parseSubTrees ts
+        parseUsings' (Node a ts) =
+            let a' = popWrapperA a
+             in if a == a' then
+                    parseSubTrees ts
+                else
+                    parseUsings (Node a' ts) sts
+        parseSubTrees ts = mconcatErrors $
+            map (\t -> parseUsings t sts) ts
+
+mconcatErrors :: [Maybe String] -> Maybe String
+mconcatErrors mes =
+    if all (== Nothing) mes then
+        Nothing
+    else
+        Just $ concat
+        $ intersperse "\n"
+        $ catMaybes mes
+                
+hasNothing :: [Maybe a] -> Bool
+hasNothing [] = False
+hasNothing (Nothing:xs) = True
+hasNothing (_:xs) = hasNothing xs
+
+applyOptsA :: Action -> [Option] -> Maybe Action
+applyOptsA (Optional s a) opts
+    | evalOpt s opts = applyOptsA a opts
+    | otherwise = Nothing
+applyOptsA (Transaction a) opts =
+    applyOptsA a opts >>= return . Transaction
+applyOptsA (Conditional a c) opts =
+    applyOptsA a opts >>= return . \a' -> Conditional a' c
+applyOptsA (Using a sts) opts =
+    applyOptsA a opts >>= return . \a' -> Using a' sts
+applyOptsA a _ = Just a
+
+applyOpts :: Recipe -> [Option] -> Maybe Recipe
+applyOpts (Node a ts) opts = case applyOptsA a opts of
+    Nothing -> case ts of
+        [] -> Nothing
+        [x] -> applyOpts x opts
+        xs -> maxByLength xs >>= \r -> applyOpts r opts
+    Just a' ->
+        let ts' = catMaybes $ map (\t -> applyOpts t opts) ts
+         in if length ts' == reqDeps a' then
+                Just $ Node a' ts'
+            else
+                Nothing
+       
+reqDeps :: Action -> Int
+reqDeps (Combine _) = 2
+reqDeps (GetIngredient _) = 0
+reqDeps a
+    | popWrapperA a == a = 1
+    | otherwise = reqDeps $ popWrapperA a
+
+maxByLength :: [Tree a] -> Maybe (Tree a)
+maxByLength [] = Nothing
+maxByLength [t] = Just t
+maxByLength ts = Just $ maximumBy
+    (\t1 t2 -> compare (length t1) (length t2)) ts
 
 -- |Task performed by a 'Station'.
 data Task a = Active a -- ^ Active performing the action corresponding to the label.
@@ -192,6 +273,12 @@ isTransaction l rMap = case Map.lookup l rMap of
     Just (Node (Transaction _) _) -> True
     _                             -> False
 
+getUsings :: Action -> Maybe [StName]
+getUsings (Using _ sts) = Just sts
+getUsings a
+    | popWrapperA a == a = Nothing
+    | otherwise = getUsings $ popWrapperA a
+
 -- Choose the best stack for the given label.
 -- heuristic 1 + heuristic 2
 -- tie breaker is heuristic 3
@@ -199,6 +286,7 @@ isTransaction l rMap = case Map.lookup l rMap of
 chooseStack :: Tree Label -> Tree Label -> Label -> Env
     -> Map Label Recipe -> Schedule Label -> Schedule Label
 chooseStack fullTree unscheduleds l env rMap sch =
+    -- if step is "Using" then select from usings
     let vs = lookupValSts env l rMap
         validSch = Map.filterWithKey (\st _ -> st `elem` vs) sch -- schedule containing only stations valid for l
 
@@ -242,9 +330,16 @@ chooseStackRec fullTree lTree' (l:ls) env rMap sch =
 -- See documentation at the top for heuristics used.
 scheduleRecipe :: Recipe -> Env -> Schedule Label
 scheduleRecipe r env =
-    let lTree = labelRecipe r
-        rMap = mkLabelMap $ labelRecipeR r
-     in scheduleRecipe' lTree lTree rMap (initSchedule env)
+    let mUseErr = parseUsings r (eStations env)
+        mr = applyOpts r (eOpts env)
+     in case mUseErr of
+            Just er -> error er
+            Nothing -> case mr of
+                Nothing -> error "False option resulted in no recipe."
+                Just r' -> 
+                    let lTree = labelRecipe r'
+                        rMap = mkLabelMap $ labelRecipeR r'
+                     in scheduleRecipe' lTree lTree rMap (initSchedule env)
     where
         scheduleRecipe' :: Tree Label -> Tree Label
             -> Map Label Recipe -> Schedule Label -> Schedule Label

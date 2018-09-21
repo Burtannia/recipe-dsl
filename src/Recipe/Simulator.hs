@@ -103,8 +103,9 @@ runSimulator s = do
                 putStrLn ""
             (env, compls, sch) <- runSchedule sEnv sLRecipe sCompletes sSchedule
             let obs = incTime (eObs env)
-            let env' = Env (eStations env) obs
-            let uSeconds = (1 / sSpeed) * 1000000
+                opts = eOpts env
+                env' = Env (eStations env) obs opts
+                uSeconds = (1 / sSpeed) * 1000000
             delay (floor uSeconds)
             return $ Simulator compls sLRecipe env' sSpeed sClr sch
 
@@ -223,10 +224,7 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
             Continue -> return (env', compls, lp')
             End -> case getCond ps of
                      Nothing -> output env' lp'
-                     Just c -> if isOpt c then
-                                   output env' lp'
-                               else
-                                   runProcesses stNm env' compls (l, deps, setupRerun ps')
+                     Just c -> runProcesses stNm env' compls (l, deps, setupRerun ps')
             Terminate -> do
                 let lp'' = markAllComplete lp'
                 output env' lp''
@@ -245,28 +243,28 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                     return (locals', (status, p) : ps', r)
 
                 PIncomplete -> case p of
-                    Input ->
+                    P_Input ->
                         if length deps > 0 then do
                             putStrLn $ "Receiving Inputs: " ++ show deps
                             return (locals, (PCompleted, p) : ps, Continue)
                         else
                             return (locals, (PCompleted, p) : ps, Next)
 
-                    Output ->
+                    P_Output ->
                         return (locals, (PCompleted, p) : ps, End)
                         -- output printed after conditions evaluated
                         -- once this function returns as the processes
                         -- may need to be run again before output
 
-                    Fetch s -> do
-                        putStrLn $ "Fetching " ++ s
+                    P_GetIngredient s -> do
+                        putStrLn $ "Getting " ++ s
                         i <- randomRIO (1,7) :: IO Int
-                        if i == 7 then -- fetching an ingredient takes, on average, 7 cycles (seconds)
+                        if i == 7 then -- getting an ingredient takes, on average, 7 cycles (seconds)
                             return (locals, (PCompleted, p) : ps, Continue)
                         else
                             return (locals, (status, p) : ps, Continue)
 
-                    Preheat t -> do
+                    P_Preheat t -> do
                         let currTemp = getTemp locals
                         putStrLn ("Preheating to " ++ show t
                                     ++ ", current temperature is "
@@ -280,45 +278,47 @@ runProcesses stNm env compls lp@(l, deps, ps) = do
                         else
                             return (locals', (PIncomplete, p) : ps, Continue)
 
-                    DoNothing -> do
-                        putStrLn $ "Holding Inputs"
-                        return (locals, (PCompleted, p) : ps, Continue)
+                    -- DoNothing -> do
+                    --     putStrLn $ "Holding Inputs"
+                    --     return (locals, (PCompleted, p) : ps, Continue)
 
-                    PCombine s -> do
+                    P_Combine s -> do
                         putStrLn $ "Combining inputs (" ++ s ++ ")"
                         return (locals, (PCompleted, p) : ps, Continue)
 
-                    EvalCond c -> do
+                    P_EvalCond c -> do
                         let obs = globals ++ locals
                         result <- evalCondPrint c obs
 
-                        let opts = extractOpts c
+                        --let opts = extractOpts c
                         let temps = extractTemps c
-                        let currTemp = getTemp locals
-                        if length opts > 0 then
-                            if True `elem` map (\c -> evalCond c obs) opts then
-                                continuePs
-                            else
-                                terminate
+                            tempConds = extractTempConds c
+                            currTemp = getTemp locals
+                        -- if length opts > 0 then
+                        --     if True `elem` map (\c -> evalCond c obs) opts then
+                        --         continuePs
+                        --     else
+                        --         terminate
+                        -- else
+                        if result then
+                            terminate
                         else
-                            if result then
-                                terminate
-                            else
-                                if length temps > 0 then
-                                    if True `elem` map (\c -> evalCond c obs) opts then
-                                        continuePs
-                                    else case listToMaybe temps of
-                                        Nothing -> error "No Temperatures"
-                                        Just x -> do
-                                            let locals' = if currTemp < x then
-                                                            incTemp locals
-                                                          else
-                                                            decTemp locals
-                                            return (locals', (PCompleted, p) : ps, Continue)
-                                else
+                            if length temps > 0 then -- conds contain temperature
+                                if True `elem` map (\c -> evalCond c obs) tempConds then -- temperature condition is true
                                     continuePs
+                                else case listToMaybe temps of
+                                    Nothing -> error "No Temperatures"
+                                    Just x -> do
+                                        let locals' =
+                                                if currTemp < x then
+                                                    incTemp locals
+                                                else
+                                                    decTemp locals
+                                        return (locals', (PCompleted, p) : ps, Continue)
+                            else
+                                continuePs
 
-                    MeasureOut m -> do
+                    P_Measure m -> do
                         putStrLn $ "Measuring " ++ show m ++ "of inputs"
                         return (locals, (PCompleted, p) : ps, Continue)
             where
@@ -346,7 +346,7 @@ evalCondPrint c obs = do
 getCond :: [(ProcessStatus, Process)] -> Maybe Condition
 getCond = getCond' . map snd
     where
-        getCond' ps = listToMaybe [c | (EvalCond c) <- ps]
+        getCond' ps = listToMaybe [c | (P_EvalCond c) <- ps]
 
 -- Setup a set of tasks to be rerurn, maps over them setting their
 -- statuses to 'PIncomplete'. Ignores 'Input' and 'Preheat' as
@@ -356,9 +356,9 @@ setupRerun :: [(ProcessStatus, Process)] -> [(ProcessStatus, Process)]
 setupRerun [] = []
 setupRerun ((stat, p) : ps) =
     case p of
-        Input     -> (stat, p) : setupRerun ps
-        Preheat t -> (stat, p) : setupRerun ps
-        _         -> (PIncomplete, p) : setupRerun ps
+        P_Input     -> (stat, p) : setupRerun ps
+        P_Preheat t -> (stat, p) : setupRerun ps
+        _           -> (PIncomplete, p) : setupRerun ps
 
 -- Replaces the corresponding station in the environment
 -- with the given station.
@@ -366,7 +366,7 @@ updateStation :: Station -> Env -> Env
 updateStation st Env{..} =
     let eSts = filter (\st' ->
             not $ stName st == stName st') eStations
-     in Env (st : eSts) eObs
+     in Env (st : eSts) eObs eOpts
 
 -- Increments all 'ObsTemp's in a list of observables.
 -- Does nothing to other observables.
@@ -385,7 +385,7 @@ decTemp (o:os)             = o : decTemp os
 -- Returns a list of all 'EvalCond' processes
 -- in a list of processes.
 getConds :: [Process] -> [Process]
-getConds ps = [x | x@(EvalCond _) <- ps]
+getConds ps = [x | x@(P_EvalCond _) <- ps]
 
 -- Determines the status of a task given its list
 -- of processes.

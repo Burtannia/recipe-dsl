@@ -161,8 +161,9 @@ boilInWaterForM t r = forTime (minutes t)
 
 env :: Env
 env = Env { eStations = [kettle, chef, toaster, chef2, hob, fridge]
-          , eObs = [ return $ ObsTime 0
-                   , return $ ObsOpt "milk" True ] }
+          , eObs = [return $ ObsTime 0]
+          , eOpts = [Option "milk" True]
+          }
 
 isBoilWater :: Recipe -> Bool
 isBoilWater r@(Node a ts) = case a of
@@ -176,7 +177,7 @@ isBoilWater r@(Node a ts) = case a of
 kettle :: Station
 kettle = let kettleConstr r =
                     if isBoilWater r then
-                        Just [Input, EvalCond (CondTemp 100), Output]
+                        Just [P_Input, P_EvalCond (CondTemp 100), P_Output]
                     else
                         Nothing
              kettleTemp = return $ ObsTemp 10
@@ -187,7 +188,7 @@ toastBread = heat (ingredient "bread")
 
 toaster :: Station
 toaster = let toasterConstr r@(Node a ts)
-                | r == toastBread = Just [Input, Output]
+                | r == toastBread = Just [P_Input, P_Output]
                 | otherwise = case a of
                     Conditional _ c@(CondTime t) ->
                         (toasterConstr $ popCond r) >>= return . addEvalCond c
@@ -198,24 +199,24 @@ toaster = let toasterConstr r@(Node a ts)
 
 chef :: Station
 chef = let chefConstr r@(Node a ts) = case a of
-                GetIngredient s -> Just [Input, Fetch s, Output]
-                Combine s       -> Just [Input, PCombine s, Output]
-                Wait            -> Just [Input, DoNothing, Output]
+                GetIngredient s -> Just [P_Input, P_GetIngredient s, P_Output]
+                Combine s       -> Just [P_Input, P_Combine s, P_Output]
+                Wait            -> Just [P_Input, P_Output]
                 Conditional _ c -> (chefConstr $ popCond r)
                                     >>= return . addEvalCond c
-                Measure m       -> Just [Input, MeasureOut m, Output]
+                Measure m       -> Just [P_Input, P_Measure m, P_Output]
                 Transaction a   -> chefConstr $ popT r
                 _               -> Nothing
         in Station "chef" chefConstr []
 
 chef2 :: Station
 chef2 = let chefConstr r@(Node a ts) = case a of
-                GetIngredient s -> Just [Input, Fetch s, Output]
-                Combine s       -> Just [Input, PCombine s, Output]
-                Wait            -> Just [Input, DoNothing, Output]
+                GetIngredient s -> Just [P_Input, P_GetIngredient s, P_Output]
+                Combine s       -> Just [P_Input, P_Combine s, P_Output]
+                Wait            -> Just [P_Input, P_Output]
                 Conditional _ c -> (chefConstr $ popCond r)
                                     >>= return . addEvalCond c
-                Measure m       -> Just [Input, MeasureOut m, Output]
+                Measure m       -> Just [P_Input, P_Measure m, P_Output]
                 Transaction a   -> chefConstr $ popT r
                 _               -> Nothing
          in Station "chef2" chefConstr []
@@ -223,8 +224,8 @@ chef2 = let chefConstr r@(Node a ts) = case a of
 hob :: Station
 hob =
     let hobConstr r@(Node a ts) = case a of
-            Heat -> Just [Input, Output]
-            Wait -> Just [Input, DoNothing, Output]
+            Heat -> Just [P_Input, P_Output]
+            Wait -> Just [P_Input, P_Output]
             Conditional _ c ->
                 if valTemp c (> 50) then -- prevents hob being used to cool something
                     (hobConstr $ popCond r)
@@ -238,7 +239,7 @@ hob =
 fridge :: Station
 fridge =
     let fridgeConstr r@(Node a ts) = case a of
-            Heat -> Just [Input, Output]
+            Heat -> Just [P_Input, P_Output]
             Conditional _ c ->
                 if length (extractTemps c) > 0
                     && valTemp c (== 4) then -- Must be a temperature and it must be 4

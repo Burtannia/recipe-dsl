@@ -32,9 +32,17 @@ type StName = String
 -- |An observable value.
 data Obs = ObsTemp Int -- ^ Observable temperature.
          | ObsTime Time -- ^ Observable time.
-         | ObsOpt String Bool -- ^ Observable option, labelled to correspond with a 'CondOpt'
-                              -- in a recipe. True would mean to include that optional part of the recipe.
          deriving (Show, Eq, Ord)
+
+-- |A decision for a `CondOpt`.
+data Option = Option String Bool
+
+-- |Given a list of `Option`s, find whether an `Option` with the
+-- given name is true or false.
+evalOpt :: String -> [Option] -> Bool
+evalOpt s os = case [b | Option s' b <- os, s == s'] of
+    []     -> False
+    (b:bs) -> b
 
 -- |Given a list of observables, returns whether the given condition is true.
 evalCond :: Condition -> [Obs] -> Bool
@@ -44,9 +52,6 @@ evalCond (CondTime t) os = case [o | o@(ObsTime _) <- os] of
 evalCond (CondTemp t) os = case [o | o@(ObsTemp _) <- os] of
     []  -> False
     os' -> True `elem` (map (\(ObsTemp t') -> t == t') os')
-evalCond (CondOpt s) os = case [o | o@(ObsOpt s' _) <- os, s == s'] of
-    []  -> False
-    os' -> True `elem` (map (\(ObsOpt _ b) -> b) os')
 evalCond c os = getAll $ foldCond (\c -> All $ evalCond c os) c
 
 -- |Takes a condition of time and the observable representing
@@ -73,13 +78,13 @@ popCond r                           = r
 -- added to the start.
 addEvalCond :: Condition -> [Process] -> [Process]
 addEvalCond c ps =
-    if Input `elem` ps then
+    if P_Input `elem` ps then
         addEvalCond' c ps
     else
-        EvalCond c : ps
+        P_EvalCond c : ps
     where
-        addEvalCond' c (Input : Preheat t : ps) = Input : Preheat t : EvalCond c : ps
-        addEvalCond' c (Input : ps) = Input : EvalCond c : ps
+        addEvalCond' c (P_Input : P_Preheat t : ps) = P_Input : P_Preheat t : P_EvalCond c : ps
+        addEvalCond' c (P_Input : ps) = P_Input : P_EvalCond c : ps
         addEvalCond' c (p:ps) = p : addEvalCond' c ps
 
 -- |Removes the 'Transaction' wrapper from the root action
@@ -92,20 +97,20 @@ popT r                         = r
 -- |A process that a station goes through, intended to
 -- be interfaced with device specific instructions.
 data Process =
-    Input -- ^ Receive input.
-    | Output -- ^ Output contents.
-    | Fetch String -- ^ Fetch an ingredient.
-    | Preheat Int -- ^ Preheat to the given temperature.
-    | DoNothing -- ^ Do nothing.
-    | PCombine String -- ^ Combine contents with the given method.
-    | EvalCond Condition -- ^ Evaluate the given condition.
-    | MeasureOut Measurement -- ^ Measure our the given measurement of contents.
+    P_Input -- ^ Receive input.
+    | P_Output -- ^ Output contents.
+    | P_GetIngredient String -- ^ Get an ingredient.
+    | P_Preheat Int -- ^ Preheat to the given temperature.
+    | P_Combine String -- ^ Combine contents with the given method.
+    | P_EvalCond Condition -- ^ Evaluate the given condition.
+    | P_Measure Measurement -- ^ Measure the given measurement of contents.
     deriving (Show, Eq)
 
 -- |Representation of a cooking environment for example a kitchen.
 data Env = Env
     { eStations :: [Station] -- ^ List of stations present in the environment.
     , eObs      :: [IO Obs] -- ^ Global observables for example time.
+    , eOpts     :: [Option] -- ^ List of decisions for any optional steps.
     }
 
 ------------------------
@@ -116,31 +121,17 @@ data Env = Env
 -- a condition of time 'CondTime' in a list of processes.
 incTimeConds :: [Process] -> [Process]
 incTimeConds [] = []
-incTimeConds (p@(EvalCond c) : ps) =
-    EvalCond (adjustTime c (ObsTime 1)) : (incTimeConds ps)
+incTimeConds (p@(P_EvalCond c) : ps) =
+    P_EvalCond (adjustTime c (ObsTime 1)) : (incTimeConds ps)
 incTimeConds (p:ps) = p : incTimeConds ps
 
 -- |Applied 'adjustTime' to all 'EvalCond' in a list of
 -- processes. Passed global time observable.
 condsToAbsolute :: [Process] -> Obs -> [Process]
 condsToAbsolute [] _ = []
-condsToAbsolute (p@(EvalCond c) : ps) o =
-    EvalCond (adjustTime c o) : (condsToAbsolute ps o)
+condsToAbsolute (p@(P_EvalCond c) : ps) o =
+    P_EvalCond (adjustTime c o) : (condsToAbsolute ps o)
 condsToAbsolute (p:ps) o = p : condsToAbsolute ps o
-
--- |Extracts all 'CondOpt's found within a condition.
-extractOpts :: Condition -> [Condition]
-extractOpts (CondOpt s) = [CondOpt s]
-extractOpts (AND c1 c2) = extractOpts c1 ++ extractOpts c2
-extractOpts (OR c1 c2)  = extractOpts c1 ++ extractOpts c2
-extractOpts _           = []
-
--- |Returns True if a condition contains a 'CondOpt'.
-isOpt :: Condition -> Bool
-isOpt (CondOpt _) = True
-isOpt (AND c1 c2) = isOpt c1 || isOpt c2
-isOpt (OR c1 c2)  = isOpt c1 || isOpt c2
-isOpt _           = False
 
 -- |Extracts all temperatures from 'CondTemp's found within a condition.
 extractTemps :: Condition -> [Int]
@@ -148,6 +139,13 @@ extractTemps (CondTemp t) = [t]
 extractTemps (AND c1 c2)  = extractTemps c1 ++ extractTemps c2
 extractTemps (OR c1 c2)   = extractTemps c1 ++ extractTemps c2
 extractTemps _            = []
+
+-- |Extracts all 'CondTemp's found within a condition.
+extractTempConds :: Condition -> [Condition]
+extractTempConds c@(CondTemp _) = [c]
+extractTempConds (AND c1 c2) = extractTempConds c1 ++ extractTempConds c2
+extractTempConds (OR c1 c2) = extractTempConds c1 ++ extractTempConds c2
+extractTempConds _ = []
 
 -- |If a condition contains temperatures, checks that they
 -- meet the constraint passed e.g. > 50.

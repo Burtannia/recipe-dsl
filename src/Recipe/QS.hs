@@ -51,7 +51,8 @@ genUnRec un = oneof
     , liftM wait un
     , liftM2 addCondition arbitrary (genUnRec un)
     , liftM transaction (genUnRec un)
-    , liftM2 measure arbitrary un ]
+    , liftM2 measure arbitrary un
+    , liftM2 optional (liftM show (choose (1, 10) :: Gen Int)) un ]
 
 -- |Generate a binary recipe.
 genBinRec :: Gen Recipe -> Gen Recipe -> Gen Recipe
@@ -82,8 +83,7 @@ instance Arbitrary Condition where
 -- |Generate a single condition (not AND or OR).
 singleCond :: Gen Condition
 singleCond = oneof
-    [ liftM (CondOpt . show) (choose (1, 10) :: Gen Int)
-    , liftM CondTime arbitrary
+    [ liftM CondTime arbitrary
     , liftM CondTemp genTemp ]
 
 instance Arbitrary Time where
@@ -98,11 +98,13 @@ instance Arbitrary Measurement where
 instance Arbitrary Obs where
     arbitrary = oneof
         [ liftM ObsTemp genTemp
-        , liftM ObsTime arbitrary
-        , liftM2 ObsOpt (liftM show (choose (1, 10) :: Gen Int)) arbitrary ]
+        , liftM ObsTime arbitrary ]
 
 instance Observe [Obs] Bool Condition where
     observe obs c = evalCond c obs
+
+allOpts :: [Option]
+allOpts = [Option (show i) True | i <- [1..10]]
 
 -- |Make an environment containing 3 useful stations
 -- and 1 useless station.
@@ -113,7 +115,7 @@ mkUsefulEnv = evalState mkUsefulEnv' 0
         mkUsefulEnv' = do
             sts <- genSts 4
             let obs = [timeZero]
-            return $ Env sts obs
+            return $ Env sts obs allOpts
         genSts :: Int -> State Int [Station]
         genSts 0 = return []
         genSts 2 = do
@@ -135,7 +137,7 @@ mkUselessEnv =
     let sts = [ mkStationUseless (mkStName 0)
               , mkStationUseless (mkStName 1) ]
         obs = [timeZero]
-     in Env sts obs
+     in Env sts obs allOpts
 
 -- |ObsTime 0
 timeZero :: IO Obs
@@ -149,14 +151,14 @@ mkStName i = "Station_" ++ show i
 mkStationUseful :: StName -> Station
 mkStationUseful stNm =
     let constr r@(Node a ts) = case a of
-            GetIngredient _ -> Just [Input, Output]
-            Heat            -> Just [Input, Output]
-            HeatAt t        -> Just [Input, Preheat t, Output]
-            Combine s       -> Just [Input, PCombine s, Output]
-            Wait            -> Just [Input, DoNothing, Output]
+            GetIngredient _ -> Just [P_Input, P_Output]
+            Heat            -> Just [P_Input, P_Output]
+            HeatAt t        -> Just [P_Input, P_Preheat t, P_Output]
+            Combine s       -> Just [P_Input, P_Combine s, P_Output]
+            Wait            -> Just [P_Input, P_Output]
             Conditional _ c -> (constr $ popCond r)
                                 >>= return . addEvalCond c
-            Measure m       -> Just [Input, MeasureOut m, Output]
+            Measure m       -> Just [P_Input, P_Measure m, P_Output]
             Transaction a   -> constr $ popT r
      in Station stNm constr [return $ ObsTemp 20]
 
@@ -179,8 +181,8 @@ qsRecipe = quickSpec
     , con ".||" ((.||) :: Condition -> Condition -> Condition)
     , con "transaction" (transaction :: Recipe -> Recipe)
     , con "measure" (measure :: Measurement -> Recipe -> Recipe)
-
     , con "optional" (optional :: String -> Recipe -> Recipe)
+
     , con "toTemp" (toTemp :: Int -> Recipe -> Recipe)
     , con "forTime" (forTime :: Time -> Recipe -> Recipe)
     , con "hours" (hours :: Int -> Time)
@@ -311,7 +313,6 @@ prop_eval_cond_true c obs =
 condToObs :: Condition -> [Obs]
 condToObs (CondTime t) = [ObsTime t]
 condToObs (CondTemp t) = [ObsTemp t]
-condToObs (CondOpt s)  = [ObsOpt s True]
 condToObs (AND c1 c2)  = condToObs c1 ++ condToObs c2
 condToObs (OR c1 c2)   = condToObs c1 ++ condToObs c2
 

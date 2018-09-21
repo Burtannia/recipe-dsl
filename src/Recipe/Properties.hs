@@ -32,7 +32,10 @@ evalProps :: Monoid v => PropertyList v -> Recipe -> v
 evalProps ps = foldRecipe f
     where
         f (GetIngredient s) = lookupProp ps s
-        f _                 = mempty
+        f a = let a' = popWrapperA a in
+            if a == a'
+                then mempty
+                else f a'
 
 -- |The same as 'evalProps' but considers the quantity of an ingredient used
 -- and calculates the ratio accordingly.
@@ -83,6 +86,9 @@ instance Show Price where
                 | p < 10 = '0' : show p
                 | otherwise = show p
          in '£' : show pounds ++ '.' : showPence pence'
+
+-- instance Semigroup Price where
+--     (<>) = (+)
 
 instance Monoid Price where
     mempty = Price 0
