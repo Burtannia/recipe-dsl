@@ -43,20 +43,24 @@ type SchList = [(StName, [(TaskStatus, Task Label)])]
 -- Also takes a Bool to determine whether to clear
 -- stdout after each round of tasks (True means clear).
 simulate :: Recipe -> Env -> Float -> Bool -> IO ()
-simulate r env spd clr =
-    let lTree = labelRecipeR r
-        sch = flipStacks $ scheduleRecipe r env
-        schList = Map.toList sch
-        schWithStatus = map (\(st, ts) ->
-            (st, map (\t ->
-                (TNotStarted, t)) ts)) schList
-        sim = Simulator { sCompletes = []
-                        , sLRecipe = lTree
-                        , sEnv = env
-                        , sSpeed = spd
-                        , sClr = clr
-                        , sSchedule = schWithStatus }
-     in runSimulator sim
+simulate r env spd clr = do
+    let mr = applyOpts r (eOpts env)
+    case mr of
+        Nothing -> print "Invalid Options"
+        Just r' -> do
+            let lTree = labelRecipeR r'
+                sch = flipStacks $ scheduleRecipe r env
+                schList = Map.toList sch
+                schWithStatus = map (\(st, ts) ->
+                    (st, map (\t ->
+                        (TNotStarted, t)) ts)) schList
+                sim = Simulator { sCompletes = []
+                                , sLRecipe = lTree
+                                , sEnv = env
+                                , sSpeed = spd
+                                , sClr = clr
+                                , sSchedule = schWithStatus }
+            runSimulator sim
 
 -- Remove completed tasks from the stations in the simulator.
 pruneCompleteT :: Simulator -> Simulator

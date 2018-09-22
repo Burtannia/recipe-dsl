@@ -158,8 +158,12 @@ printStack (Idle t : xs) sMap rMap = do
 -- |Schedule the given recipe in the given environemnt
 -- and print the resulting schedule.
 scheduleAndPrint :: Recipe -> Env -> IO ()
-scheduleAndPrint r env =
-    let sch = scheduleRecipe r env
-        sMap = (Map.fromList . flatten . steps) r
-        rMap = mkLabelMap $ labelRecipeR r
-     in printSchedule sch sMap rMap
+scheduleAndPrint r env = do
+    let mr = applyOpts r (eOpts env)
+        sch = scheduleRecipe r env
+    case mr of
+        Nothing -> print "Invalid options"
+        Just r' -> do
+            let sMap = (Map.fromList . flatten . steps) r'
+                rMap = mkLabelMap $ labelRecipeR r'
+            printSchedule sch sMap rMap

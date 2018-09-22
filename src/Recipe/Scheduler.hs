@@ -22,7 +22,8 @@ module Recipe.Scheduler(
     lookupValSts, validStations,
     -- * Scheduling Functions
     duration, scheduleRecipe, initSchedule,
-    schLength ) where
+    schLength,
+    applyOpts ) where
 
 import           Data.List       (groupBy, maximumBy, minimumBy, sortBy, intersperse)
 import           Data.Map.Strict (Map)
@@ -65,10 +66,14 @@ lookupValSts env l rMap =
 -- |Lookup the stations capable of handling the action
 -- at the root node of the given recipe.
 validStations :: Env -> Recipe -> [StName]
-validStations env r = let xs = map (applyConstrF r) (eStations env)
-                          applyConstrF r st = (stName st, (stConstrF st) r)
-                          ys = filter (isJust . snd) xs
-                       in map fst ys
+validStations env r@(Node a _) =
+    case getUsings a of
+        Just sts -> sts
+        Nothing -> 
+            let xs = map (applyConstrF r) (eStations env)
+                applyConstrF r st = (stName st, (stConstrF st) r)
+                ys = filter (isJust . snd) xs
+             in map fst ys
 
 -----------------------------
 -- Scheduler

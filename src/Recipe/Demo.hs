@@ -162,7 +162,7 @@ boilInWaterForM t r = forTime (minutes t)
 env :: Env
 env = Env { eStations = [kettle, chef, toaster, chef2, hob, fridge]
           , eObs = [return $ ObsTime 0]
-          , eOpts = [Option "milk" True]
+          , eOpts = [Option "milk" False]
           }
 
 isBoilWater :: Recipe -> Bool
