@@ -171,7 +171,9 @@ isBoilWater r@(Node a ts) = case a of
         [Node (GetIngredient "water") []]                    -> True
         [Node (Measure _) [Node (GetIngredient "water") []]] -> True
         _                                                    -> False
-    Transaction _ -> isBoilWater $ popT r
+    Transaction _ -> isBoilWater $ popWrapper r
+    Optional _ _ -> isBoilWater $ popWrapper r
+    Using _ _ -> isBoilWater $ popWrapper r
     _ -> False
 
 kettle :: Station

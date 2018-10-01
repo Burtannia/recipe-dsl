@@ -291,7 +291,6 @@ getUsings a
 chooseStack :: Tree Label -> Tree Label -> Label -> Env
     -> Map Label Recipe -> Schedule Label -> Schedule Label
 chooseStack fullTree unscheduleds l env rMap sch =
-    -- if step is "Using" then select from usings
     let vs = lookupValSts env l rMap
         validSch = Map.filterWithKey (\st _ -> st `elem` vs) sch -- schedule containing only stations valid for l
 
